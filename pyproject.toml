@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "safe"
-description = "Implementation of the "Gotta be SAFE: a new framework for molecular design" paper"
+description = "Implementation of the 'Gotta be SAFE: a new framework for molecular design' paper"
 dynamic = ["version"]
 authors = [
     { name = "Emmanuel Noutahi", email = "emmanuel.noutahi@gmail.com" },
@@ -36,8 +36,7 @@ dependencies = [
     "tokenizer",
     "numpy",
     "datasets",
-    "transformers",
-
+    "transformers"
 ]
 
 [project.urls]
