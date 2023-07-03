@@ -1,0 +1,69 @@
+site_name: "SAFE"
+site_description: "Gotta be SAFE: a new framework for molecular design"
+site_url: ""
+repo_url: "https://github.com/maclandrol/safe"
+repo_name: "maclandrol/safe"
+docs_dir: "docs"
+remote_branch: "gh-pages"
+use_directory_urls: false
+copyright: Copyright 2023 maclandrol
+
+nav:
+  - Overview: index.md
+  - Tutorials:
+      - Getting started with SAFE: tutorials/getting-started.ipynb
+      - Molecular design with SAFE: tutorials/design-with-safe.ipynb
+      - Training a new model: tutorials/training-safe.ipynb
+  - API:
+      - safe: api/safe.md
+  - License: license.md
+
+theme:
+  name: material
+  features:
+    - navigation.expand
+
+markdown_extensions:
+  - admonition
+  - markdown_include.include
+  - pymdownx.emoji
+  - pymdownx.highlight
+  - pymdownx.magiclink
+  - pymdownx.superfences
+  - pymdownx.tabbed
+  - pymdownx.tasklist
+  - pymdownx.details
+  # For `tab_length=2` in the markdown extension
+  # See https://github.com/mkdocs/mkdocs/issues/545
+  - mdx_truly_sane_lists
+  - toc:
+      permalink: true
+
+plugins:
+  - search
+  - mkdocstrings:
+      watch:
+        - safe/
+      handlers:
+        python:
+          setup_commands:
+            - import sys
+            - import safe
+            - sys.path.append("docs")
+            - sys.path.append("safe")
+          selection:
+            new_path_syntax: true
+          rendering:
+            show_root_heading: false
+            heading_level: 3
+            show_if_no_docstring: true
+
+  - mkdocs-jupyter:
+      execute: false
+
+  - mike:
+      version_selector: true
+
+extra:
+  version:
+    provider: mike

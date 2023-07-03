@@ -1,0 +1,96 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "safe"
+description = "Implementation of the "Gotta be SAFE: a new framework for molecular design" paper"
+dynamic = ["version"]
+authors = [
+    { name = "Emmanuel Noutahi", email = "emmanuel.noutahi@gmail.com" },
+]
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.8"
+classifiers = [
+        "Development Status :: 3 - Alpha",
+        "Intended Audience :: Developers",
+        "Intended Audience :: Healthcare Industry",
+        "Intended Audience :: Science/Research",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
+        "Topic :: Scientific/Engineering :: Bio-Informatics",
+        "Topic :: Scientific/Engineering :: Information Analysis",
+        "Topic :: Scientific/Engineering :: Medical Science Apps.",
+        "Natural Language :: English",
+        "Operating System :: OS Independent",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+]
+
+keywords = ["safe", "smiles", "de novo", "design", "molecules"]
+dependencies = [
+    "datamol",
+    "tokenizer",
+    "numpy",
+    "datasets",
+    "transformers",
+
+]
+
+[project.urls]
+"Source Code" = "https://github.com/maclandrol/safe"
+"Bug Tracker" = "https://github.com/maclandrol/safe/issues"
+Documentation = "https://maclandrol.github.io/safe"
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = false
+license-files = ["LICENSE"]
+
+[tool.setuptools_scm]
+fallback_version = "dev"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["safe", "safe.*"]
+exclude = []
+namespaces = true
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310']
+include = '\.pyi?$'
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "--verbose --cov-report xml --cov-report term --color yes --disable-warnings"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 120
+# Enable Pyflakes `E` and `F` codes by default.
+select = [
+    "E", "W",  # see: https://pypi.org/project/pycodestyle
+    "F",  # see: https://pypi.org/project/pyflakes
+    "S",  # see: https://pypi.org/project/flake8-bandit
+]
+extend-select = [
+    "C4",  # see: https://pypi.org/project/flake8-comprehensions
+    "SIM",  # see: https://pypi.org/project/flake8-simplify
+    "RET",  # see: https://pypi.org/project/flake8-return
+    "PT",  # see: https://pypi.org/project/flake8-pytest-style
+]
+ignore = [
+    "E731",  # Do not assign a lambda expression, use a def
+    "S108",
+]
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".git",
+    "docs",
+    "_notebooks"
+]
+ignore-init-module-imports = true
