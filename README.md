@@ -1,11 +1,13 @@
 
 <h1 align="center">  :safety_vest: `SAFE` </h1>
-<h4 align="center">S</b>equential <b>A</b>ttachment-based <b>F</b>ragment <b>E</b>mbedding (SAFE) is a novel molecular line notation that represents molecules as an unordered sequence of fragment blocks to improve molecule design using generative models.<h4>
+<h4 align="center"><b>S</b>equential <b>A</b>ttachment-based <b>F</b>ragment <b>E</b>mbedding (SAFE) is a novel molecular line notation that represents molecules as an unordered sequence of fragment blocks to improve molecule design using generative models.<h4>
 
 </br>
 <div align="center">
     <img src="docs/assets/safe-tasks.svg" width="100%">
 </div>
+</br>
+
 <p align="center">
     <a href="" target="_blank">
       Paper
@@ -19,6 +21,8 @@
 </p>
 
 ---
+
+</br>
 
 [![PyPI](https://img.shields.io/pypi/v/safe)](https://pypi.org/project/safe/)
 [![Version](https://img.shields.io/pypi/pyversions/safe)](https://pypi.org/project/safe/)
