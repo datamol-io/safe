@@ -6,6 +6,8 @@ from typing import Callable
 
 import re
 import datamol as dm
+import itertools
+import numpy as np
 
 from collections import Counter
 from loguru import logger
@@ -40,6 +42,21 @@ class SafeConverter:
         "mmpa": ["[#6+0;!$(*=, #[!#6])]!@!=!#[*]"],  # classical mmpa slicing smarts
         "attach": ["[*]!@[*]"],  # any potential attachment point, including hydrogens when explicit
     }
+
+    def randomize(self, mol: dm.Mol, rng: Optional[int] = None):
+        """Randomize the position of the atoms in a mol.
+
+        Args:
+            mol: molecules to randomize
+            seed: optional seed to use
+        """
+        if isinstance(rng, int):
+            rng = np.random.default_rng(rng)
+        if mol.GetNumAtoms() == 0:
+            return mol
+        atom_indices = list(range(mol.GetNumAtoms()))
+        atom_indices = rng.permutation(atom_indices).tolist()
+        return Chem.RenumberAtoms(mol, atom_indices)
 
     def __init__(
         self,
@@ -91,7 +108,7 @@ class SafeConverter:
                     bnum_str = str(bnum) if bnum < 10 else f"%{bnum}"
                     missing_tokens.append(f"[*:{i+1}]{bnum_str}")
 
-        mol = dm.to_mol(missing_tokens.join("."))
+        mol = dm.to_mol(".".join(missing_tokens))
         if remove_dummies:
             mol = dm.remove_dummies(mol)
         if return_mol:
@@ -138,7 +155,7 @@ class SafeConverter:
             inp: input smiles
             bond_smarts: decomposition type or smarts string or list of smarts strings to use for bond breaking
             canonical: whether to return canonical smiles string. Defaults to True
-            randomize: whether to randomize the safe string encoding
+            randomize: whether to randomize the safe string encoding. Will automatically set canonical to False for smiles generation
             seed: optional seed to use when allowing randomization of the SAFE encoding. Randomization happens at two steps:
                 1. at the original smiles representation by randomization the atoms.
                 2. at the SAFE conversion by randomizing fragment orders
@@ -146,15 +163,36 @@ class SafeConverter:
                 Any bond slicing would happen inside a substructure matching any of the patterns would not be taken into account
 
         """
+        rng = None
+        if randomize:
+            rng = np.random.default_rng(seed)
+            inp = dm.to_mol(inp)
+            inp = self.randomize(inp, rng)
+
         if isinstance(inp, dm.Mol):
-            inp = dm.to_smiles(inp)
+            inp = dm.to_smiles(inp, canonical=(not randomize), randomize=False, ordered=False)
 
         branch_numbers = [int(x) for x in re.findall(r"[^\[]%?(\d+)[^\]]", inp)]
         mol = dm.to_mol(inp)
         matching_bonds = self._fragment(mol)
+        substructed_ignored = []
+        if constraints is not None:
+            substructed_ignored = list(
+                itertools.chain(
+                    *[
+                        mol.GetSubstructMatches(constraint, uniquify=True)
+                        for constraint in constraints
+                    ]
+                )
+            )
+
         bonds = []
-        for ia, ib in matching_bonds:
-            obond = mol.GetBondBetweenAtoms(ia, ib)
+        for i_a, i_b in matching_bonds:
+            # if both atoms of the bond are found in a disallowed substructure, we cannot consider them
+            # on the other end, a bond between two substructure to preserved independently is perfectly fine
+            if any((i_a in ignore_x and i_b in ignore_x) for ignore_x in substructed_ignored):
+                continue
+            obond = mol.GetBondBetweenAtoms(i_a, i_b)
             bonds.append(obond.GetIdx())
         mol = Chem.FragmentOnBonds(
             mol, bonds, dummyLabels=[(i + 1, i + 1) for i in range(len(bonds))]
@@ -170,6 +208,8 @@ class SafeConverter:
                     reverse=True,
                 )
             )
+        elif randomize:
+            frags = rng.permutation(frags).tolist()
         frags_str = []
         for frag in frags:
             non_map_atom_idxs = [a.GetIdx() for a in frag.GetAtoms() if a.GetSymbol() != "*"]
