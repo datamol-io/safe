@@ -6,7 +6,6 @@ except ModuleNotFoundError:
     from importlib_metadata import version
     from importlib_metadata import PackageNotFoundError
 
-import packaging.version
 
 try:
     __version__ = version("safe")
