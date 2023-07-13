@@ -44,7 +44,7 @@ def to_image(
         kwargs["circleAtoms"] = kwargs.get("circleAtoms", False) or False
 
     fragments = [sf.decode(x, as_mol=False, remove_dummies=False) for x in safe_str.split(".")]
-    mol = dm.to_mol(safe_str)
+    mol = dm.to_mol(safe_str, remove_hs=False)
     cm = plt.get_cmap("gist_rainbow")
     current_colors = [cm(1.0 * i / len(fragments)) for i in range(len(fragments))]
 

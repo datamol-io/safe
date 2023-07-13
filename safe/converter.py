@@ -12,6 +12,9 @@ from collections import Counter
 
 from rdkit import Chem
 from rdkit.Chem import BRICS
+from ._exception import SafeDecodeError
+from ._exception import SafeEncodeError
+from ._exception import SafeFragmentationError
 
 
 class SafeConverter:
@@ -78,7 +81,8 @@ class SafeConverter:
             self.slicer = [dm.from_smarts(x) for x in self.slicer]
         self.require_hs = require_hs or (slicer == "attach")
 
-    def randomize(self, mol: dm.Mol, rng: Optional[int] = None):
+    @staticmethod
+    def randomize(mol: dm.Mol, rng: Optional[int] = None):
         """Randomize the position of the atoms in a mol.
 
         Args:
@@ -146,7 +150,7 @@ class SafeConverter:
             mol = dm.remove_dummies(mol)
         if as_mol:
             return mol
-        return dm.to_smiles(mol, canonical=canonical)
+        return dm.to_smiles(mol, canonical=canonical, explicit_hs=True)
 
     def _fragment(self, mol: dm.Mol):
         """
@@ -154,6 +158,8 @@ class SafeConverter:
 
         Args:
             mol: input molecule to split
+        Raises:
+            SafeFragmentationError: if the slicing algorithm return empty bonds
         """
 
         if callable(self.slicer):
@@ -166,8 +172,14 @@ class SafeConverter:
         else:
             matches = set()
             for smarts in self.slicer:
-                matches |= {tuple(sorted(match)) for match in mol.GetSubstructMatches(smarts)}
+                matches |= {
+                    tuple(sorted(match)) for match in mol.GetSubstructMatches(smarts, uniquify=True)
+                }
             matching_bonds = list(matches)
+        if matching_bonds is None or len(matching_bonds) == 0:
+            raise SafeFragmentationError(
+                "Slicing algorithms did not return any bonds that can be cut !"
+            )
         return matching_bonds
 
     def encoder(
@@ -195,7 +207,7 @@ class SafeConverter:
         rng = None
         if randomize and not canonical:
             rng = np.random.default_rng(seed)
-            inp = dm.to_mol(inp)
+            inp = dm.to_mol(inp, remove_hs=False)
             inp = self.randomize(inp, rng)
 
         if isinstance(inp, dm.Mol):
@@ -204,7 +216,7 @@ class SafeConverter:
         # TODO(maclandrol): RDKit supports some extended form of ring closure, up to 5 digits
         # https://www.rdkit.org/docs/RDKit_Book.html#ring-closures and I should try to include them
         branch_numbers = self._find_branch_number(inp)
-        mol = dm.to_mol(inp)
+        mol = dm.to_mol(inp, remove_hs=False)
         if self.require_hs:
             mol = dm.add_hs(mol)
         matching_bonds = self._fragment(mol)
@@ -248,14 +260,17 @@ class SafeConverter:
                 Chem.MolToSmiles(
                     frag,
                     isomericSmiles=True,
-                    canonical=canonical,
+                    canonical=True,  # needs to always be true
                     rootedAtAtom=non_map_atom_idxs[0],
                 )
             )
 
         scaffold_str = ".".join(frags_str)
         attach_pos = set(re.findall(r"(\[\d+\*\]|\[[^:]*:\d+\])", scaffold_str))
-        starting_num = max(branch_numbers) + 1
+        if len(branch_numbers) == 0:
+            starting_num = 1
+        else:
+            starting_num = max(branch_numbers) + 1
         for attach in attach_pos:
             val = str(starting_num) if starting_num < 10 else f"%{starting_num}"
             # we cannot have anything of the form "\([@=-#-$/\]*\d+\)"
@@ -290,9 +305,15 @@ def encode(
         slicer = "brics"
     with dm.without_rdkit_log():
         safe = SafeConverter(slicer=slicer, require_hs=require_hs)
-        return safe.encoder(
-            inp, canonical=canonical, randomize=randomize, constraints=constraints, seed=seed
-        )
+        try:
+            encoded = safe.encoder(
+                inp, canonical=canonical, randomize=randomize, constraints=constraints, seed=seed
+            )
+        except SafeFragmentationError as e:
+            raise e
+        except Exception as e:
+            raise SafeEncodeError(f"Failed to encode {inp} with {slicer}") from e
+        return encoded
 
 
 def decode(
@@ -313,6 +334,10 @@ def decode(
     """
     with dm.without_rdkit_log():
         safe = SafeConverter()
-        return safe.decoder(
-            safe_str, as_mol=as_mol, canonical=canonical, fix=fix, remove_dummies=remove_dummies
-        )
+        try:
+            decoded = safe.decoder(
+                safe_str, as_mol=as_mol, canonical=canonical, fix=fix, remove_dummies=remove_dummies
+            )
+        except Exception as e:
+            raise SafeDecodeError(f"Failed to decode {safe_str}") from e
+        return decoded
