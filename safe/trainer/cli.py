@@ -1,22 +1,26 @@
 from typing import Optional
 from typing import Literal
 
+import math
 import os
 import sys
 import typer
+import uuid
 import torch
 import logging
+import transformers
 from transformers import (
     AutoConfig,
+    Trainer,
     set_seed,
 )
-
 from safe.trainer.model import SAFEDoubleHeadsModel
 from safe.tokenizer import SAFETokenizer
 from safe.trainer.data_utils import get_dataset
 
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+LOGGING_STEPS = 100
 logger = logging.getLogger(__name__)
 app = typer.Typer()
 
@@ -75,7 +79,9 @@ def train(
     dual_head: Optional[bool] = typer.Option(
         False, "--dual-head", help="whether to use a dual head loss"
     ),
-    fp16: Optional[bool] = typer.Option(False, "--fp16", help="whether to train using fp16"),
+    dtype: Literal["auto", "bfloat16", "float16", "float32"] = typer.Option(
+        None, "--dtype", help="torch datatype to use and train the model in"
+    ),
     group_by_length: Optional[bool] = typer.Option(
         False,
         "--group-by-length",
@@ -101,11 +107,20 @@ def train(
         help="Path to a checkpoint from which we can resume experiments",
     ),
     eval_every: Optional[int] = typer.Option(
-        100, "--eval-every", help="Number of steps between every evaluation"
+        1000, "--eval-every", help="Number of steps between every evaluation"
     ),
     save_every: Optional[int] = typer.Option(
-        100, "--save-every", help="Number of steps between every model saving"
+        1000, "--save-every", help="Number of steps between every model saving"
     ),
+    warmup_steps: Optional[int] = typer.Option(
+        None,
+        "--warmup-steps",
+        help="Number of steps used for a linear warmup from 0 to learning_rate",
+    ),
+    num_workers: Optional[int] = typer.Option(
+        0, "--num-workers", help="Number of workers to use for dataloading"
+    ),
+    max_steps: Optional[int] = typer.Option(-1, "--max-steps", help="Maximum number of steps"),
 ):
     world_size = int(os.environ.get("WORLD_SIZE", 1))
     ddp = world_size != 1
@@ -115,6 +130,7 @@ def train(
 
     # Check if parameter passed or if set within environ
     # Only overwrite environ if wandb param passed
+    wandb_run_name = f"safe-model-{uuid.uuid4().hex[:8]}"
     if wandb_project:
         os.environ["WANDB_PROJECT"] = wandb_project
     if wandb_watch:
@@ -135,16 +151,22 @@ def train(
     n_gpu = torch.cuda.device_count()
     logger.info("device: {}, n_gpu {}".format(device, n_gpu))
 
-    # load dataset
-    dataset = get_dataset(dataset, streaming=True)
-
     # load tokenizer and model
     tokenizer = SAFETokenizer.load(tokenizer)
     if config is None:
         config = os.path.join(CURRENT_DIR, "data/default_config.json")
     config = AutoConfig.from_pretrained(config, cache_dir=cache_dir)
-    if model_path is not None is not None:
-        model = SAFEDoubleHeadsModel.from_pretrained(model_path, config=config)
+
+    torch_dtype = dtype if dtype in ["auto", None] else getattr(torch, dtype)
+
+    if model_path is not None:
+        model = SAFEDoubleHeadsModel.from_pretrained(
+            model_path,
+            config=config,
+            cache_dir=cache_dir,
+            torch_dtype=torch_dtype,
+            low_cpu_mem_usage=True,
+        )
     else:
         model = SAFEDoubleHeadsModel(config)
 
@@ -157,11 +179,41 @@ def train(
     n_params = sum({p.data_ptr(): p.numel() for p in model.parameters()}.values())
     logger.info(f"Training new model from scratch - Total size={n_params/2**20:.2f}M params")
 
-    if torch.__version__ >= "2" and sys.platform != "win32":
-        model = torch.compile(model)
+    model.to(device)
 
-    if is_tokenized:
-        pass
+    training_args = (
+        transformers.TrainingArguments(
+            per_device_train_batch_size=batch_size,
+            gradient_accumulation_steps=gradient_accumulation_steps,
+            warmup_steps=warmup_steps,
+            num_train_epochs=num_epochs,
+            learning_rate=learning_rate,
+            fp16=(dtype == "float16"),
+            logging_steps=LOGGING_STEPS,
+            optim="adamw_torch",
+            evaluation_strategy="steps",
+            save_strategy="steps",
+            eval_steps=eval_every,
+            save_steps=save_every,
+            output_dir=output_dir,
+            save_total_limit=5,
+            load_best_model_at_end=True,
+            ddp_find_unused_parameters=False if ddp else None,
+            group_by_length=group_by_length,
+            report_to="wandb" if wandb_project is not None else None,
+            run_name=wandb_run_name if wandb_project is not None else None,
+            dataloader_num_workers=num_workers,
+            save_safetensors=True,
+            torch_compile=(torch.__version__ >= "2" and sys.platform != "win32"),
+            max_steps=max_steps,
+        ),
+    )
+
+    # load dataset
+    with training_args.main_process_first():
+        dataset = get_dataset(
+            dataset, tokenizer=(None if is_tokenized else tokenizer), streaming=True
+        )
 
     if resume_from_checkpoint:
         # Check the available weights and load them
@@ -173,29 +225,59 @@ def train(
         model.is_parallelizable = True
         model.model_parallel = True
 
-    # trainer = transformers.Trainer(
-    #     model=model,
-    #     train_dataset=train_dataset,
-    #     eval_dataset=valid_dataset,
-    #     args=,
-    #     data_collator=transformers.DataCollatorForSeq2Seq(
-    #         tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
-    #     ),
-    # )
-    # model.config.use_cache = False
+    data_collator = transformers.DataCollatorForLanguageModeling(
+        tokenizer=tokenizer, mlm=False, mlm_probability=0.0
+    )
 
-    # old_state_dict = model.state_dict
-    # model.state_dict = (
-    #     lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())
-    # ).__get__(model, type(model))
-    # # with torch.autocast("cuda"):
-    # trainer.train(resume_from_checkpoint=resume_from_checkpoint)
+    data_collator = (
+        transformers.DataCollatorForSeq2Seq(
+            tokenizer, pad_to_multiple_of=8, return_tensors="pt", padding=True
+        ),
+    )
 
-    # trainer.log_metrics("train", metrics)
-    # trainer.save_metrics("train", metrics)
-    # trainer.save_state()
+    trainer = Trainer(
+        model=model,
+        train_dataset=dataset["train"],
+        eval_dataset=dataset["validation"],
+        args=training_args,
+        data_collator=data_collator,
+        prediction_loss_only=True,
+    )
 
-    # print("\n If there's a warning about missing keys above, please disregard :)")
+    train_params = {}
+    if model_path is not None and os.path.isdir(model_path):
+        train_params["model_path"] = model_path
+
+    if resume_from_checkpoint is not None:
+        train_params["resume_from_checkpoint"] = resume_from_checkpoint
+
+    trainer.train(**train_params)
+    trainer.save_model()
+    # For convenience, we also re-save the tokenizer to the same directory,
+    # so that you can share your model easily on huggingface.co/models =)
+    if trainer.is_world_master():
+        tokenizer.save(os.path.join(output_dir, "tokenizer.json"))
+
+    model.save_pretrained(output_dir)
+
+    # Evaluation
+    results = {}
+    logger.info("*** Evaluate ***")
+
+    eval_output = trainer.evaluate()
+
+    perplexity = math.exp(eval_output["eval_loss"])
+    result = {"perplexity": perplexity}
+
+    output_eval_file = os.path.join(output_dir, "eval_results_lm.txt")
+    if trainer.is_world_master():
+        with open(output_eval_file, "w") as writer:
+            logger.info("***** Eval results *****")
+            for key in sorted(result.keys()):
+                logger.info("  %s = %s", key, str(result[key]))
+                writer.write("%s = %s\n" % (key, str(result[key])))
+
+    results.update(result)
 
 
 if __name__ == "__main__":
