@@ -2,13 +2,16 @@ from typing import Optional
 from typing import List
 
 import re
+import fsspec
+import json
 from loguru import logger
+from contextlib import contextmanager
 
 from tokenizers import decoders
 from tokenizers import Tokenizer
 from tokenizers.models import BPE, WordLevel
 from tokenizers.trainers import BpeTrainer, WordLevelTrainer
-from tokenizers.pre_tokenizers import PreTokenizer
+from tokenizers.pre_tokenizers import Whitespace, PreTokenizer
 from tokenizers.processors import TemplateProcessing
 from transformers import PreTrainedTokenizerFast
 
@@ -25,6 +28,20 @@ TEMPLATE_SPECIAL_TOKENS = [
     ("[CLS]", 1),
     ("[SEP]", 2),
 ]
+
+
+@contextmanager
+def attr_as(obj, field, value):
+    """Temporary replace the value of an object
+    Args:
+        obj: object to temporary patch
+        field: name of the key to change
+        value: value of key to be temporary changed
+    """
+    old_value = getattr(obj, field, None)
+    setattr(obj, field, value)
+    yield
+    setattr(obj, field, old_value)
 
 
 class SAFESplitter:
@@ -193,6 +210,45 @@ class SAFETokenizer:
             return ids
         return enc
 
+    def to_dict(self, **kwargs):
+        """Convert tokenizer to dict"""
+        if not self._use_white_space(self.tokenizer_type):
+            # we need to do this because HuggingFace tokenizers doesnt save with custom pre-tokenizers
+            with attr_as(self.tokenizer, "pre_tokenizer", Whitespace()):
+                # temporary replace pre tokenizer with whitespace
+                tk_data = json.loads(self.tokenizer.to_str())
+                tk_data["custom_pre_tokenizer"] = True
+
+        else:
+            tk_data = json.loads(self.tokenizer.to_str())
+        tk_data["tokenizer_type"] = self.tokenizer_type
+        tk_data["tokenizer_attrs"] = self.tokenizer.__dict__
+        return tk_data
+
+    def save(self, file_name=None):
+        r"""
+        Saves the :class:`~tokenizers.Tokenizer` to the file at the given path.
+
+        Args:
+            file_name (str, optional): File where to save tokenizer
+        """
+        # EN: whole logic here assumes noone is going to mess with the special token
+        file_name = file_name or self.file_path
+        tk_data = self.to_dict()
+        with fsspec.open(file_name, "w", encoding="utf-8") as OUT:
+            out_str = json.dumps(tk_data, ensure_ascii=False)
+            OUT.write(out_str)
+
+    @classmethod
+    def load(cls, file_name):
+        """Load the current tokenizer from file"""
+        with fsspec.open(file_name, "r") as OUT:
+            data_str = OUT.read()
+        data = json.loads(data_str)
+        # EN: the rust json parser of tokenizers has a predefined structure
+        # the next two lines are important
+        return cls.from_dict(data)
+
     @classmethod
     def decode(
         cls,
@@ -233,8 +289,7 @@ class SAFETokenizer:
                 if int(id) in stop_token_ids:
                     break
                 new_ids.append(id)
-        out = pretrained_tokenizer.decode(list(new_ids), skip_special_tokens=skip_special_tokens)
-        return out
+        return pretrained_tokenizer.decode(list(new_ids), skip_special_tokens=skip_special_tokens)
 
     def get_tokenizer(self, **kwargs):
         r"""
@@ -246,15 +301,15 @@ class SAFETokenizer:
         tk = PreTrainedTokenizerFast(tokenizer_object=self.tokenizer)
         # now we need to add special_tokens
         tk.add_special_tokens(
-            dict(
-                cls_token=self.tokenizer.cls_token,
-                bos_token=self.tokenizer.bos_token,
-                eos_token=self.tokenizer.eos_token,
-                mask_token=self.tokenizer.mask_token,
-                pad_token=self.tokenizer.pad_token,
-                unk_token=self.tokenizer.unk_token,
-                sep_token=self.tokenizer.sep_token,
-            )
+            {
+                "cls_token": self.tokenizer.cls_token,
+                "bos_token": self.tokenizer.bos_token,
+                "eos_token": self.tokenizer.eos_token,
+                "mask_token": self.tokenizer.mask_token,
+                "pad_token": self.tokenizer.pad_token,
+                "unk_token": self.tokenizer.unk_token,
+                "sep_token": self.tokenizer.sep_token,
+            }
         )
         if (
             tk.model_max_length is None

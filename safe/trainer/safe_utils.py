@@ -72,7 +72,7 @@ def mol_partition(mol, query: Optional[dm.Mol] = None, seed: Optional[int] = Non
     subgraphs = nx.subgraph_view(G, filter_edge=get_relevant_edges)
 
     partition = [{u} for u in G.nodes()]
-    inner_partition = list(sorted(nx.connected_components(subgraphs), key=lambda x: min(x)))
+    inner_partition = sorted(nx.connected_components(subgraphs), key=lambda x: min(x))
     mod = nx.algorithms.community.modularity(
         G, inner_partition, resolution=resolution, weight=weight
     )
@@ -183,10 +183,10 @@ def convert_to_safe(
                         seed=seed,
                     ),
                 )
-            except (sf.SafeEncodeError, sf.SafeFragmentationError) as e:
+            except (sf.SafeEncodeError, sf.SafeFragmentationError):
                 # logger.exception(e)
                 return x
         # we need to resplit using attachment point but here we are only adding
-    except sf.SafeEncodeError as e:
+    except sf.SafeEncodeError:
         return x
     return x

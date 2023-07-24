@@ -44,6 +44,10 @@ dependencies = [
 "Bug Tracker" = "https://github.com/maclandrol/safe/issues"
 Documentation = "https://maclandrol.github.io/safe"
 
+
+[project.scripts]
+safe = "safe.trainer.cli:app"
+
 [tool.setuptools]
 include-package-data = true
 zip-safe = false

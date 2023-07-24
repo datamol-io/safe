@@ -267,10 +267,7 @@ class SafeConverter:
 
         scaffold_str = ".".join(frags_str)
         attach_pos = set(re.findall(r"(\[\d+\*\]|\[[^:]*:\d+\])", scaffold_str))
-        if len(branch_numbers) == 0:
-            starting_num = 1
-        else:
-            starting_num = max(branch_numbers) + 1
+        starting_num = 1 if len(branch_numbers) == 0 else max(branch_numbers) + 1
         for attach in attach_pos:
             val = str(starting_num) if starting_num < 10 else f"%{starting_num}"
             # we cannot have anything of the form "\([@=-#-$/\]*\d+\)"
