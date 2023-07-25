@@ -69,7 +69,7 @@ include = '\.pyi?$'
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--verbose --cov-report xml --cov-report term --color yes --disable-warnings"
+addopts = "--verbose --color yes --disable-warnings"
 testpaths = ["tests"]
 
 [tool.ruff.pycodestyle]

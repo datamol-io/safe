@@ -169,7 +169,7 @@ class SAFETokenizer:
         """
         if isinstance(files, str):
             files = [files]
-        self.tokenizer.train(files=files, trainer=self._get_trainer())
+        self.tokenizer.train(files=files, trainer=self.trainer)
 
     def train_from_iterator(self, data, **kwargs):
         """Train the Tokenizer using the provided iterator.

@@ -1,6 +1,3 @@
-import safe as sf
-
-
 def test_safe():
     pass
 
