@@ -18,7 +18,6 @@ def tokenize_fn(
     row,
     tokenizer,
     tokenize_column: str = "inputs",
-    property_column: str = "descriptors",
     max_length: Optional[int] = None,
     padding: bool = False,
 ):
@@ -27,13 +26,12 @@ def tokenize_fn(
         row: row to tokenize
         tokenizer: tokenizer to use
         tokenize_column: column to tokenize
-        property_column: column containing the property to predict
         max_length: maximum size of the tokenized sequence
         padding: whether to pad the sequence
     """
     # there's probably a way to do this with the tokenizer settings
     # but again, gotta move fast
-    result = tokenizer(
+    return tokenizer(
         row[tokenize_column],
         truncation=(max_length is not None),
         max_length=max_length,
@@ -41,10 +39,6 @@ def tokenize_fn(
         return_tensors=None,
     )
 
-    result["labels"] = result["input_ids"].copy()
-    if property_column is not None:
-        result["mc_labels"] = row[property_column]
-    return result
 
 
 def batch_iterator(datasets, batch_size=100, n_examples=None, column="inputs"):
@@ -109,7 +103,9 @@ def get_dataset(
         return raw_datasets
 
     columns_to_remove = [
-        x for x in raw_datasets["train"].column_names if x != tokenize_column and "label" not in x
+        x
+        for x in raw_datasets["train"].column_names
+        if x not in [tokenize_column, property_column] and "label" not in x
     ]
     fast_tokenizer = tokenizer.get_pretrained() if isinstance(tokenizer, SAFETokenizer) else tokenizer
     return raw_datasets.map(
@@ -117,7 +113,6 @@ def get_dataset(
             tokenize_fn,
             tokenizer=fast_tokenizer,
             tokenize_column=tokenize_column,
-            property_column=property_column,
             max_length=max_length,
         ),
         batched=True,
