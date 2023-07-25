@@ -24,6 +24,7 @@ jobs:
       - name: Install black
         run: |
           pip install black>=23
+          pip install ruff
 
       - name: Lint
         run: |
