@@ -40,7 +40,6 @@ def tokenize_fn(
     )
 
 
-
 def batch_iterator(datasets, batch_size=100, n_examples=None, column="inputs"):
     if isinstance(datasets, Mapping):
         datasets = list(datasets.values())
@@ -107,7 +106,9 @@ def get_dataset(
         for x in raw_datasets["train"].column_names
         if x not in [tokenize_column, property_column] and "label" not in x
     ]
-    fast_tokenizer = tokenizer.get_pretrained() if isinstance(tokenizer, SAFETokenizer) else tokenizer
+    fast_tokenizer = (
+        tokenizer.get_pretrained() if isinstance(tokenizer, SAFETokenizer) else tokenizer
+    )
     return raw_datasets.map(
         partial(
             tokenize_fn,
