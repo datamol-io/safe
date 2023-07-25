@@ -1,11 +1,11 @@
 from typing import Optional
-from typing import Literal
 
 import math
 import os
 import sys
 import typer
 import uuid
+import click
 import torch
 import logging
 import transformers
@@ -79,7 +79,7 @@ def train(
     dual_head: Optional[bool] = typer.Option(
         False, "--dual-head", help="whether to use a dual head loss"
     ),
-    dtype: Literal["auto", "bfloat16", "float16", "float32"] = typer.Option(
+    dtype: Optional[str] = typer.Option(
         None, "--dtype", help="torch datatype to use and train the model in"
     ),
     group_by_length: Optional[bool] = typer.Option(
@@ -93,12 +93,10 @@ def train(
         "--wandb-project",
         help="Name of the wandb project to use to log the SAFE model parameter",
     ),
-    wandb_watch: Literal["gradients", "all", None] = typer.Option(
+    wandb_watch: Optional[str] = typer.Option(
         None,
-        "--wandb-project",
-        prompt=True,
-        show_choices=True,
-        help="whern of the wandb project to use to log the SAFE model parameter",
+        "--wandb-watch",
+        help="Whether to watch the wandb models or not",
     ),
     # whether to resume training from a checkpoint
     resume_from_checkpoint: Optional[str] = typer.Option(
@@ -128,6 +126,15 @@ def train(
         {"": int(os.environ.get("LOCAL_RANK") or 0)}
         gradient_accumulation_steps = gradient_accumulation_steps // world_size
 
+    if dtype not in ["auto", "bfloat16", "float16", "float32", None]:
+        raise ValueError(
+            f"Invalid dtype {dtype}", "Valid values are: auto, bfloat16, float16, float32, None"
+        )
+
+    if wandb_watch not in ["gradients", "all", None]:
+        raise ValueError(
+            f"Invalid wandb_watch {wandb_watch}", "Valid values are: gradients, all, None"
+        )
     # Check if parameter passed or if set within environ
     # Only overwrite environ if wandb param passed
     wandb_run_name = f"safe-model-{uuid.uuid4().hex[:8]}"
@@ -154,9 +161,10 @@ def train(
     # load tokenizer and model
     tokenizer = SAFETokenizer.load(tokenizer)
     if config is None:
-        config = os.path.join(CURRENT_DIR, "data/default_config.json")
+        config = os.path.join(CURRENT_DIR, "configs/default_config.json")
     config = AutoConfig.from_pretrained(config, cache_dir=cache_dir)
 
+    config.vocab_size = len(tokenizer)
     torch_dtype = dtype if dtype in ["auto", None] else getattr(torch, dtype)
 
     if model_path is not None:

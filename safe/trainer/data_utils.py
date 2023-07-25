@@ -1,7 +1,68 @@
 from typing import Optional
 from typing import Callable
+from collections.abc import Mapping
+from tqdm.auto import tqdm
+from functools import partial
+import itertools
 import upath
 import datasets
+from safe.tokenizer import SAFETokenizer
+
+
+def take(n, iterable):
+    "Return first n items of the iterable as a list"
+    return list(itertools.islice(iterable, n))
+
+
+def tokenize_fn(
+    row,
+    tokenizer,
+    tokenize_column: str = "inputs",
+    property_column: str = "descriptors",
+    max_length: Optional[int] = None,
+    padding: bool = False,
+):
+    """Perform the tokenization of a row
+    Args:
+        row: row to tokenize
+        tokenizer: tokenizer to use
+        tokenize_column: column to tokenize
+        property_column: column containing the property to predict
+        max_length: maximum size of the tokenized sequence
+        padding: whether to pad the sequence
+    """
+    # there's probably a way to do this with the tokenizer settings
+    # but again, gotta move fast
+    result = tokenizer(
+        row[tokenize_column],
+        truncation=(max_length is not None),
+        max_length=max_length,
+        padding=padding,
+        return_tensors=None,
+    )
+
+    result["labels"] = result["input_ids"].copy()
+    if property_column is not None:
+        result["mc_labels"] = row[property_column]
+    return result
+
+
+def batch_iterator(datasets, batch_size=100, n_examples=None, column="inputs"):
+    if isinstance(datasets, Mapping):
+        datasets = list(datasets.values())
+
+    if not isinstance(datasets, (list, tuple)):
+        datasets = [datasets]
+
+    for dataset in datasets:
+        iter_dataset = iter(dataset)
+        if n_examples is not None and n_examples > 0:
+            for _ in tqdm(range(0, n_examples, batch_size)):
+                out = [next(iter_dataset)[column] for _ in range(batch_size)]
+                yield out
+        else:
+            for out in tqdm(iter(partial(take, batch_size, iter_dataset), [])):
+                yield [x[column] for x in out]
 
 
 def get_dataset(
@@ -12,7 +73,8 @@ def get_dataset(
     streaming: bool = True,
     use_auth_token: bool = False,
     tokenize_column: Optional[str] = "inputs",
-    block_size: Optional[int] = None,
+    property_column: Optional[str] = "descriptors",
+    max_length: Optional[int] = None,
 ):
     """Get the datasets from the config file"""
     raw_datasets = {}
@@ -22,20 +84,17 @@ def get_dataset(
         if data_path.exists():
             # the we need to load from disk
             data_path = str(data_path)
-            try:
-                raw_datasets = datasets.load_dataset(data_path, streaming=True, cache_dir=cache_dir)
-            except:
-                # for some reason, the datasets package is not able to load the dataset
-                # because the split where not originally proposed
-                raw_datasets = datasets.load_from_disk(data_path)
+            # for some reason, the datasets package is not able to load the dataset
+            # because the split where not originally proposed
+            raw_datasets = datasets.load_from_disk(data_path)
 
-                if streaming:
-                    if isinstance(raw_datasets, datasets.DatasetDict):
-                        raw_datasets = datasets.IterableDatasetDict(
-                            {k: dt.to_iterable_dataset() for k, dt in raw_datasets.items()}
-                        )
-                    else:
-                        raw_datasets = raw_datasets.to_iterable_dataset()
+            if streaming:
+                if isinstance(raw_datasets, datasets.DatasetDict):
+                    raw_datasets = datasets.IterableDatasetDict(
+                        {k: dt.to_iterable_dataset() for k, dt in raw_datasets.items()}
+                    )
+                else:
+                    raw_datasets = raw_datasets.to_iterable_dataset()
 
         else:
             raw_datasets = datasets.load_dataset(
@@ -49,30 +108,18 @@ def get_dataset(
     if tokenizer is None:
         return raw_datasets
 
-    block_size = tokenizer.tokenizer.model_max_length or 1024
-
-    def tokenize(row):
-        # there's probably a way to do this with the tokenizer settings
-        # but again, gotta move fast
-        result = tokenizer(
-            row[tokenize_column],
-            truncation=True,
-            max_length=block_size,
-            padding=False,
-            return_tensors=None,
-        )
-        if (
-            result["input_ids"][-1] != tokenizer.eos_token_id
-            and len(result["input_ids"]) < block_size
-        ):
-            result["input_ids"].append(tokenizer.eos_token_id)
-            result["attention_mask"].append(1)
-
-        result["labels"] = result["input_ids"].copy()
-        result["mc_labels"] = result["descriptors"]
-        return result
-
     columns_to_remove = [
         x for x in raw_datasets["train"].column_names if x != tokenize_column and "label" not in x
     ]
-    return raw_datasets.map(tokenize, batched=True, remove_columns=columns_to_remove)
+    fast_tokenizer = tokenizer.get_pretrained() if isinstance(tokenizer, SAFETokenizer) else tokenizer
+    return raw_datasets.map(
+        partial(
+            tokenize_fn,
+            tokenizer=fast_tokenizer,
+            tokenize_column=tokenize_column,
+            property_column=property_column,
+            max_length=max_length,
+        ),
+        batched=True,
+        remove_columns=columns_to_remove,
+    )

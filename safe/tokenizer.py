@@ -3,6 +3,9 @@ from typing import List
 
 import re
 import fsspec
+import copy
+import torch
+import numpy as np
 import json
 from loguru import logger
 from contextlib import contextmanager
@@ -96,6 +99,7 @@ class SAFETokenizer:
     def __init__(
         self,
         tokenizer_type: str = "bpe",
+        splitter: Optional[str] = "safe",
         trainer_args=None,
         decoder_args=None,
         token_model_args=None,
@@ -114,7 +118,10 @@ class SAFETokenizer:
             self.trainer = WordLevelTrainer(special_tokens=SPECIAL_TOKENS, **self.trainer_args)
 
         self.tokenizer = Tokenizer(self.model)
-        self.tokenizer.pre_tokenizer = PreTokenizer.custom(SAFESplitter())
+        self.splitter = None
+        if splitter == "safe":
+            self.splitter = SAFESplitter()
+            self.tokenizer.pre_tokenizer = PreTokenizer.custom(self.splitter)
         self.tokenizer.post_processor = TemplateProcessing(
             single=TEMPLATE_SINGLE,
             pair=TEMPLATE_PAIR,
@@ -185,15 +192,11 @@ class SAFETokenizer:
         """
         return len(self.tokenizer.get_vocab().keys())
 
-    @classmethod
-    def encode(
-        cls, pretrained_tokenizer: PreTrainedTokenizerFast, sample_str, ids_only=True, **kwargs
-    ):
+    def encode(self, sample_str, ids_only=True, **kwargs):
         r"""
         Encodes a given molecule string once training is done
 
         Args
-            pretrained_tokenizer: pretrained tokenizer to use
             sample_str (str): Sample string to encode molecule
             ids_only (bool): whether to return only the ids or the encoding objet
 
@@ -201,26 +204,27 @@ class SAFETokenizer:
             object: Returns encoded list of IDs
 
         """
-        enc = pretrained_tokenizer.encode(sample_str, **kwargs)
+        if isinstance(sample_str, str):
+            enc = self.tokenizer.encode(sample_str, **kwargs)
+            if ids_only:
+                return enc.ids
+            return enc
+
+        encs = self.tokenizer.encode_batch(sample_str, **kwargs)
         if ids_only:
-            ids = enc.ids
-            if ids[0] == cls.bos_token_id:
-                # by convention bos token is not
-                ids = ids[1:]
-            return ids
-        return enc
+            return [enc.ids for enc in encs]
+        return encs
 
     def to_dict(self, **kwargs):
         """Convert tokenizer to dict"""
-        if not self._use_white_space(self.tokenizer_type):
-            # we need to do this because HuggingFace tokenizers doesnt save with custom pre-tokenizers
+        # we need to do this because HuggingFace tokenizers doesnt save with custom pre-tokenizers
+        if self.splitter is None:
+            tk_data = json.loads(self.tokenizer.to_str())
+        else:
             with attr_as(self.tokenizer, "pre_tokenizer", Whitespace()):
                 # temporary replace pre tokenizer with whitespace
                 tk_data = json.loads(self.tokenizer.to_str())
                 tk_data["custom_pre_tokenizer"] = True
-
-        else:
-            tk_data = json.loads(self.tokenizer.to_str())
         tk_data["tokenizer_type"] = self.tokenizer_type
         tk_data["tokenizer_attrs"] = self.tokenizer.__dict__
         return tk_data
@@ -240,6 +244,25 @@ class SAFETokenizer:
             OUT.write(out_str)
 
     @classmethod
+    def from_dict(cls, data):
+        """Load tokenizer from dict
+
+        Args:
+            data: dictionary containing the tokenizer info
+        """
+        tokenizer_type = data.pop("tokenizer_type", "smiles")
+        tokenizer_attrs = data.pop("tokenizer_attrs", None)
+        custom_pre_tokenizer = data.pop("custom_pre_tokenizer", False)
+        tokenizer = Tokenizer.from_str(json.dumps(data))
+        if custom_pre_tokenizer:
+            tokenizer.pre_tokenizer = PreTokenizer.custom(SAFESplitter())
+        mol_tokenizer = cls(tokenizer_type)
+        mol_tokenizer.tokenizer = mol_tokenizer.set_special_tokens(tokenizer)
+        if tokenizer_attrs and isinstance(tokenizer_attrs, dict):
+            mol_tokenizer.tokenizer.__dict__.update(tokenizer_attrs)
+        return mol_tokenizer
+
+    @classmethod
     def load(cls, file_name):
         """Load the current tokenizer from file"""
         with fsspec.open(file_name, "r") as OUT:
@@ -249,12 +272,10 @@ class SAFETokenizer:
         # the next two lines are important
         return cls.from_dict(data)
 
-    @classmethod
     def decode(
-        cls,
+        self,
         ids,
-        pretrained_tokenizer: PreTrainedTokenizerFast,
-        skip_special_tokens: bool = False,
+        skip_special_tokens: bool = True,
         ignore_stops: bool = False,
         stop_token_ids: Optional[List[int]] = None,
     ):
@@ -272,33 +293,47 @@ class SAFETokenizer:
             sequence: str representation of molecule
 
         """
-        new_ids = ids
+        old_id_list = ids
+        if not isinstance(ids[0], (list, np.ndarray)) and not torch.is_tensor(ids[0]):
+            old_id_list = [ids]
         if not stop_token_ids:
-            stop_token_ids = [pretrained_tokenizer.token_to_id(pretrained_tokenizer.eos_token)]
-        if not ignore_stops:
-            new_ids = []
-            # if first tokens are stop, we just remove it
-            # this is because of bart essentially
-            pos = 0
-            if len(ids) > 1:
-                while ids[pos] in stop_token_ids:
-                    pos += 1
-            # we only ignore when there is a list of tokens
-            ids = ids[pos:]
-            for pos, id in enumerate(ids):
-                if int(id) in stop_token_ids:
-                    break
-                new_ids.append(id)
-        return pretrained_tokenizer.decode(list(new_ids), skip_special_tokens=skip_special_tokens)
+            stop_token_ids = [self.tokenizer.token_to_id(self.tokenizer.eos_token)]
 
-    def get_tokenizer(self, **kwargs):
+        new_ids_list = []
+        for ids in old_id_list:
+            if not ignore_stops:
+                new_ids = []
+                # if first tokens are stop, we just remove it
+                # this is because of bart essentially
+                pos = 0
+                if len(ids) > 1:
+                    while ids[pos] in stop_token_ids:
+                        pos += 1
+                # we only ignore when there is a list of tokens
+                ids = ids[pos:]
+                for pos, id in enumerate(ids):
+                    if int(id) in stop_token_ids:
+                        break
+                    new_ids.append(id)
+            new_ids_list.append(new_ids)
+        if len(new_ids_list) == 1:
+            return self.tokenizer.decode(
+                list(new_ids_list), skip_special_tokens=skip_special_tokens
+            )
+        return self.tokenizer.decode_batch(
+            list(new_ids_list), skip_special_tokens=skip_special_tokens
+        )
+
+    def get_pretrained(self, **kwargs):
         r"""
         Get a pretrained tokenizer from this tokenizer
 
         Returns:
             Returns pre-trained fast tokenizer for hugging face models.
         """
-        tk = PreTrainedTokenizerFast(tokenizer_object=self.tokenizer)
+        with attr_as(self.tokenizer, "pre_tokenizer", Whitespace()):
+            tk = PreTrainedTokenizerFast(tokenizer_object=self.tokenizer)
+        tk._tokenizer.pre_tokenizer = self.tokenizer.pre_tokenizer
         # now we need to add special_tokens
         tk.add_special_tokens(
             {
