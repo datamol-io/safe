@@ -31,7 +31,12 @@ def tokenize_fn(
     """
     # there's probably a way to do this with the tokenizer settings
     # but again, gotta move fast
-    return tokenizer(
+
+    fast_tokenizer = (
+        tokenizer.get_pretrained() if isinstance(tokenizer, SAFETokenizer) else tokenizer
+    )
+
+    return fast_tokenizer(
         row[tokenize_column],
         truncation=(max_length is not None),
         max_length=max_length,
@@ -98,24 +103,27 @@ def get_dataset(
                 streaming=streaming,
             )
     # that means we need to return a tokenized version of the dataset
-    if tokenizer is None:
-        return raw_datasets
 
+    raw_datasets = raw_datasets.rename_column(property_column, "mc_labels")
     columns_to_remove = [
         x
         for x in raw_datasets["train"].column_names
-        if x not in [tokenize_column, property_column] and "label" not in x
-    ]
-    fast_tokenizer = (
-        tokenizer.get_pretrained() if isinstance(tokenizer, SAFETokenizer) else tokenizer
-    )
+        if x not in [tokenize_column, "mc_labels"] and "label" not in x
+    ] or None
+
+    if tokenizer is None:
+        if columns_to_remove is not None:
+            raw_datasets = raw_datasets.remove_columns(columns_to_remove)
+        return raw_datasets
+
     return raw_datasets.map(
         partial(
             tokenize_fn,
-            tokenizer=fast_tokenizer,
+            tokenizer=tokenizer,
             tokenize_column=tokenize_column,
             max_length=max_length,
         ),
         batched=True,
         remove_columns=columns_to_remove,
     )
+

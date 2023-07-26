@@ -8,7 +8,7 @@ import torch
 import numpy as np
 import json
 from loguru import logger
-from contextlib import contextmanager
+from contextlib import contextmanager, suppress
 
 from tokenizers import decoders
 from tokenizers import Tokenizer
@@ -44,7 +44,9 @@ def attr_as(obj, field, value):
     old_value = getattr(obj, field, None)
     setattr(obj, field, value)
     yield
-    setattr(obj, field, old_value)
+    with suppress(TypeError):
+        setattr(obj, field, old_value)
+
 
 
 class SAFESplitter:
@@ -130,6 +132,21 @@ class SAFETokenizer:
         self.tokenizer.decoder = decoders.BPEDecoder(**self.decoder_args)
         self.tokenizer = self.set_special_tokens(self.tokenizer)
 
+    @property
+    def bos_token_id(self):
+        """Get the bos token id"""
+        return self.tokenizer.token_to_id(self.tokenizer.bos_token)
+
+    @property
+    def pad_token_id(self):
+        """Get the bos token id"""
+        return self.tokenizer.token_to_id(self.tokenizer.pad_token)
+
+    @property
+    def eos_token_id(self):
+        """Get the bos token id"""
+        return self.tokenizer.token_to_id(self.tokenizer.eos_token)
+
     @classmethod
     def set_special_tokens(cls, tokenizer, bos_token=CLS_TOKEN, eos_token=SEP_TOKEN):
         """Set special tokens for a tokenizer
@@ -170,6 +187,23 @@ class SAFETokenizer:
         if isinstance(files, str):
             files = [files]
         self.tokenizer.train(files=files, trainer=self.trainer)
+
+    def __getstate__(self):
+        """Getting state to allow pickling"""
+        with attr_as(self.tokenizer, "pre_tokenizer", Whitespace()):
+            d = copy.deepcopy(self.__dict__)
+        # copy back tokenizer level attribute
+        d["tokenizer_attrs"] = self.tokenizer.__dict__.copy()
+        d["tokenizer"].pre_tokenizer = Whitespace()
+        return d
+
+    def __setstate__(self, d):
+        """Setting state during reloading pickling"""
+        use_pretokenizer = d.get("custom_pre_tokenizer")
+        if use_pretokenizer:
+            d["tokenizer"].pre_tokenizer = PreTokenizer.custom(SAFESplitter())
+        d["tokenizer"].__dict__.update(d.get("tokenizer_attrs", {}))
+        self.__dict__.update(d)
 
     def train_from_iterator(self, data, **kwargs):
         """Train the Tokenizer using the provided iterator.

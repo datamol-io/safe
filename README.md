@@ -81,8 +81,7 @@ pip install -e .
 
 We provided a pretained GPT2 model (50M parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B): 
 
-- *Safe-1.1B-dataset* [maclandrol/safe-50M]()
-- *Safe-50M* [maclandrol/safe-50M]()
+- *Safe-1.1B-dataset* [maclandrol/safe-1.1B]()
 
 
 ## Usage
@@ -127,6 +126,27 @@ ibuprofen_tokens = list(safe.split(ibuprofen_sf))
 # ['[C]', '[=C]', '[C]', '[=C]', '[C]', '[=C]', '[Ring1]', '[=Branch1]']
 ```
 
+### Training a new models
+
+A command line interface is available to train a new model, please run ```safe-train --help```
+
+For example:
+
+```bash
+safe-train --config <path to config> \
+    --model-path <path to model> \
+    --tokenizer  <path to tokenizer> \
+    --dataset <path to dataset> \
+    --num_labels 9 \
+    --torch_compile True \
+    --optim "adamw_torch" \
+    --learning_rate 1e-5 \
+    --prop_loss_coeff 1e-3 \
+    --gradient_accumulation_steps 1 \
+    --output_dir "<path to outputdir>" \
+    --max_steps 5
+```
+
 
 ## Changelog
 See the latest changelogs at [CHANGELOG.rst](./CHANGELOG.rst).
@@ -141,7 +161,7 @@ If you use this repository, please cite the following related paper:
   journal={},
   year={2023}
 }
-````
+```
 
 ## License
 

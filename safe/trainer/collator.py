@@ -4,13 +4,14 @@ from typing import List
 from typing import Dict
 from typing import Any
 
+import copy
 import torch
 from collections.abc import Mapping
 from transformers.data.data_collator import _torch_collate_batch
 from safe.tokenizer import SAFETokenizer
 
 
-class SafeCollator:
+class SAFECollator:
     """Collate function for language modelling tasks
 
 
@@ -46,34 +47,36 @@ class SafeCollator:
         self.property_key = property_key
         self.max_length = max_length
 
-    def _get_hg_tokenizer(self):
+    def get_tokenizer(self):
         """Get underlying tokenizer"""
         if isinstance(self.tokenizer, SAFETokenizer):
             return self.tokenizer.get_pretrained()
         return self.tokenizer
 
-    def __call__(self, examples: List[Union[List[int], Any, Dict[str, Any]]]):
+    def __call__(self, samples: List[Union[List[int], Any, Dict[str, Any]]]):
         """
         Call collate function
 
         Args:
-            examples: list of examples
+            samples: list of examples
         """
         # Handle dict or lists with proper padding and conversion to tensor.
-        tokenizer = self._get_hg_tokenizer()
+        tokenizer = self.get_tokenizer()
 
+        # examples = samples
+        examples = copy.deepcopy(samples)
         inputs = [example.pop(self.input_key, None) for example in examples]
         mc_labels = (
-            torch.tensor([example[self.property_key] for example in examples]).float()
+            torch.tensor([example.pop(self.property_key, None) for example in examples]).float()
             if self.property_key in examples[0]
             else None
         )
-
         if "input_ids" not in examples[0] and inputs is not None:
             batch = tokenizer(
                 inputs,
                 return_tensors="pt",
                 padding=True,
+                truncation=True,
                 max_length=self.max_length,
                 pad_to_multiple_of=self.pad_to_multiple_of,
             )
@@ -82,6 +85,7 @@ class SafeCollator:
                 examples,
                 return_tensors="pt",
                 padding=True,
+                truncation=True,
                 pad_to_multiple_of=self.pad_to_multiple_of,
                 max_length=self.max_length,
             )

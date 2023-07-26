@@ -5,8 +5,8 @@ from transformers.models.auto.modeling_auto import (
 )
 
 
-class SafeTrainer(Trainer):
-    def __init__(self, *args, prop_loss_coeff: int = 1, **kwargs):
+class SAFETrainer(Trainer):
+    def __init__(self, *args, prop_loss_coeff: int = 1e-3, **kwargs):
         super().__init__(*args, **kwargs)
         self.prop_loss_coeff = prop_loss_coeff
 
@@ -17,8 +17,8 @@ class SafeTrainer(Trainer):
         labels = (
             inputs.pop("labels") if self.label_smoother is not None and "labels" in inputs else None
         )
-        outputs = model(**inputs)
 
+        outputs = model(**inputs)
         # Save past state if it exists
         # TODO: this needs to be fixed and made cleaner later.
         if self.args.past_index >= 0:
@@ -37,7 +37,7 @@ class SafeTrainer(Trainer):
                 )
             # We don't use .loss here since the model may return tuples instead of ModelOutput.
             loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
-
-        mc_loss = outputs["mc_loss"] if isinstance(outputs, dict) else outputs[1]
-        loss = loss + self.prop_loss_coeff * mc_loss
+        mc_loss = outputs.get("mc_loss", None) if isinstance(outputs, dict) else outputs[1]
+        if mc_loss is not None:
+            loss = loss + self.prop_loss_coeff * mc_loss
         return (loss, outputs) if return_outputs else loss
