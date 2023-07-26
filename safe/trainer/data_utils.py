@@ -126,4 +126,3 @@ def get_dataset(
         batched=True,
         remove_columns=columns_to_remove,
     )
-

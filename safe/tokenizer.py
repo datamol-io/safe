@@ -48,7 +48,6 @@ def attr_as(obj, field, value):
         setattr(obj, field, old_value)
 
 
-
 class SAFESplitter:
     """Standard Splitter for SAFE string"""
 
