@@ -44,6 +44,10 @@ dependencies = [
 "Bug Tracker" = "https://github.com/maclandrol/safe/issues"
 Documentation = "https://maclandrol.github.io/safe"
 
+
+[project.scripts]
+safe-train = "safe.trainer.cli:train"
+
 [tool.setuptools]
 include-package-data = true
 zip-safe = false
@@ -65,7 +69,7 @@ include = '\.pyi?$'
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "--verbose --cov-report xml --cov-report term --color yes --disable-warnings"
+addopts = "--verbose --color yes --disable-warnings"
 testpaths = ["tests"]
 
 [tool.ruff.pycodestyle]
@@ -88,6 +92,10 @@ extend-select = [
 ignore = [
     "E731",  # Do not assign a lambda expression, use a def
     "S108",
+    "F401",
+    "S105",
+    "E501",
+    "E722",
 ]
 # Exclude a variety of commonly ignored directories.
 exclude = [
