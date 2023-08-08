@@ -33,9 +33,7 @@ class TokenizerTrainingArguments:
     tokenizer_name: Optional[str] = field(default="safe", metadata={"help": "Name of new tokenizer."})
     outfile: Optional[str] = field(default=None, metadata={"help": "Path to the local save of the trained tokenizer"})
     all_split: Optional[bool] = field(default=False, metadata={"help": "Whether to use all the splits or just the train split if only that is available."})
-    push_to_hub: Optional[bool] = field(default=True, metadata={"help": "Whether to push saved tokenizer to the hub."})
-
-
+    push_to_hub: Optional[bool] = field(default=False, metadata={"help": "Whether to push saved tokenizer to the hub."})
 
 if __name__ == "__main__":
     # Configuration
@@ -61,6 +59,7 @@ if __name__ == "__main__":
         if args.outfile is not None:
             tokenizer.save(args.outfile)
         tokenizer = tokenizer.get_pretrained()
+
     tokenizer.save_pretrained(tokenizer_name, push_to_hub=args.push_to_hub)
     
 

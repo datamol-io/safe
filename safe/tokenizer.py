@@ -155,13 +155,13 @@ class SAFETokenizer:
             bos_token: Optional bos token to use
             eos_token: Optional eos token to use
         """
-        tokenizer._pad_token = PADDING_TOKEN
-        tokenizer._cls_token = CLS_TOKEN
-        tokenizer._sep_token = SEP_TOKEN
-        tokenizer._mask_token = MASK_TOKEN
-        tokenizer._unk_token = UNK_TOKEN
-        tokenizer._eos_token = eos_token
-        tokenizer._bos_token = bos_token
+        tokenizer.pad_token = PADDING_TOKEN
+        tokenizer.cls_token = CLS_TOKEN
+        tokenizer.sep_token = SEP_TOKEN
+        tokenizer.mask_token = MASK_TOKEN
+        tokenizer.unk_token = UNK_TOKEN
+        tokenizer.eos_token = eos_token
+        tokenizer.bos_token = bos_token
         if isinstance(tokenizer, Tokenizer):
             tokenizer.add_special_tokens(
                 [
@@ -266,7 +266,6 @@ class SAFETokenizer:
     def save_pretrained(self, *args, **kwargs):
         """Save pretrained tokenizer"""
         self.tokenizer.save_pretrained(*args, **kwargs)
-
 
     def save(self, file_name=None):
         r"""
