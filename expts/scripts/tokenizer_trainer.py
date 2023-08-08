@@ -2,9 +2,20 @@ from typing import Optional
 
 from collections.abc import Mapping
 from dataclasses import dataclass, field
+from loguru import logger
 from transformers import AutoTokenizer, HfArgumentParser
 from safe.tokenizer import SAFETokenizer
+from tqdm.auto import tqdm
 from safe.trainer.data_utils import batch_iterator, get_dataset
+
+
+def fast_batch_iterator(dataset, batch_size=1000, n_examples=None, column="inputs"):
+    cur_len = 0
+    for batch in tqdm(dataset.iter(batch_size=batch_size)):
+        yield batch[column]
+        cur_len += len(batch[column])
+        if n_examples is not None and cur_len >= n_examples:
+            break
 
 
 @dataclass
@@ -65,9 +76,17 @@ if __name__ == "__main__":
     # Training and saving
     if isinstance(dataset, Mapping) and not args.all_split:
         dataset = dataset["train"]
-    dataset_iterator = batch_iterator(
-        dataset, batch_size=args.batch_size, n_examples=args.n_examples, column=args.text_column
-    )
+
+    if not args.all_split:
+        logger.info("Using fast batch iterator.")
+        dataset_iterator = fast_batch_iterator(
+            dataset, batch_size=args.batch_size, n_examples=args.n_examples, column=args.text_column
+        )
+    else:
+        logger.info("Using regular batch iterator.")
+        dataset_iterator = batch_iterator(
+            dataset, batch_size=args.batch_size, n_examples=args.n_examples, column=args.text_column
+        )
 
     if args.base_tokenizer is not None:
         tokenizer = AutoTokenizer.from_pretrained(args.base_tokenizer)

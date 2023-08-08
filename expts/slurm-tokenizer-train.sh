@@ -20,9 +20,9 @@ DATASET="$1" # "/home/emmanuel/safe/expts/tmp_data/proc_data"
 OUTPUT="/home/emmanuel/safe/expts/tokenizer/tokenizer-custom.json"
 VOCAB_SIZE="5000"
 TEXT_COLUMN="input"
-BATCH_SIZE="10000"
+BATCH_SIZE="1000"
 
 python scripts/tokenizer_trainer.py --tokenizer_type $TOKENIZER_TYPE \
                                     --dataset $DATASET --text_column $TEXT_COLUMN \
                                     --vocab_size $VOCAB_SIZE --batch_size $BATCH_SIZE \
-                                    --all_split True --outfile $OUTPUT
+                                    --outfile $OUTPUT
