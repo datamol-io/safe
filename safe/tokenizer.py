@@ -155,24 +155,25 @@ class SAFETokenizer:
             bos_token: Optional bos token to use
             eos_token: Optional eos token to use
         """
-        tokenizer.pad_token = PADDING_TOKEN
-        tokenizer.cls_token = CLS_TOKEN
-        tokenizer.sep_token = SEP_TOKEN
-        tokenizer.mask_token = MASK_TOKEN
-        tokenizer.unk_token = UNK_TOKEN
-        tokenizer.eos_token = eos_token
-        tokenizer.bos_token = bos_token
-        tokenizer.add_special_tokens(
-            [
-                PADDING_TOKEN,
-                CLS_TOKEN,
-                SEP_TOKEN,
-                MASK_TOKEN,
-                UNK_TOKEN,
-                eos_token,
-                bos_token,
-            ]
-        )
+        tokenizer._pad_token = PADDING_TOKEN
+        tokenizer._cls_token = CLS_TOKEN
+        tokenizer._sep_token = SEP_TOKEN
+        tokenizer._mask_token = MASK_TOKEN
+        tokenizer._unk_token = UNK_TOKEN
+        tokenizer._eos_token = eos_token
+        tokenizer._bos_token = bos_token
+        if isinstance(tokenizer, Tokenizer):
+            tokenizer.add_special_tokens(
+                [
+                    PADDING_TOKEN,
+                    CLS_TOKEN,
+                    SEP_TOKEN,
+                    MASK_TOKEN,
+                    UNK_TOKEN,
+                    eos_token,
+                    bos_token,
+                ]
+            )
         return tokenizer
 
     def train(self, files: Optional[List[str]], **kwargs):
@@ -262,6 +263,11 @@ class SAFETokenizer:
         tk_data["tokenizer_attrs"] = self.tokenizer.__dict__
         return tk_data
 
+    def save_pretrained(self, *args, **kwargs):
+        """Save pretrained tokenizer"""
+        self.tokenizer.save_pretrained(*args, **kwargs)
+
+
     def save(self, file_name=None):
         r"""
         Saves the :class:`~tokenizers.Tokenizer` to the file at the given path.
@@ -270,7 +276,6 @@ class SAFETokenizer:
             file_name (str, optional): File where to save tokenizer
         """
         # EN: whole logic here assumes noone is going to mess with the special token
-        file_name = file_name or self.file_path
         tk_data = self.to_dict()
         with fsspec.open(file_name, "w", encoding="utf-8") as OUT:
             out_str = json.dumps(tk_data, ensure_ascii=False)

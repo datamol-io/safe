@@ -14,6 +14,20 @@ def take(n, iterable):
     return list(itertools.islice(iterable, n))
 
 
+def get_dataset_column_names(dataset):
+    """Get the column names in a dataset
+    Args:
+        dataset: dataset to get the column names from
+    """
+    if isinstance(dataset, (datasets.IterableDatasetDict, Mapping)):
+        column_names = {split: dataset[split].column_names for split in dataset}
+    else:
+        column_names = dataset.column_names
+    if isinstance(column_names, dict):
+        column_names = list(column_names.values())[0]
+    return column_names
+
+
 def tokenize_fn(
     row,
     tokenizer,
@@ -105,11 +119,14 @@ def get_dataset(
     # that means we need to return a tokenized version of the dataset
 
     raw_datasets = raw_datasets.rename_column(property_column, "mc_labels")
-    columns_to_remove = [
-        x
-        for x in raw_datasets["train"].column_names
-        if x not in [tokenize_column, "mc_labels"] and "label" not in x
-    ] or None
+
+    columns_to_remove = None
+    if tokenize_column is not None:
+        columns_to_remove = [
+            x
+            for x in (get_dataset_column_names(raw_datasets) or [])
+            if x not in [tokenize_column, "mc_labels"] and "label" not in x
+        ] or None
 
     if tokenizer is None:
         if columns_to_remove is not None:

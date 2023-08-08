@@ -71,6 +71,7 @@ class SAFECollator:
             if self.property_key in examples[0]
             else None
         )
+
         if "input_ids" not in examples[0] and inputs is not None:
             batch = tokenizer(
                 inputs,
@@ -85,10 +86,10 @@ class SAFECollator:
                 examples,
                 return_tensors="pt",
                 padding=True,
-                truncation=True,
                 pad_to_multiple_of=self.pad_to_multiple_of,
                 max_length=self.max_length,
             )
+
         # If special token mask has been preprocessed, pop it from the dict.
         batch.pop("special_tokens_mask", None)
         labels = batch.get("labels", batch["input_ids"].clone())
