@@ -65,7 +65,6 @@ if __name__ == "__main__":
     # Training and saving
     if isinstance(dataset, Mapping) and not args.all_split:
         dataset = dataset["train"]
-
     dataset_iterator = batch_iterator(
         dataset, batch_size=args.batch_size, n_examples=args.n_examples, column=args.text_column
     )

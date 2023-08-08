@@ -5,9 +5,9 @@
 #SBATCH --output=/home/emmanuel/safe/expts/output/job_%x_%a.out
 #SBATCH --error=/home/emmanuel/safe/expts/output/job_%x_%a.out
 #SBATCH --open-mode=append
-#SBATCH --cpus-per-task=64
-#SBATCH --mem=128G
-#SBATCH --time=1-12:00
+#SBATCH --cpus-per-task=32
+#SBATCH --mem=100G
+#SBATCH --time=1:00:00
 
 set -ex
 # The below env variables can eventually help setting up your workload.
@@ -16,11 +16,11 @@ source activate safe
 
 TOKENIZER_TYPE="bpe"
 DATASET="$1" # "/home/emmanuel/safe/expts/tmp_data/proc_data"
-DATASET="/home/emmanuel/safe/expts/notebook/tmp_data/proc_data"
+#DATASET="/home/emmanuel/safe/expts/notebook/tmp_data/proc_data"
 OUTPUT="/home/emmanuel/safe/expts/tokenizer/tokenizer-custom.json"
 VOCAB_SIZE="5000"
-TEXT_COLUMN="inputs"
-BATCH_SIZE="50"
+TEXT_COLUMN="input"
+BATCH_SIZE="10000"
 
 python scripts/tokenizer_trainer.py --tokenizer_type $TOKENIZER_TYPE \
                                     --dataset $DATASET --text_column $TEXT_COLUMN \
