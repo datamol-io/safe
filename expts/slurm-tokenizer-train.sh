@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 
 ## Name of your SLURM job
-#SBATCH --job-name=train-safe-tokenizer
-#SBATCH --output=/home/emmanuel/safe/expts/output/job_%x_%a.out
-#SBATCH --error=/home/emmanuel/safe/expts/output/job_%x_%a.out
+#SBATCH --job-name=bpe-train-safe-tokenizer
+#SBATCH --output=/home/emmanuel/safe/expts/output/job_bpe_%x_%a.out
+#SBATCH --error=/home/emmanuel/safe/expts/output/job_bpe_%x_%a.out
 #SBATCH --open-mode=append
 #SBATCH --cpus-per-task=32
-#SBATCH --mem=100G
-#SBATCH --time=1:00:00
+#SBATCH --mem=80G
+#SBATCH --time=48:00:00
 
 set -ex
 # The below env variables can eventually help setting up your workload.
@@ -15,14 +15,16 @@ set -ex
 source activate safe
 
 TOKENIZER_TYPE="bpe"
-DATASET="$1" # "/home/emmanuel/safe/expts/tmp_data/proc_data"
+DEFAULT_DATASET="/storage/shared_data/cristian/preprocessed_zinc_unichem/train_filtered/"
+DATASET="${1:-$DEFAULT_DATASET}"
 #DATASET="/home/emmanuel/safe/expts/notebook/tmp_data/proc_data"
-OUTPUT="/home/emmanuel/safe/expts/tokenizer/tokenizer-custom.json"
-VOCAB_SIZE="5000"
+OUTPUT="/home/emmanuel/safe/expts/tokenizer/tokenizer.json"
+VOCAB_SIZE="10000"
 TEXT_COLUMN="input"
-BATCH_SIZE="1000"
+BATCH_SIZE="1500"
+N_EXAMPLES="500000000"
 
 python scripts/tokenizer_trainer.py --tokenizer_type $TOKENIZER_TYPE \
                                     --dataset $DATASET --text_column $TEXT_COLUMN \
                                     --vocab_size $VOCAB_SIZE --batch_size $BATCH_SIZE \
-                                    --outfile $OUTPUT
+                                    --outfile $OUTPUT --n_examples $N_EXAMPLES
