@@ -6,7 +6,7 @@ from transformers.models.auto.modeling_auto import (
 
 
 class SAFETrainer(Trainer):
-    def __init__(self, *args, prop_loss_coeff: int = 1e-3, **kwargs):
+    def __init__(self, *args, prop_loss_coeff: float = 1e-3, **kwargs):
         super().__init__(*args, **kwargs)
         self.prop_loss_coeff = prop_loss_coeff
 

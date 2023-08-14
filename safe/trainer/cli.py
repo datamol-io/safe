@@ -5,6 +5,7 @@ import math
 import os
 import uuid
 import safe
+import torch
 import transformers
 import evaluate
 from dataclasses import dataclass, field
@@ -45,6 +46,11 @@ class ModelArguments:
     num_labels: Optional[int] = field(
         default=None, metadata={"help": "Optional number of labels for the descriptors"}
     )
+
+    include_descriptors: Optional[bool] = field(
+        default=True,
+        metadata={"help": "Whether to train with descriptors if they are available or Not"},
+    )
     prop_loss_coeff: Optional[float] = field(
         default=1e-2, metadata={"help": "coefficient for the propery loss"}
     )
@@ -69,10 +75,20 @@ class ModelArguments:
             "choices": ["auto", "bfloat16", "float16", "float32"],
         },
     )
-    model_max_length: int = field(
-        default=512,
+
+    low_cpu_mem_usage: bool = field(
+        default=False,
         metadata={
-            "help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."
+            "help": (
+                "It is an option to create the model as an empty shell, then only materialize its parameters when the pretrained weights are loaded."
+                "set True will benefit LLM loading time and RAM consumption. Only valid when loading a pretrained model"
+            )
+        },
+    )
+    model_max_length: int = field(
+        default=1024,
+        metadata={
+            "help": "Maximum sequence length. Sequences will be right padded (and possibly truncated) up to that value."
         },
     )
 
@@ -97,12 +113,8 @@ class DataArguments:
     )
 
 
-def train():
+def train(model_args, data_args, training_args):
     """Train a new model from scratch"""
-    os.environ["TRANSFORMERS_NO_ADVISORY_WARNINGS"] = "true"
-    parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
-    model_args, data_args, training_args = parser.parse_args_into_dataclasses()
-
     if training_args.should_log:
         # The default of training_args.log_level is passive, so we set log level at info here to have that default.
         transformers.utils.logging.set_verbosity_info()
@@ -174,7 +186,13 @@ def train():
             max_length=model_args.model_max_length,
         )
 
-    data_collator = SAFECollator(tokenizer=tokenizer, max_length=model_args.model_max_length)
+    data_collator = SAFECollator(
+        tokenizer=tokenizer,
+        input_key=data_args.text_column,
+        max_length=model_args.model_max_length,
+        include_descriptors=model_args.include_descriptors,
+        property_key="mc_labels",
+    )
     pretrained_tokenizer = data_collator.get_tokenizer()
     config = model_args.config
 
@@ -198,12 +216,19 @@ def train():
         config.pad_token_id = pretrained_tokenizer.pad_token_id
 
     if model_args.model_path is not None:
+        torch_dtype = (
+            model_args.torch_dtype
+            if model_args.torch_dtype in ["auto", None]
+            else getattr(torch, model_args.torch_dtype)
+        )
         model = SAFEDoubleHeadsModel.from_pretrained(
             model_args.model_path,
             config=config,
             cache_dir=model_args.cache_dir,
-            low_cpu_mem_usage=True,
+            low_cpu_mem_usage=model_args.low_cpu_mem_usage,
+            torch_dtype=torch_dtype,
         )
+
     else:
         model = SAFEDoubleHeadsModel(config)
 
@@ -237,13 +262,15 @@ def train():
     trainer = SAFETrainer(
         model=model,
         tokenizer=pretrained_tokenizer,
-        train_dataset=dataset["train"],
+        train_dataset=dataset["train"].shuffle(seed=(training_args.seed or 42)),
         eval_dataset=dataset["validation"],
         args=training_args,
+        prop_loss_coeff=model_args.prop_loss_coeff,
         compute_metrics=compute_metrics if training_args.do_eval else None,
         data_collator=data_collator,
-        preprocess_logits_for_metrics=preprocess_logits_for_metrics if training_args.do_eval else None,
-        prop_loss_coeff=model_args.prop_loss_coeff,
+        preprocess_logits_for_metrics=preprocess_logits_for_metrics
+        if training_args.do_eval
+        else None,
     )
 
     if training_args.do_train:
@@ -310,5 +337,11 @@ def train():
         trainer.create_model_card(**kwargs)
 
 
+def main():
+    parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
+    model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+    train(model_args, data_args, training_args)
+
+
 if __name__ == "__main__":
-    train()
+    main()

@@ -118,7 +118,8 @@ def get_dataset(
             )
     # that means we need to return a tokenized version of the dataset
 
-    raw_datasets = raw_datasets.rename_column(property_column, "mc_labels")
+    if property_column not in ["mc_labels", None]:
+        raw_datasets = raw_datasets.rename_column(property_column, "mc_labels")
 
     columns_to_remove = None
     if tokenize_column is not None:

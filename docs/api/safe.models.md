@@ -1,3 +1,8 @@
+## Config File
+
+The input config file for training a `SAFE` model is very similar to the GPT2 config file, with the addition of an optional `num_labels` attribute for training with descriptors regularization.
+
+```json
 {
   "activation_function": "gelu_new",
   "attn_pdrop": 0.1,
@@ -26,3 +31,21 @@
   "vocab_size": 10000,
   "num_labels": 9
 }
+```
+
+
+## SAFE Model
+::: safe.trainer.model
+
+
+## Trainer
+::: safe.trainer.trainer_utils
+
+
+## Data Collator
+::: safe.trainer.collator
+
+
+## Data Utils
+::: safe.trainer.safe_utils
+

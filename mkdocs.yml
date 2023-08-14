@@ -1,21 +1,23 @@
 site_name: "SAFE"
 site_description: "Gotta be SAFE: a new framework for molecular design"
 site_url: ""
-repo_url: "https://github.com/maclandrol/safe"
-repo_name: "maclandrol/safe"
+repo_url: "https://github.com/valence-labs/safe"
+repo_name: "valence-labs/safe"
 docs_dir: "docs"
 remote_branch: "gh-pages"
 use_directory_urls: false
-copyright: Copyright 2023 maclandrol
+copyright: Copyright 2023 Valence Labs
 
 nav:
   - Overview: index.md
   - Tutorials:
       - Getting started with SAFE: tutorials/getting-started.ipynb
-      - Molecular design with SAFE: tutorials/design-with-safe.ipynb
-      - Training a new model: tutorials/training-safe.ipynb
+      - Molecular design with Pretrained SAFE: tutorials/design-with-safe.ipynb
   - API:
-      - safe: api/safe.md
+      - SAFE: api/safe.md
+      - Visualization: api/safe.viz.md
+      - Model training: api/safe.models.md
+  - CLI: cli.md
   - License: license.md
 
 theme:
@@ -46,6 +48,8 @@ plugins:
         - safe/
       handlers:
         python:
+          import:
+            - https://docs.python.org/3/objects.inv
           setup_commands:
             - import sys
             - import safe
@@ -55,8 +59,19 @@ plugins:
             new_path_syntax: true
           rendering:
             show_root_heading: false
-            heading_level: 3
+            heading_level: 2
             show_if_no_docstring: true
+        options:
+          docstring_options:
+            ignore_init_summary: false
+          docstring_section_style: list
+          merge_init_into_class: true
+          show_root_heading: false
+          show_root_full_path: false
+          show_signature_annotations: true
+          show_symbol_type_heading: true
+          show_symbol_type_toc: true
+          signature_crossrefs: true
 
   - mkdocs-jupyter:
       execute: false
@@ -67,3 +82,11 @@ plugins:
 extra:
   version:
     provider: mike
+
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/valence-labs
+    - icon: fontawesome/brands/twitter
+      link: https://twitter.com/ENoutahi
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/safe-mol/
