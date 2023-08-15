@@ -7,7 +7,7 @@
   "initializer_range": 0.02,
   "layer_norm_epsilon": 1e-05,
   "model_type": "gpt2",
-  "n_embd": 512,
+  "n_embd": 768,
   "n_head": 12,
   "n_inner": null,
   "n_layer": 12,
@@ -16,13 +16,14 @@
   "resid_pdrop": 0.1,
   "scale_attn_by_inverse_layer_idx": false,
   "scale_attn_weights": true,
-  "summary_activation": "tanh",
+  "summary_activation": "relu",
   "summary_first_dropout": 0.1,
   "summary_proj_to_labels": true,
+  "summary_hidden_size": 64,
   "summary_type": "cls_index",
   "summary_use_proj": true,
   "transformers_version": "4.31.0",
   "use_cache": true,
   "vocab_size": 10000,
-  "num_labels": 9
+  "num_labels": 18
 }

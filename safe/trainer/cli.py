@@ -3,16 +3,19 @@ from typing import Literal
 
 import math
 import os
+import sys
 import uuid
 import safe
 import torch
 import transformers
 import evaluate
+import datasets
 from dataclasses import dataclass, field
 from loguru import logger
 from transformers import AutoConfig
 from transformers import AutoTokenizer
 from transformers import set_seed
+from transformers.utils.logging import log_levels as LOG_LEVELS
 from transformers.trainer_utils import get_last_checkpoint
 from transformers import TrainingArguments
 from safe.trainer.model import SAFEDoubleHeadsModel
@@ -46,7 +49,6 @@ class ModelArguments:
     num_labels: Optional[int] = field(
         default=None, metadata={"help": "Optional number of labels for the descriptors"}
     )
-
     include_descriptors: Optional[bool] = field(
         default=True,
         metadata={"help": "Whether to train with descriptors if they are available or Not"},
@@ -54,6 +56,11 @@ class ModelArguments:
     prop_loss_coeff: Optional[float] = field(
         default=1e-2, metadata={"help": "coefficient for the propery loss"}
     )
+    model_hub_name: Optional[str] = field(
+        default="maclandrol/safe-gpt2",
+        metadata={"help": "Name of the model when uploading to huggingface"},
+    )
+
     wandb_project: Optional[str] = field(
         default="safe-gpt2",
         metadata={"help": "Name of the wandb project to use to log the SAFE model parameter"},
@@ -112,6 +119,28 @@ class DataArguments:
         default="inputs", metadata={"help": "Column containing text data to process."}
     )
 
+    max_train_samples: Optional[int] = field(
+        default=None, metadata={"help": "Maximum number of training sample to use."}
+    )
+
+    max_eval_samples: Optional[int] = field(
+        default=None, metadata={"help": "Maximum number of evaluation sample to use."}
+    )
+
+    train_split: Optional[str] = field(
+        default="train",
+        metadata={
+            "help": "Training splits to use. You can use train+validation for example to include both train and validation split in the training"
+        },
+    )
+
+    property_column: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": "Column containing the descriptors information. Default to None to use `mc_labels`"
+        },
+    )
+
 
 def train(model_args, data_args, training_args):
     """Train a new model from scratch"""
@@ -120,18 +149,23 @@ def train(model_args, data_args, training_args):
         transformers.utils.logging.set_verbosity_info()
 
     log_level = training_args.get_process_log_level()
-    logger.setLevel(log_level)
+    if log_level is None or log_level == "passive":
+        log_level = "info"
+
+    _LOG_LEVEL = {v: k for k, v in LOG_LEVELS.items()}
+    logger.remove()
+    logger.add(sys.stderr, level=_LOG_LEVEL.get(log_level, log_level).upper())
     transformers.utils.logging.set_verbosity(log_level)
     transformers.utils.logging.enable_default_handler()
     transformers.utils.logging.enable_explicit_format()
 
     # Log on each process the small summary:
-    logger.warning(
-        f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
+    logger.info(
+        f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu} "
         + f"distributed training: {training_args.parallel_mode.value == 'distributed'}, 16-bits training: {training_args.fp16}"
     )
 
-    logger.info(f"Training/evaluation parameters {training_args}")
+    logger.info(f"Training/evaluation parameters: {training_args}")
 
     # Detecting last checkpoint.
     last_checkpoint = None
@@ -141,11 +175,6 @@ def train(model_args, data_args, training_args):
         and not training_args.overwrite_output_dir
     ):
         last_checkpoint = get_last_checkpoint(training_args.output_dir)
-        if last_checkpoint is None and len(os.listdir(training_args.output_dir)) > 0:
-            raise ValueError(
-                f"Output directory ({training_args.output_dir}) already exists and is not empty. "
-                "Use --overwrite_output_dir to overcome."
-            )
         if last_checkpoint is not None and training_args.resume_from_checkpoint is None:
             logger.info(
                 f"Checkpoint detected, resuming training at {last_checkpoint}. To avoid this behavior, change "
@@ -157,6 +186,7 @@ def train(model_args, data_args, training_args):
     wandb_run_name = f"safe-model-{uuid.uuid4().hex[:8]}"
     if model_args.wandb_project:
         os.environ["WANDB_PROJECT"] = model_args.wandb_project
+        training_args.report_to = ["wandb"]
     if model_args.wandb_watch:
         os.environ["WANDB_WATCH"] = model_args.wandb_watch
         if model_args.wandb_watch == "all":
@@ -178,13 +208,32 @@ def train(model_args, data_args, training_args):
 
     # load dataset
     with training_args.main_process_first():
+        # if the dataset is streaming we tokenize on the fly, it would be faster
         dataset = get_dataset(
             data_args.dataset,
-            tokenizer=(None if data_args.is_tokenized else tokenizer),
+            tokenizer=(None if data_args.is_tokenized or data_args.streaming else tokenizer),
             streaming=data_args.streaming,
-            tokenize_column=data_args.tokenize_column,
+            tokenize_column=data_args.text_column,
             max_length=model_args.model_max_length,
+            property_column=data_args.property_column,
         )
+
+        if data_args.max_train_samples is not None:
+            dataset["train"] = dataset["train"].take(data_args.max_train_samples)
+        if data_args.max_eval_samples is not None:
+            for k in dataset:
+                if k != "train":
+                    dataset[k] = dataset[k].take(data_args.max_eval_samples)
+
+    eval_dataset_key_name = "validation" if "validation" in dataset else "test"
+
+    train_dataset = dataset["train"]
+    if data_args.train_split is not None:
+        train_dataset = datasets.concatenate_datasets(
+            [dataset[x] for x in data_args.train_split.split("+")]
+        )
+        if eval_dataset_key_name in data_args.train_split.split("+"):
+            eval_dataset_key_name = None
 
     data_collator = SAFECollator(
         tokenizer=tokenizer,
@@ -204,8 +253,8 @@ def train(model_args, data_args, training_args):
         config.num_labels = int(model_args.num_labels)
 
     config.vocab_size = len(tokenizer)
-    if training_args.model_max_length is not None:
-        config.max_position_embeddings = training_args.model_max_length
+    if model_args.model_max_length is not None:
+        config.max_position_embeddings = model_args.model_max_length
     try:
         config.bos_token_id = tokenizer.bos_token_id
         config.eos_token_id = tokenizer.eos_token_id
@@ -242,28 +291,53 @@ def train(model_args, data_args, training_args):
     logger.info(f"Training new model from scratch - Total size={n_params/2**20:.2f}M params")
 
     def preprocess_logits_for_metrics(logits, labels):
+        prop_logits = None
         if isinstance(logits, tuple):
             # Depending on the model and config, logits may contain extra tensors,
             # like past_key_values, but logits always come first
-            logits = logits[0]
-        return logits.argmax(dim=-1)
+            if len(logits) > 1:
+                # we could have the loss twice
+                base_ind = 0
+                if logits[base_ind].ndim < 2:
+                    base_ind = 1
+            label_logits = logits[base_ind].argmax(dim=-1)
+            if len(logits) > base_ind + 1:
+                prop_logits = logits[base_ind + 1]
+        else:
+            label_logits = logits.argmax(dim=-1)
+
+        if prop_logits is not None:
+            return label_logits, prop_logits
+        return label_logits
 
     accuracy_metric = evaluate.load("accuracy")
-    evaluate.load("mse")
+    mse_metric = evaluate.load("mse")
 
     def compute_metrics(eval_preds):
         preds, labels = eval_preds
+        mc_preds = None
+        mc_labels = None
+        if isinstance(preds, tuple):
+            preds, mc_preds = preds
+        if isinstance(labels, tuple):
+            labels, mc_labels = labels
         # preds have the same shape as the labels, after the argmax(-1) has been calculated
         # by preprocess_logits_for_metrics but we need to shift the labels
         labels = labels[:, 1:].reshape(-1)
         preds = preds[:, :-1].reshape(-1)
-        return accuracy_metric.compute(predictions=preds, references=labels)
+        results = accuracy_metric.compute(predictions=preds, references=labels)
+        if mc_preds is not None and mc_labels is not None:
+            results_mse = mse_metric.compute(
+                predictions=mc_preds.reshape(-1), references=mc_labels.reshape(-1)
+            )
+            results.update(results_mse)
+        return results
 
     trainer = SAFETrainer(
         model=model,
-        tokenizer=pretrained_tokenizer,
-        train_dataset=dataset["train"].shuffle(seed=(training_args.seed or 42)),
-        eval_dataset=dataset["validation"],
+        tokenizer=None,  # we don't deal with the tokenizer at all, https://github.com/huggingface/tokenizers/issues/581 -_-
+        train_dataset=train_dataset.shuffle(seed=(training_args.seed or 42)),
+        eval_dataset=dataset.get(eval_dataset_key_name, None),
         args=training_args,
         prop_loss_coeff=model_args.prop_loss_coeff,
         compute_metrics=compute_metrics if training_args.do_eval else None,
@@ -280,16 +354,16 @@ def train(model_args, data_args, training_args):
         elif last_checkpoint is not None:
             checkpoint = last_checkpoint
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
-        trainer.save_model()  # Saves the tokenizer too for easy upload
+        try:
+            # we were unable to save the model because of the tokenizer
+            trainer.save_model()  # Saves the tokenizer too for easy upload
+        except:
+            model.save_pretrained(os.path.join(training_args.output_dir, "safe-model"))
+
+        if training_args.push_to_hub and model_args.model_hub_name:
+            model.push_to_hub(model_args.model_hub_name, private=True, safe_serialization=True)
 
         metrics = train_result.metrics
-
-        max_train_samples = (
-            data_args.max_train_samples
-            if data_args.max_train_samples is not None
-            else len(dataset["train"])
-        )
-        metrics["train_samples"] = min(max_train_samples, len(dataset["train"]))
 
         trainer.log_metrics("train", metrics)
         trainer.save_metrics("train", metrics)
@@ -302,36 +376,25 @@ def train(model_args, data_args, training_args):
 
     # Evaluation
     if training_args.do_eval:
-        results = {}
         logger.info("*** Evaluate ***")
-        eval_output = trainer.evaluate()
-
-        max_eval_samples = (
-            data_args.max_eval_samples
-            if data_args.max_eval_samples is not None
-            else len(dataset["validation"])
-        )
-        eval_output["eval_samples"] = min(max_eval_samples, len(dataset["validation"]))
+        results = trainer.evaluate()
         try:
-            perplexity = math.exp(eval_output["eval_loss"])
-        except OverflowError:
+            perplexity = math.exp(results["eval_loss"])
+        except Exception as e:
+            logger.error(e)
             perplexity = float("inf")
-
         results.update({"perplexity": perplexity})
-
-        output_eval_file = os.path.join(training_args.output_dir, "eval_results_lm.txt")
         if trainer.is_world_process_zero():
-            with open(output_eval_file, "w") as writer:
-                logger.info("***** Eval results *****")
-                for key in sorted(results.keys()):
-                    logger.info("  {key} = {results[key]:.3f}")
-                    writer.write(f"{key} = {results[key]:.3f}\n")
+            trainer.log_metrics("eval", results)
+            trainer.save_metrics("eval", results)
 
-    kwargs = {"finetuned_from": model_args.model_name_or_path, "tasks": "text-generation"}
-    kwargs["dataset_tags"] = data_args.dataset_name
-    kwargs["dataset"] = data_args.dataset_name
+    kwargs = {"finetuned_from": model_args.model_path, "tasks": "text-generation"}
+    kwargs["dataset_tags"] = data_args.dataset
+    kwargs["dataset"] = data_args.dataset
+    kwargs["tags"] = ["safe", "valence-labs", "molecule-design", "smiles"]
 
     if training_args.push_to_hub:
+        kwargs["private"] = True
         trainer.push_to_hub(**kwargs)
     else:
         trainer.create_model_card(**kwargs)

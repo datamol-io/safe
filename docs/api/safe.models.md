@@ -12,7 +12,7 @@ The input config file for training a `SAFE` model is very similar to the GPT2 co
   "initializer_range": 0.02,
   "layer_norm_epsilon": 1e-05,
   "model_type": "gpt2",
-  "n_embd": 512,
+  "n_embd": 768,
   "n_head": 12,
   "n_inner": null,
   "n_layer": 12,
@@ -25,6 +25,7 @@ The input config file for training a `SAFE` model is very similar to the GPT2 co
   "summary_first_dropout": 0.1,
   "summary_proj_to_labels": true,
   "summary_type": "cls_index",
+  "summary_hidden_size": 128,
   "summary_use_proj": true,
   "transformers_version": "4.31.0",
   "use_cache": true,
@@ -37,15 +38,20 @@ The input config file for training a `SAFE` model is very similar to the GPT2 co
 ## SAFE Model
 ::: safe.trainer.model
 
+---
 
 ## Trainer
 ::: safe.trainer.trainer_utils
 
+---
 
 ## Data Collator
 ::: safe.trainer.collator
 
+---
 
 ## Data Utils
+::: safe.trainer.data_utils
+
 ::: safe.trainer.safe_utils
 

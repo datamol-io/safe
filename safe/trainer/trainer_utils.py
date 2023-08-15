@@ -6,6 +6,13 @@ from transformers.models.auto.modeling_auto import (
 
 
 class SAFETrainer(Trainer):
+    """
+    Custom trainer for training SAFE model.
+
+    This custom trainer changes the loss function to support the property head
+
+    """
+
     def __init__(self, *args, prop_loss_coeff: float = 1e-3, **kwargs):
         super().__init__(*args, **kwargs)
         self.prop_loss_coeff = prop_loss_coeff

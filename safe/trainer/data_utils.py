@@ -87,6 +87,7 @@ def get_dataset(
     tokenize_column: Optional[str] = "inputs",
     property_column: Optional[str] = "descriptors",
     max_length: Optional[int] = None,
+    num_shards=1024,
 ):
     """Get the datasets from the config file"""
     raw_datasets = {}
@@ -102,11 +103,20 @@ def get_dataset(
 
             if streaming:
                 if isinstance(raw_datasets, datasets.DatasetDict):
+                    previous_num_examples = {k: len(dt) for k, dt in raw_datasets.items()}
                     raw_datasets = datasets.IterableDatasetDict(
-                        {k: dt.to_iterable_dataset() for k, dt in raw_datasets.items()}
+                        {
+                            k: dt.to_iterable_dataset(num_shards=num_shards)
+                            for k, dt in raw_datasets.items()
+                        }
                     )
+                    for k, dt in raw_datasets.items():
+                        if previous_num_examples[k] is not None:
+                            setattr(dt, "num_examples", previous_num_examples[k])
                 else:
-                    raw_datasets = raw_datasets.to_iterable_dataset()
+                    num_examples = len(raw_datasets)
+                    raw_datasets = raw_datasets.to_iterable_dataset(num_shards=num_shards)
+                    setattr(raw_datasets, "num_examples", num_examples)
 
         else:
             raw_datasets = datasets.load_dataset(

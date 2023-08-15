@@ -5,6 +5,7 @@ from typing import Dict
 from typing import Any
 
 import copy
+import functools
 import torch
 from collections.abc import Mapping
 from transformers.data.data_collator import _torch_collate_batch
@@ -50,6 +51,7 @@ class SAFECollator:
         self.include_descriptors = include_descriptors
         self.max_length = max_length
 
+    @functools.lru_cache()
     def get_tokenizer(self):
         """Get underlying tokenizer"""
         if isinstance(self.tokenizer, SAFETokenizer):
