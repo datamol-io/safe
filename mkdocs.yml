@@ -1,12 +1,13 @@
 site_name: "SAFE"
 site_description: "Gotta be SAFE: a new framework for molecular design"
-site_url: ""
+site_url: "https://github.com/valence-labs/safe"
 repo_url: "https://github.com/valence-labs/safe"
 repo_name: "valence-labs/safe"
-docs_dir: "docs"
-remote_branch: "gh-pages"
-use_directory_urls: false
 copyright: Copyright 2023 Valence Labs
+
+remote_branch: "gh-pages"
+docs_dir: "docs"
+use_directory_urls: false
 
 nav:
   - Overview: index.md
