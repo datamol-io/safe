@@ -1,5 +1,5 @@
 
-<h1 align="center">  :safety_vest: SAFE </h1>
+<h1 align="center">  🦺 SAFE </h1>
 <h4 align="center">S</b>equential <b>A</b>ttachment-based <b>F</b>ragment <b>E</b>mbedding (SAFE) is a novel molecular line notation that represents molecules as an unordered sequence of fragment blocks to improve molecule design using generative models.</h4>
 
 </br>

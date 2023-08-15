@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import transformers
 from safe.trainer.cli import ModelArguments
 from safe.trainer.cli import DataArguments
