@@ -13,9 +13,12 @@ class SAFETrainer(Trainer):
 
     """
 
-    def __init__(self, *args, prop_loss_coeff: float = 1e-3, **kwargs):
+    def __init__(
+        self, *args, prop_loss_coeff: float = 1e-3, dispatch_batches: bool = False, **kwargs
+    ):
         super().__init__(*args, **kwargs)
         self.prop_loss_coeff = prop_loss_coeff
+        self.accelerator.dispatch_batches = dispatch_batches
 
     def compute_loss(self, model, inputs, return_outputs=False):
         """

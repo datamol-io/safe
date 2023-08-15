@@ -333,9 +333,13 @@ def train(model_args, data_args, training_args):
             results.update(results_mse)
         return results
 
+    if model_args.include_descriptors:
+        training_args.label_names = ["labels", "mc_labels"]
+
     trainer = SAFETrainer(
         model=model,
         tokenizer=None,  # we don't deal with the tokenizer at all, https://github.com/huggingface/tokenizers/issues/581 -_-
+        dispatch_batches=(data_args.streaming is True),
         train_dataset=train_dataset.shuffle(seed=(training_args.seed or 42)),
         eval_dataset=dataset.get(eval_dataset_key_name, None),
         args=training_args,
