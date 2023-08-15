@@ -43,16 +43,21 @@ class PropertyHead(torch.nn.Module):
 
         self.summary_type = getattr(config, "summary_type", "cls_index")
         self.summary = torch.nn.Identity()
-        num_labels = config.hidden_size
-        if hasattr(config, "num_labels") and config.num_labels > 0:
-            num_labels = config.num_labels
+        last_hidden_size = config.hidden_size
 
-        self.summary = nn.Linear(config.hidden_size, config.hidden_size)
+        if getattr(config, "summary_hidden_size", None) and config.summary_hidden_size > 0:
+            self.summary = nn.Linear(config.hidden_size, config.summary_hidden_size)
+            last_hidden_size = config.summary_hidden_size
+
         activation_string = getattr(config, "summary_activation", None)
         self.activation: Callable = (
             get_activation(activation_string) if activation_string else nn.Identity()
         )
-        self.out = nn.Linear(config.hidden_size, num_labels)
+
+        self.out = torch.nn.Identity()
+        if getattr(config, "num_labels", None) and config.num_labels > 0:
+            num_labels = config.num_labels
+            self.out = nn.Linear(last_hidden_size, num_labels)
 
     def forward(
         self, hidden_states: torch.FloatTensor, cls_index: Optional[torch.LongTensor] = None
@@ -77,21 +82,22 @@ class PropertyHead(torch.nn.Module):
         elif self.summary_type == "mean":
             output = hidden_states.mean(dim=1)
         elif self.summary_type == "cls_index":
-            # batch_size = hidden_states.shape[0]
-            # output =  hidden_states.squeeze()[torch.arange(batch_size), sequence_lengths]
-            if cls_index is None:
-                cls_index = torch.full_like(
-                    hidden_states[..., :1, :],
-                    hidden_states.shape[-2] - 1,
-                    dtype=torch.long,
-                )
-            else:
-                cls_index = cls_index.unsqueeze(-1).unsqueeze(-1)
-                cls_index = cls_index.expand(
-                    (-1,) * (cls_index.dim() - 1) + (hidden_states.size(-1),)
-                )
+            # if cls_index is None:
+            #     cls_index = torch.full_like(
+            #         hidden_states[..., :1, :],
+            #         hidden_states.shape[-2] - 1,
+            #         dtype=torch.long,
+            #     )
+            # else:
+            #     cls_index = cls_index.unsqueeze(-1).unsqueeze(-1)
+            #     cls_index = cls_index.expand(
+            #         (-1,) * (cls_index.dim() - 1) + (hidden_states.size(-1),)
+            #     )
+
             # shape of cls_index: (bsz, XX, 1, hidden_size) where XX are optional leading dim of hidden_states
-            output = hidden_states.gather(-2, cls_index).squeeze(-2)  # shape (bsz, XX, hidden_size)
+            # output = hidden_states.gather(-2, cls_index).squeeze(-2)  # shape (bsz, XX, hidden_size)
+            batch_size = hidden_states.shape[0]
+            output = hidden_states.squeeze()[torch.arange(batch_size), cls_index]
         else:
             raise NotImplementedError
 
@@ -107,6 +113,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
         self.num_labels = getattr(config, "num_labels", None)
         super().__init__(config)
         self.config.num_labels = self.num_labels
+        del self.multiple_choice_head
         self.multiple_choice_head = PropertyHead(config)
 
     @add_start_docstrings_to_model_forward(GPT2_INPUTS_DOCSTRING)
@@ -131,21 +138,22 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
         **kwargs,
     ) -> Union[Tuple, GPT2DoubleHeadsModelOutput]:
         r"""
-        mc_token_ids (`torch.LongTensor` of shape `(batch_size, num_choices)`, *optional*, default to index of the last token of the input):
-            Index of the classification token in each input sequence. Selected in the range `[0, input_ids.size(-1) -
-            1]`.
-        labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
-            Labels for language modeling. Note that the labels **are shifted** inside the model, i.e. you can set
-            `labels = input_ids`. Indices are selected in `[-100, 0, ..., config.vocab_size - 1]`. All labels set to
-            `-100` are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size - 1]`
-        mc_labels (`torch.LongTensor` of shape `(batch_size, n_tasks)`, *optional*):
-            Labels for computing the supervized loss for regularization.
-        inputs: List of inputs, put here because the trainer removes information not in signature
+
+        Args:
+            mc_token_ids (`torch.LongTensor` of shape `(batch_size, num_choices)`, *optional*, default to index of the last token of the input):
+                Index of the classification token in each input sequence. Selected in the range `[0, input_ids.size(-1) -
+                1]`.
+            labels (`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*):
+                Labels for language modeling. Note that the labels **are shifted** inside the model, i.e. you can set
+                `labels = input_ids`. Indices are selected in `[-100, 0, ..., config.vocab_size - 1]`. All labels set to
+                `-100` are ignored (masked), the loss is only computed for labels in `[0, ..., config.vocab_size - 1]`
+            mc_labels (`torch.LongTensor` of shape `(batch_size, n_tasks)`, *optional*):
+                Labels for computing the supervized loss for regularization.
+            inputs: List of inputs, put here because the trainer removes information not in signature
 
         Returns:
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
         transformer_outputs = self.transformer(
             input_ids,
             past_key_values=past_key_values,
@@ -177,6 +185,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
         mc_logits = None
         if mc_labels is not None and getattr(self.config, "num_labels", 0) > 0:
             mc_logits = self.multiple_choice_head(hidden_states, mc_token_ids).squeeze(-1)
+            mc_labels = mc_labels.to(mc_logits.device)
             loss_fct = MSELoss()
             mc_loss = loss_fct(
                 mc_logits.view(-1, mc_logits.size(-1)), mc_labels.view(-1, mc_logits.size(-1))

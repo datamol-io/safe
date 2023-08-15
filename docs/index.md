@@ -1,6 +1,6 @@
 
-<h1 align="center">  :safety_vest: `SAFE` </h1>
-<h4 align="center">S</b>equential <b>A</b>ttachment-based <b>F</b>ragment <b>E</b>mbedding (SAFE) is a novel molecular line notation that represents molecules as an unordered sequence of fragment blocks to improve molecule design using generative models.<h4>
+<h1 align="center">  :safety_vest: SAFE </h1>
+<h4 align="center">S</b>equential <b>A</b>ttachment-based <b>F</b>ragment <b>E</b>mbedding (SAFE) is a novel molecular line notation that represents molecules as an unordered sequence of fragment blocks to improve molecule design using generative models.</h4>
 
 </br>
 <div align="center">
@@ -10,8 +10,8 @@
     <a href="" target="_blank">
       Paper
   </a> |
-  <a href="https://maclandrol.github.io/safe/" target="_blank">
-      Docs
+  <a href="https://github.com/valence-labs/safe/" target="_blank">
+      Github
   </a> |
   <a href="#" target="_blank">
     🤗 Model
@@ -22,19 +22,34 @@
 
 
 ## 🆕 News
-- \[**August 2023**\] We've released xxx
+- \[**September 2023**\] We've released a SAFE GPT-like pretrained model on a combination of ZINC and UniChem
 
 
 ## Overview of SAFE
 
-SAFE is a 
+SAFE *is the* deep learning molecular representation. It's an encoding leveraging a peculiarity in the decoding schemes of SMILES, to allow representation of molecules as contiguous sequence of connected fragment. SAFE strings are valid SMILES string, and thus are able to preserve the same amount of information.  The intuitive representation of molecules as unordered sequence of connected fragments gretly simplify the following tasks often encoutered in molecular design:
+
+- *de novo* design
+- superstructure generation
+- scaffold decoration
+- motif extension
+- linker generation
+- scaffold morphing. 
+
+The construction of a SAFE strings requires definition a molecular fragmentation algorithm. By default, we use [BRICS], but any other fragmentation algorithm can be used. The image below illustrate the process of building a SAFE string. The resulting string is a valid SMILES that can be read by [datamol](https://github.com/datamol-io/datamol) or [RDKit](https://github.com/rdkit/rdkit).
+
+</br>
+<div align="center">
+    <img src="assets/safe-construction.svg" width="100%">
+</div>
 
 ### Installation
+
 
 You can install `safe` using pip.
 
 ```bash
-pip install safe-smiles
+pip install safe-mol
 ```
 
 Alternatively clone this repo, install the dependencies, install `safe` locally and you are good to go:
@@ -52,10 +67,9 @@ pip install -e .
 
 ### Datasets and Models
 
-We provided a pretained GPT2 model (50M parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B): 
+We provided a pretained GPT2 model (XXM parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B): 
 
-- *Safe-1.1B-dataset* [maclandrol/safe-50M]()
-- *Safe-50M* [maclandrol/safe-50M]()
+- *Safe-XXM* [maclandrol/safe-XXM]()
 
 
 ### Usage
@@ -63,7 +77,6 @@ We provided a pretained GPT2 model (50M parameters) using the SAFE molecular rep
 To get started with SAFE, please see the tutorials: 
 - xxx
 - xxx
-
 
 
 ## References
@@ -76,7 +89,7 @@ If you use this repository, please cite the following related paper:
   journal={},
   year={2023}
 }
-````
+```
 
 ## License
 

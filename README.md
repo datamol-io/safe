@@ -1,6 +1,6 @@
 
 <h1 align="center">  :safety_vest: SAFE </h1>
-<h4 align="center"><b>S</b>equential <b>A</b>ttachment-based <b>F</b>ragment <b>E</b>mbedding (SAFE) is a novel molecular line notation that represents molecules as an unordered sequence of fragment blocks to improve molecule design using generative models.<h4>
+<h4 align="center"><b>S</b>equential <b>A</b>ttachment-based <b>F</b>ragment <b>E</b>mbedding (SAFE) is a novel molecular line notation that represents molecules as an unordered sequence of fragment blocks to improve molecule design using generative models.</h4>
 
 </br>
 <div align="center">
@@ -79,9 +79,9 @@ pip install -e .
 
 ### Datasets and Models
 
-We provided a pretained GPT2 model (50M parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B): 
+We provided a pretained GPT2 model (XX M parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B): 
 
-- *Safe-1.1B-dataset* [maclandrol/safe-1.1B]()
+- *Safe-XXM* [maclandrol/safe-XXM]()
 
 
 ## Usage

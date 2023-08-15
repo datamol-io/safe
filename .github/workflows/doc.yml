@@ -45,3 +45,22 @@ jobs:
 
           echo "Build and deploy the doc on main"
           mike deploy --push --force main
+
+      # TODO(EN): REMOVE THIS PART WHEN PUBLIC
+      # also deploy on valdoc
+      - name: Fetch Valence Actions
+        uses: actions/checkout@v3
+        with:
+          repository: valence-platform/valence-actions
+          ref: latest
+          token: ${{ secrets.VALENCE_GITHUB_TOKEN_PLATFORM }}
+          path: .github/valence-actions
+
+      - name: Build and deploy the documentation
+        uses: ./.github/valence-actions/deploy-valdoc
+        with:
+          env-name: my_env
+          env-file: env.yml
+          anaconda-token: ${{ secrets.INVIVOAI_ANACONDA_USER_BOT_TOKEN }}
+          valdoc-json-key: ${{ secrets.VALDOC_WRITE_JSON_KEY }}
+          doc-name: my_env

@@ -5,6 +5,7 @@ from typing import Dict
 from typing import Any
 
 import copy
+import functools
 import torch
 from collections.abc import Mapping
 from transformers.data.data_collator import _torch_collate_batch
@@ -27,6 +28,7 @@ class SAFECollator:
         input_key: str = "inputs",
         label_key: str = "labels",
         property_key: str = "descriptors",
+        include_descriptors: bool = False,
         max_length: Optional[int] = None,
     ):
         """
@@ -37,6 +39,7 @@ class SAFECollator:
             input_key: key to use for input ids
             label_key: key to use for labels
             property_key: key to use for properties
+            include_descriptors: whether to include training on descriptors or not
             pad_to_multiple_of: pad to multiple of this value
         """
 
@@ -45,8 +48,10 @@ class SAFECollator:
         self.input_key = input_key
         self.label_key = label_key
         self.property_key = property_key
+        self.include_descriptors = include_descriptors
         self.max_length = max_length
 
+    @functools.lru_cache()
     def get_tokenizer(self):
         """Get underlying tokenizer"""
         if isinstance(self.tokenizer, SAFETokenizer):
@@ -97,7 +102,7 @@ class SAFECollator:
             labels[labels == tokenizer.pad_token_id] = -100
         batch["labels"] = labels
 
-        if mc_labels is not None:
+        if mc_labels is not None and self.include_descriptors:
             batch.update(
                 {
                     "mc_labels": mc_labels,
