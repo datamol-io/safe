@@ -8,8 +8,8 @@ import torch
 import numpy as np
 import json
 from loguru import logger
-from contextlib import contextmanager, suppress
 
+from .utils import attr_as
 from tokenizers import decoders
 from tokenizers import Tokenizer
 from tokenizers.models import BPE, WordLevel
@@ -31,21 +31,6 @@ TEMPLATE_SPECIAL_TOKENS = [
     ("[CLS]", 1),
     ("[SEP]", 2),
 ]
-
-
-@contextmanager
-def attr_as(obj, field, value):
-    """Temporary replace the value of an object
-    Args:
-        obj: object to temporary patch
-        field: name of the key to change
-        value: value of key to be temporary changed
-    """
-    old_value = getattr(obj, field, None)
-    setattr(obj, field, value)
-    yield
-    with suppress(TypeError):
-        setattr(obj, field, old_value)
 
 
 class SAFESplitter:

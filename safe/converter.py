@@ -8,6 +8,7 @@ import datamol as dm
 import itertools
 import numpy as np
 
+from contextlib import suppress
 from collections import Counter
 
 from rdkit import Chem
@@ -116,6 +117,24 @@ class SafeConverter:
                 branch_numbers.append(int(m[0].replace("%", "")))
         return branch_numbers
 
+    def _ensure_valid(self, inp: str):
+        """Ensure that the input SAFE string is valid by fixing the missing attachment points
+
+        Args:
+            inp: input SAFE string
+        """
+        missing_tokens = [inp]
+        branch_numbers = self._find_branch_number(inp)
+        # only use the set that have exactly 1 element
+        # any branch number that is not pairwise should receive a dummy atom to complete the attachment point
+        branch_numbers = Counter(branch_numbers)
+        for i, (bnum, bcount) in enumerate(branch_numbers.items()):
+            if bcount % 2 != 0:
+                bnum_str = str(bnum) if bnum < 10 else f"%{bnum}"
+                missing_tokens.append(f"[*:{i+1}]{bnum_str}")
+
+        return ".".join(missing_tokens)
+
     def decoder(
         self,
         inp: str,
@@ -123,41 +142,46 @@ class SafeConverter:
         canonical: bool = False,
         fix: bool = True,
         remove_dummies: bool = True,
+        remove_added_hs: bool = True,
     ):
         """Convert input SAFE representation to smiles
 
         Args:
             inp: input SAFE representation to decode as a valid molecule or smiles
             as_mol: whether to return a molecule object or a smiles string
-            canonical: whether to return a canonical smiles or a randomized smiles
+            canonical: whether to return a canonical&standardized molecule.
             fix: whether to fix the SAFE representation to take into account non-connected attachment points
-            remove_dummies: whether to remove dummy atoms from the SAFE representation
-
+            remove_dummies: whether to remove dummy atoms from the SAFE representation. Note that removing_dummies is incompatible with
+            remove_added_hs: whether to remove all the added hydrogen atoms after applying dummy removal for recovery
         """
-        missing_tokens = [inp]
+
         if fix:
-            branch_numbers = self._find_branch_number(inp)
-            # only use the set that have exactly 1 element
-            # any branch number that is not pairwise should receive a dummy atom to complete the attachment point
-            branch_numbers = Counter(branch_numbers)
-            for i, (bnum, bcount) in enumerate(branch_numbers.items()):
-                if bcount % 2 != 0:
-                    bnum_str = str(bnum) if bnum < 10 else f"%{bnum}"
-                    missing_tokens.append(f"[*:{i+1}]{bnum_str}")
-
-        mol = dm.to_mol(".".join(missing_tokens))
+            inp = self._ensure_valid(inp)
+        mol = dm.to_mol(inp)
         if remove_dummies:
-            mol = dm.remove_dummies(mol)
+            with suppress(Exception):
+                du = dm.from_smarts("[$([#0]!-!:*);$([#0;D1])]")
+                out = Chem.ReplaceSubstructs(mol, du, dm.to_mol("C"), True)[0]
+                mol = dm.remove_dummies(out)
         if as_mol:
+            if remove_added_hs:
+                mol = dm.remove_hs(mol, update_explicit_count=True)
+            if canonical:
+                mol = dm.standardize_mol(mol)
+                mol = dm.canonical_tautomer(mol)
             return mol
-        return dm.to_smiles(mol, canonical=canonical, explicit_hs=True)
+        out = dm.to_smiles(mol, canonical=canonical, explicit_hs=(not remove_added_hs))
+        if canonical:
+            out = dm.standardize_smiles(out, tautomer=True)
+        return out
 
-    def _fragment(self, mol: dm.Mol):
+    def _fragment(self, mol: dm.Mol, allow_empty: bool = False):
         """
         Perform bond cutting in place for the input molecule, given the slicing algorithm
 
         Args:
             mol: input molecule to split
+            allow_empty: whether to allow the slicing algorithm to return empty bonds
         Raises:
             SafeFragmentationError: if the slicing algorithm return empty bonds
         """
@@ -176,11 +200,11 @@ class SafeConverter:
                     tuple(sorted(match)) for match in mol.GetSubstructMatches(smarts, uniquify=True)
                 }
             matching_bonds = list(matches)
-        if matching_bonds is None or len(matching_bonds) == 0:
+        if matching_bonds is None or len(matching_bonds) == 0 and not allow_empty:
             raise SafeFragmentationError(
                 "Slicing algorithms did not return any bonds that can be cut !"
             )
-        return matching_bonds
+        return matching_bonds or []
 
     def encoder(
         self,
@@ -189,6 +213,7 @@ class SafeConverter:
         randomize: Optional[bool] = False,
         seed: Optional[int] = None,
         constraints: Optional[List[dm.Mol]] = None,
+        allow_empty: bool = False,
     ):
         """Convert input smiles to SAFE representation
 
@@ -203,12 +228,14 @@ class SafeConverter:
                 2. at the SAFE conversion by randomizing fragment orders
             constraints: List of molecules or pattern to preserve during the SAFE construction. Any bond slicing would
                 happen outside of a substructure matching one of the patterns.
+            allow_empty: whether to allow the slicing algorithm to return empty bonds
         """
         rng = None
-        if randomize and not canonical:
+        if randomize:
             rng = np.random.default_rng(seed)
-            inp = dm.to_mol(inp, remove_hs=False)
-            inp = self.randomize(inp, rng)
+            if not canonical:
+                inp = dm.to_mol(inp, remove_hs=False)
+                inp = self.randomize(inp, rng)
 
         if isinstance(inp, dm.Mol):
             inp = dm.to_smiles(inp, canonical=canonical, randomize=False, ordered=False)
@@ -219,7 +246,7 @@ class SafeConverter:
         mol = dm.to_mol(inp, remove_hs=False)
         if self.require_hs:
             mol = dm.add_hs(mol)
-        matching_bonds = self._fragment(mol)
+        matching_bonds = self._fragment(mol, allow_empty=allow_empty)
         substructed_ignored = []
         if constraints is not None:
             substructed_ignored = list(
@@ -239,9 +266,10 @@ class SafeConverter:
                 continue
             obond = mol.GetBondBetweenAtoms(i_a, i_b)
             bonds.append(obond.GetIdx())
-        mol = Chem.FragmentOnBonds(
-            mol, bonds, dummyLabels=[(i + 1, i + 1) for i in range(len(bonds))]
-        )
+        if len(bonds) > 0:
+            mol = Chem.FragmentOnBonds(
+                mol, bonds, dummyLabels=[(i + 1, i + 1) for i in range(len(bonds))]
+            )
         # here we need to be clever and disable rooted atom as the atom with mapping
         frags = list(Chem.GetMolFrags(mol, asMols=True))
 
@@ -301,9 +329,9 @@ def encode(
     if slicer is None:
         slicer = "brics"
     with dm.without_rdkit_log():
-        safe = SafeConverter(slicer=slicer, require_hs=require_hs)
+        safe_obj = SafeConverter(slicer=slicer, require_hs=require_hs)
         try:
-            encoded = safe.encoder(
+            encoded = safe_obj.encoder(
                 inp, canonical=canonical, randomize=randomize, constraints=constraints, seed=seed
             )
         except SafeFragmentationError as e:
@@ -318,7 +346,9 @@ def decode(
     as_mol: bool = False,
     canonical: bool = False,
     fix: bool = True,
+    remove_added_hs: bool = True,
     remove_dummies: bool = True,
+    ignore_errors: bool = False,
 ):
     """Convert input SAFE representation to smiles
     Args:
@@ -326,15 +356,25 @@ def decode(
         as_mol: whether to return a molecule object or a smiles string
         canonical: whether to return a canonical smiles or a randomized smiles
         fix: whether to fix the SAFE representation to take into account non-connected attachment points
+        remove_added_hs: whether to remove the hydrogen atoms that have been added to fix the string.
         remove_dummies: whether to remove dummy atoms from the SAFE representation
+        ignore_errors: whether to ignore error and return None on decoding failure or raise an error
 
     """
     with dm.without_rdkit_log():
-        safe = SafeConverter()
+        safe_obj = SafeConverter()
         try:
-            decoded = safe.decoder(
-                safe_str, as_mol=as_mol, canonical=canonical, fix=fix, remove_dummies=remove_dummies
+            decoded = safe_obj.decoder(
+                safe_str,
+                as_mol=as_mol,
+                canonical=canonical,
+                fix=fix,
+                remove_dummies=remove_dummies,
+                remove_added_hs=remove_added_hs,
             )
+
         except Exception as e:
+            if ignore_errors:
+                return None
             raise SafeDecodeError(f"Failed to decode {safe_str}") from e
         return decoded

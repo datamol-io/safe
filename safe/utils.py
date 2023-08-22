@@ -1,13 +1,21 @@
 from typing import Optional
 from typing import Any
+from typing import Union
 from typing import List
 from typing import Tuple
 from functools import partial
 from collections import deque
 from itertools import combinations
+from contextlib import contextmanager, suppress
 from networkx.utils import py_random_state
 from rdkit.Chem import EditableMol, Atom
 
+from rdkit.Chem.rdmolops import ReplaceCore
+from rdkit.Chem.rdmolops import AdjustQueryParameters
+from rdkit.Chem.rdmolops import AdjustQueryProperties
+from rdkit.Chem.rdChemReactions import ReactionFromSmarts
+
+import itertools
 import networkx as nx
 import numpy as np
 import random
@@ -16,6 +24,21 @@ import safe as sf
 
 __implicit_carbon_query = dm.from_smarts("[#6;h]")
 __mmpa_query = dm.from_smarts("[*;!$(*=,#[!#6])]!@!=!#[*]")
+
+
+@contextmanager
+def attr_as(obj, field, value):
+    """Temporary replace the value of an object
+    Args:
+        obj: object to temporary patch
+        field: name of the key to change
+        value: value of key to be temporary changed
+    """
+    old_value = getattr(obj, field, None)
+    setattr(obj, field, value)
+    yield
+    with suppress(TypeError):
+        setattr(obj, field, old_value)
 
 
 def _selective_add_hs(mol: dm.Mol, fraction_hs: Optional[bool] = None):
@@ -190,3 +213,98 @@ def convert_to_safe(
     except sf.SafeEncodeError:
         return x
     return x
+
+
+def compute_side_chains(mol: dm.Mol, core: dm.Mol, **kwargs: Any):
+    """Compute the side chain of a molecule given a core
+
+    !!! note "Finding the side chains"
+        The algorithm to find the side chains from core assumes that the core we get as input has attachment points.
+        Those attachment points are never considered as part of the query, rather they are used to define the attachment points
+        on the side chains. Removing the attachment points from the core is exactly the same as keeping them.
+
+        ```python
+        mol = "CC1=C(C(=NO1)C2=CC=CC=C2Cl)C(=O)NC3C4N(C3=O)C(C(S4)(C)C)C(=O)O"
+        core0 = "CC1(C)CN2C(CC2=O)S1"
+        core1 = "CC1(C)SC2C(-*)C(=O)N2C1-*"
+        core2 = "CC1N2C(SC1(C)C)C(N)C2=O"
+        side_chain = compute_side_chain(core=core0, mol=mol)
+        dm.to_image([side_chain, core0, mol])
+        ```
+        Therefore on the above, core0 and core1 are equivalent for the molecule `mol`, but core2 is not.
+
+    Args:
+        mol: molecule to split
+        core: core to use for deriving the side chains
+    """
+
+    if isinstance(mol, str):
+        mol = dm.to_mol(mol)
+    if isinstance(core, str):
+        core = dm.to_mol(core)
+    core_query_param = AdjustQueryParameters()
+    core_query_param.makeDummiesQueries = True
+    core_query_param.adjustDegree = False
+    core_query_param.aromatizeIfPossible = True
+    core_query_param.makeBondsGeneric = False
+    core_query = AdjustQueryProperties(core, core_query_param)
+    return ReplaceCore(
+        mol, core_query, labelByIndex=False, replaceDummies=False, requireDummyMatch=False
+    )
+
+
+def list_individual_attach_points(mol: dm.Mol, depth: Optional[int] = None):
+    """List all individual attachement points.
+
+    We do not allow multiple attachment points per substitution position.
+
+    Args:
+        mol: molecule for which we need to open the attachment points
+
+    """
+    ATTACHING_RXN = ReactionFromSmarts("[*;h;!$([*][#0]):1]>>[*:1][*]")
+    mols = [mol]
+    curated_prods = set()
+    num_attachs = len(mol.GetSubstructMatches(dm.from_smarts("[*;h:1]"), uniquify=True))
+    depth = depth or 1
+    depth = min(max(depth, 1), num_attachs)
+    while depth > 0:
+        prods = set()
+        for mol in mols:
+            mol = dm.to_mol(mol)
+            for p in ATTACHING_RXN.RunReactants((mol,)):
+                try:
+                    m = dm.sanitize_mol(p[0])
+                    sm = dm.to_smiles(m, canonical=True)
+                    sm = dm.reactions.add_brackets_to_attachment_points(sm)
+                    prods.add(dm.reactions.convert_attach_to_isotope(sm, as_smiles=True))
+                except:
+                    pass
+        curated_prods.update(prods)
+        mols = prods
+        depth -= 1
+    return list(curated_prods)
+
+
+def filter_by_substructure_constraints(
+    sequences: List[Union[str, dm.Mol]], substruct: Union[str, dm.Mol], n_jobs: int = -1
+):
+    """Check whether the input substructures are present in each of the molecule in the sequences
+
+    Args:
+        sequences: list of molecules to validate
+        substruct: substructure to use as query
+        n_jobs: number of jobs to use for parallelization
+
+    """
+
+    substruct = dm.to_mol(substruct)
+
+    def _check_match(mol):
+        with suppress(Exception):
+            mol = dm.to_mol(mol)
+            return mol.HasSubstructMatch(substruct)
+        return False
+
+    matches = dm.parallelized(_check_match, sequences, n_jobs=n_jobs)
+    return list(itertools.compress(sequences, matches))

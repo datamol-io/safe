@@ -11,6 +11,7 @@ import safe as sf
 
 def to_image(
     safe_str: str,
+    fragments: Optional[Union[str, dm.Mol]] = None,
     legend: Union[str, None] = None,
     mol_size: Union[Tuple[int, int], int] = (300, 300),
     use_svg: Optional[bool] = True,
@@ -22,10 +23,11 @@ def to_image(
 
     Args:
         safe_str: the safe string to display
+        fragments: list of fragment to highlight on the molecules. If None, will use safe decomposition of the molecule.
         legend: A string to use as the legend under the molecule.
         mol_size: The size of the image to be returned
         use_svg: Whether to return an svg or png image
-        highlight_mode: the highlight mode to use. One of ["lasso", "fill", "color"].
+        highlight_mode: the highlight mode to use. One of ["lasso", "fill", "color"]. If None, no highlight will be shown
         highlight_bond_width_multiplier: the multiplier to use for the bond width when using the 'fill' mode
         **kwargs: Additional arguments to pass to the drawing function. See RDKit
             documentation related to `MolDrawOptions` for more details at
@@ -43,7 +45,21 @@ def to_image(
         kwargs["continuousHighlight"] = False
         kwargs["circleAtoms"] = kwargs.get("circleAtoms", False) or False
 
-    fragments = [sf.decode(x, as_mol=False, remove_dummies=False) for x in safe_str.split(".")]
+    if isinstance(fragments, (str, dm.Mol)):
+        fragments = [fragments]
+
+    if fragments is None and highlight_mode is not None:
+        fragments = [
+            sf.decode(x, as_mol=False, remove_dummies=False, ignore_errors=False)
+            for x in safe_str.split(".")
+        ]
+    else:
+        parsed_fragments = []
+        for fg in fragments:
+            if isinstance(fg, str) and dm.to_mol(fg) is None:
+                fg = sf.decode(fg, as_mol=False, remove_dummies=False, ignore_errors=False)
+        parsed_fragments.append(fg)
+        fragments = parsed_fragments
     mol = dm.to_mol(safe_str, remove_hs=False)
     cm = plt.get_cmap("gist_rainbow")
     current_colors = [cm(1.0 * i / len(fragments)) for i in range(len(fragments))]
