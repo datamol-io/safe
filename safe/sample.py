@@ -2,39 +2,47 @@ from typing import Union
 from typing import List
 from typing import Optional
 
-import os
-import random
-import datamol as dm
 
-import safe as sf
-
+from contextlib import suppress
+from collections.abc import Mapping
+from collections import Counter
+from transformers.generation import PhrasalConstraint
 from transformers import GenerationConfig
-from functools import partial
 from safe.trainer.model import SAFEDoubleHeadsModel
 from safe.tokenizer import SAFETokenizer
+from safe._constraint import LinkingLogitProcessor
 from loguru import logger
 
+import os
+import random
+import platformdirs
+import datamol as dm
+import safe as sf
 
-class SAFEMolDesign:
+
+class SAFEDesign:
     """Molecular generation using SAFE pretrained model"""
 
     _DEFAULT_MAX_LENGTH = 1024  # default max length used during training
-    _DEFAULT_MODEL_PATH = "/home/emmanuel/safe/expts/model-v1"
+    _DEFAULT_MODEL_PATH = platformdirs.user_cache_dir(
+        "safe/default_model"
+    )  # EN to change this as soon as possible
 
     def __init__(
         self,
         model: Union[SAFEDoubleHeadsModel, str],
         tokenizer: Union[str, SAFETokenizer],
         generation_config: Optional[Union[str, GenerationConfig]] = None,
-        safe_encoder: Optional[sf.SafeConverter] = None,
+        safe_encoder: Optional[sf.SAFEConverter] = None,
         verbose: bool = True,
     ):
-        """SAFEMolDesign constructor
+        """SAFEDesign constructor
 
         Args:
             model: input SAFEDoubleHeadsModel to use for generation
             tokenizer: input SAFETokenizer to use for generation
             generation_config: input GenerationConfig to use for generation
+            safe_encoder: custom safe encoder to use
             verbose: whether to print out logging information during generation
         """
         if isinstance(model, os.PathLike):
@@ -57,83 +65,58 @@ class SAFEMolDesign:
                     self.generation_config, special_token_id, getattr(tokenizer, special_token_id)
                 )
 
-        self.safe_encoder = safe_encoder or sf.SafeConverter()
+        self.verbose = verbose
+        self.safe_encoder = safe_encoder or sf.SAFEConverter()
 
     @classmethod
-    def load_default(cls) -> "SAFEMolDesign":
-        """Load default SAFEGenerator model"""
+    def load_default(cls, verbose: bool = False) -> "SAFEDesign":
+        """Load default SAFEGenerator model
+
+        Args:
+            verbose: whether to print out logging information during generation
+        """
         model = SAFEDoubleHeadsModel.from_pretrained(cls._DEFAULT_MODEL_PATH)
         tokenizer = SAFETokenizer.load(os.path.join(cls._DEFAULT_MODEL_PATH, "tokenizer.json"))
         gen_config = GenerationConfig.from_pretrained(cls._DEFAULT_MODEL_PATH)
-        return cls(model=model, tokenizer=tokenizer, generation_config=gen_config)
+        return cls(model=model, tokenizer=tokenizer, generation_config=gen_config, verbose=verbose)
 
-    def linker_generation(self, *groups: List[Union[str, dm.Mol]], n_samples: int = 10):
-        if len(groups) > 2 and self.verbose:
-            logger.warning(
-                f"It's advised to have at most two groups when generating a linker, got {len(groups)} fragments"
-            )
-        pass
-
-    def motif_extension(self, motif: Union[str, dm.Mol], n_samples: int = 10):
-        pass
-
-    def super_structure(
+    def linker_generation(
         self,
-        core: Union[str, dm.Mol],
+        *groups: List[Union[str, dm.Mol]],
         n_samples_per_trial: int = 10,
         n_trials: Optional[int] = 1,
         sanitize: bool = False,
         do_not_fragment_further: Optional[bool] = False,
         random_seed: Optional[int] = None,
-        attachment_point_depth: Optional[int] = None,
         **kwargs,
     ):
-        """Perform super structure generation using the pretrained SAFE model.
+        """Perform linker generation using the pretrained SAFE model.
+        Linker generation is really just scaffold morphing underlying.
 
-        To generate super-structure, we basically just create various attachment points to the input core,
-        then perform scaffold decoration.
 
         Args:
-            core: input substructure to use. We aim to generate super structures of this molecule
+            groups: list of fragments to link together, they are joined in the order provided
             n_samples_per_trial: number of new molecules to generate for each randomization
-            n_trials: number of different attachment points to consider
+            n_trials: number of randomization to perform
             do_not_fragment_further: whether to fragment the scaffold further or not
             sanitize: whether to sanitize the generated molecules
             random_seed: random seed to use
-            attachment_point_depth: depth of opening the attachment points.
-                Increasing this, means you increase the number of substitution point to consider.
             kwargs: any argument to provide to the underlying generation function
         """
-
-        core = dm.to_mol(core)
-        cores = sf.utils.list_individual_attach_points(core, depth=attachment_point_depth)
-        # get the fully open mol, everytime too.
-        cores.append(dm.to_smiles(dm.reactions.open_attach_points(core)))
-        cores = list(set(cores))
-        rng = random.Random(random_seed)
-        rng.shuffle(cores)
-        # now also get the single openining of an attachment point
-        total_sequences = []
-        n_trials = n_trials or 1
-        for _ in range(n_trials):
-            core = cores[_ % len(cores)]
-            with sf.utils.attr_as(self, "verbose", False):
-                out = self._completion(
-                    fragment=core,
-                    n_samples_per_trial=n_samples_per_trial,
-                    n_trials=n_trials,
-                    do_not_fragment_further=do_not_fragment_further,
-                    sanitize=sanitize,
-                    random_seed=random_seed,
-                    **kwargs,
-                )
-
-                total_sequences.extend(out)
-
-        if sanitize and self.verbose:
-            logger.info(
-                f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %)  generated molecules are valid !"
+        if len(groups) < 2 and self.verbose:
+            logger.warning(
+                f"It's advised to have at most two groups when generating a linker, got {len(groups)} fragments"
             )
+        side_chains = list(groups)
+        return self.scaffold_morphing(
+            side_chains=side_chains,
+            n_samples_per_trial=n_samples_per_trial,
+            n_trials=n_trials,
+            sanitize=sanitize,
+            do_not_fragment_further=do_not_fragment_further,
+            random_seed=random_seed,
+            **kwargs,
+        )
 
     def scaffold_morphing(
         self,
@@ -175,7 +158,11 @@ class SAFEMolDesign:
                     "Either side_chains OR mol+core should be provided for scaffold morphing"
                 )
             side_chains = sf.trainer.utils.compute_side_chains(mol, core)
-        side_chains = [dm.to_mol(x) for x in side_chains] if isinstance(side_chains, list) else [dm.to_mol(side_chains)]
+        side_chains = (
+            [dm.to_mol(x) for x in side_chains]
+            if isinstance(side_chains, list)
+            else [dm.to_mol(side_chains)]
+        )
 
         side_chains = ".".join([dm.to_smiles(x) for x in side_chains])
         if "*" not in side_chains and self.verbose:
@@ -183,17 +170,166 @@ class SAFEMolDesign:
                 f"Side chain {side_chains} does not contain any dummy atoms, this might not be what you want"
             )
 
-        return self._completion(
-            fragment=side_chains,
+        rng = random.Random(random_seed)
+        new_seed = rng.randint(1, 1000)
+
+        total_sequences = []
+        n_trials = n_trials or 1
+        for _ in range(n_trials):
+            with dm.without_rdkit_log():
+                context_mng = (
+                    sf.utils.attr_as(self.safe_encoder, "slicer", None)
+                    if do_not_fragment_further
+                    else suppress()
+                )
+                old_slicer = getattr(self.safe_encoder, "slicer", None)
+                with context_mng:
+                    try:
+                        encoded_fragment = self.safe_encoder.encoder(
+                            side_chains,
+                            canonical=False,
+                            randomize=True,
+                            constraints=None,
+                            allow_empty=True,
+                            seed=new_seed,
+                        )
+
+                    except Exception as e:
+                        if self.verbose:
+                            logger.error(e)
+                        raise sf.SAFEEncodeError(f"Failed to encode {side_chains}") from e
+                    finally:
+                        if old_slicer is not None:
+                            self.safe_encoder.slicer = old_slicer
+
+            prefix = encoded_fragment
+            prefix, suffix = encoded_fragment.rsplit(".", 1)
+
+            missing_closure = Counter(self.safe_encoder._find_branch_number(prefix))
+            missing_closure = [f"{str(x)}" for x in missing_closure if missing_closure[x] % 2 == 1]
+            word_ids = self.tokenizer.encode(missing_closure, add_special_tokens=False)
+            word_ids = self.tokenizer.encode([suffix], add_special_tokens=False)
+            constraints = [PhrasalConstraint(tkl) for tkl in word_ids]
+            # if not kwargs.get("do_sample"):
+            kwargs["constraints"] = constraints
+            kwargs["num_beams"] = n_samples_per_trial
+            kwargs["how"] = "beam"
+            # kwargs["logits_processor"] = [LinkingLogitProcessor(prefix, self.tokenizer, max_link_tokens=None)]
+            kwargs["early_stopping"] = False
+
+            sequences = self._generate(n_samples=n_samples_per_trial, safe_prefix=prefix, **kwargs)
+            sequences = self._decode_safe(sequences, canonical=True, remove_invalid=sanitize)
+            total_sequences.extend(sequences)
+
+        # then we should filter out molecules that do not match the requested
+        if sanitize:
+            total_sequences = sf.utils.filter_by_substructure_constraints(
+                total_sequences, side_chains
+            )
+            if self.verbose:
+                logger.info(
+                    f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %)  generated molecules are valid !"
+                )
+        return total_sequences
+
+    def motif_extension(
+        self,
+        motif: Union[str, dm.Mol],
+        n_samples_per_trial: int = 10,
+        n_trials: Optional[int] = 1,
+        sanitize: bool = False,
+        do_not_fragment_further: Optional[bool] = False,
+        random_seed: Optional[int] = None,
+        **kwargs,
+    ):
+        """Perform motif extension using the pretrained SAFE model.
+        Motif extension is really just scaffold decoration underlying.
+
+        Args:
+            scaffold: scaffold (with attachment points) to decorate
+            n_samples_per_trial: number of new molecules to generate for each randomization
+            n_trials: number of randomization to perform
+            do_not_fragment_further: whether to fragment the scaffold further or not
+            sanitize: whether to sanitize the generated molecules and check
+            random_seed: random seed to use
+            kwargs: any argument to provide to the underlying generation function
+        """
+        return self.scaffold_decoration(
+            motif,
             n_samples_per_trial=n_samples_per_trial,
             n_trials=n_trials,
-            do_not_fragment_further=do_not_fragment_further,
             sanitize=sanitize,
+            do_not_fragment_further=do_not_fragment_further,
             random_seed=random_seed,
+            add_dot=False,
             **kwargs,
         )
 
-        # check for scaffold morphing validity
+    def super_structure(
+        self,
+        core: Union[str, dm.Mol],
+        n_samples_per_trial: int = 10,
+        n_trials: Optional[int] = 1,
+        sanitize: bool = False,
+        do_not_fragment_further: Optional[bool] = False,
+        random_seed: Optional[int] = None,
+        attachment_point_depth: Optional[int] = None,
+        **kwargs,
+    ):
+        """Perform super structure generation using the pretrained SAFE model.
+
+        To generate super-structure, we basically just create various attachment points to the input core,
+        then perform scaffold decoration.
+
+        Args:
+            core: input substructure to use. We aim to generate super structures of this molecule
+            n_samples_per_trial: number of new molecules to generate for each randomization
+            n_trials: number of different attachment points to consider
+            do_not_fragment_further: whether to fragment the scaffold further or not
+            sanitize: whether to sanitize the generated molecules
+            random_seed: random seed to use
+            attachment_point_depth: depth of opening the attachment points.
+                Increasing this, means you increase the number of substitution point to consider.
+            kwargs: any argument to provide to the underlying generation function
+        """
+
+        core = dm.to_mol(core)
+        cores = sf.utils.list_individual_attach_points(core, depth=attachment_point_depth)
+        # get the fully open mol, everytime too.
+        cores.append(dm.to_smiles(dm.reactions.open_attach_points(core)))
+        cores = list(set(cores))
+        rng = random.Random(random_seed)
+        rng.shuffle(cores)
+        # now also get the single openining of an attachment point
+        total_sequences = []
+        n_trials = n_trials or 1
+        for _ in range(n_trials):
+            core = cores[_ % len(cores)]
+            old_verbose = self.verbose
+            try:
+                with sf.utils.attr_as(self, "verbose", False):
+                    out = self._completion(
+                        fragment=core,
+                        n_samples_per_trial=n_samples_per_trial,
+                        n_trials=1,
+                        do_not_fragment_further=do_not_fragment_further,
+                        sanitize=sanitize,
+                        random_seed=random_seed,
+                        **kwargs,
+                    )
+                    total_sequences.extend(out)
+            except Exception as e:
+                if old_verbose:
+                    logger.error(e)
+
+            finally:
+                self.verbose = old_verbose
+
+        if sanitize and self.verbose:
+            logger.info(
+                f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %)  generated molecules are valid !"
+            )
+        return total_sequences
 
     def scaffold_decoration(
         self,
@@ -203,6 +339,7 @@ class SAFEMolDesign:
         do_not_fragment_further: Optional[bool] = False,
         sanitize: bool = False,
         random_seed: Optional[int] = None,
+        add_dot=True,
         **kwargs,
     ):
         """Perform scaffold decoration using the pretrained SAFE model
@@ -215,7 +352,7 @@ class SAFEMolDesign:
             n_samples_per_trial: number of new molecules to generate for each randomization
             n_trials: number of randomization to perform
             do_not_fragment_further: whether to fragment the scaffold further or not
-            sanitize: whether to sanitize the generated molecules
+            sanitize: whether to sanitize the generated molecules and check if the scaffold is still present
             random_seed: random seed to use
             kwargs: any argument to provide to the underlying generation function
         """
@@ -227,16 +364,18 @@ class SAFEMolDesign:
             do_not_fragment_further=do_not_fragment_further,
             sanitize=sanitize,
             random_seed=random_seed,
+            add_dot=add_dot,
             **kwargs,
         )
         # if we require sanitization
         # then we should filter out molecules that do not match the requested
         if sanitize:
             total_sequences = sf.utils.filter_by_substructure_constraints(total_sequences, scaffold)
-        if sanitize and self.verbose:
-            logger.info(
-                f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %)  generated molecules are valid !"
-            )
+            if self.verbose:
+                logger.info(
+                    f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %)  generated molecules are valid !"
+                )
+        return total_sequences
 
     def de_novo_generation(self, n_samples_per_trial: int = 10, sanitize: bool = False, **kwargs):
         """Perform de novo generation using the pretrained SAFE model.
@@ -267,14 +406,16 @@ class SAFEMolDesign:
         self, sequences: List[str], canonical: bool = True, remove_invalid: bool = False
     ):
         """Decode a safe sequence into a molecule
+
         Args:
             sequence: safe sequence to decode
             canonical: whether to return canonical sequence
             remove_invalid: whether to remove invalid safe strings or keep them
         """
 
-        decode_fn = partial(
-            sf.decode(
+        def _decode_fn(x):
+            return sf.decode(
+                x,
                 as_mol=False,
                 fix=True,
                 remove_added_hs=True,
@@ -282,11 +423,98 @@ class SAFEMolDesign:
                 ignore_errors=True,
                 remove_dummies=True,
             )
-        )
-        safe_strings = dm.parallelized(decode_fn, sequences)
+
+        if len(sequences) > 100:
+            safe_strings = dm.parallelized(_decode_fn, sequences, n_jobs=-1)
+        else:
+            safe_strings = [_decode_fn(x) for x in sequences]
         if remove_invalid:
             safe_strings = [x for x in safe_strings if x is not None]
+
         return safe_strings
+
+    def _completion(
+        self,
+        fragment: Union[str, dm.Mol],
+        n_samples_per_trial: int = 10,
+        n_trials: Optional[int] = 1,
+        do_not_fragment_further: Optional[bool] = False,
+        sanitize: bool = False,
+        random_seed: Optional[int] = None,
+        add_dot: Optional[bool] = False,
+        is_safe: Optional[bool] = False,
+        **kwargs,
+    ):
+        """Perform sentence completion using a prefix fragment
+
+        Args:
+            scaffold: scaffold (with attachment points) to decorate
+            n_samples_per_trial: number of new molecules to generate for each randomization
+            n_trials: number of randomization to perform
+            do_not_fragment_further: whether to fragment the scaffold further or not
+            sanitize: whether to sanitize the generated molecules
+            random_seed: random seed to use
+            is_safe: whether the smiles is already encoded as a safe string
+            add_dot: whether to add a dot at the end of the fragments to signal to the model that we want to generate a distinct fragment.
+            kwargs: any argument to provide to the underlying generation function
+        """
+
+        # EN: lazy programming much ?
+        kwargs.setdefault("how", "random")
+        if kwargs["how"] != "random" and not kwargs.get("do_sample"):
+            logger.warning(
+                "I don't think you know what you are doing ... for de novo generation `do_sample=True` or `how='random'` is expected !"
+            )
+
+        # Step 1: we conver the fragment into the relevant safe string format
+        # we use the provided safe encoder with the slicer that was expected
+
+        rng = random.Random(random_seed)
+        new_seed = rng.randint(1, 1000)
+
+        total_sequences = []
+        n_trials = n_trials or 1
+        for _ in range(n_trials):
+            if is_safe:
+                encoded_fragment = fragment
+            else:
+                with dm.without_rdkit_log():
+                    context_mng = (
+                        sf.utils.attr_as(self.safe_encoder, "slicer", None)
+                        if do_not_fragment_further
+                        else suppress()
+                    )
+                    old_slicer = getattr(self.safe_encoder, "slicer", None)
+                    with context_mng:
+                        try:
+                            encoded_fragment = self.safe_encoder.encoder(
+                                fragment,
+                                canonical=False,
+                                randomize=True,
+                                constraints=None,
+                                allow_empty=True,
+                                seed=new_seed,
+                            )
+
+                        except Exception as e:
+                            if self.verbose:
+                                logger.error(e)
+                            raise sf.SAFEEncodeError(f"Failed to encode {fragment}") from e
+                        finally:
+                            if old_slicer is not None:
+                                self.safe_encoder.slicer = old_slicer
+
+            if add_dot and encoded_fragment.count("(") == encoded_fragment.count(")"):
+                encoded_fragment = encoded_fragment.rstrip(".") + "."
+
+            sequences = self._generate(
+                n_samples=n_samples_per_trial, safe_prefix=encoded_fragment, **kwargs
+            )
+
+            sequences = self._decode_safe(sequences, canonical=True, remove_invalid=sanitize)
+            total_sequences.extend(sequences)
+
+        return total_sequences
 
     def _generate(
         self,
@@ -303,14 +531,27 @@ class SAFEMolDesign:
         This emulates the izanagi sampling models, if you wish to retain the hugging face generation
         behaviour, either call the hugging face functions directly or overwrite this function
 
-        !!! note
+        ??? note "Generation Parameters"
             From the hugging face documentation:
 
             * `greedy decoding` if how="greedy" and num_beams=1 and do_sample=False.
             * `multinomial sampling` if num_beams=1 and do_sample=True.
             * `beam-search decoding` if how="beam" and num_beams>1 and do_sample=False.
             * `beam-search multinomial` sampling by calling if beam=True, num_beams>1 and do_sample=True or how="random" and num_beams>1
-            * `diverse beam-search decoding` if num_beams>1 and num_beam_groups>1.
+            * `diverse beam-search decoding` if num_beams>1 and num_beam_groups>1
+
+            It's also possible to ignore the 'how' shortcut and directly call the underlying generation methods using the proper arguments.
+            Learn more here: https://huggingface.co/docs/transformers/v4.32.0/en/main_classes/text_generation#transformers.GenerationConfig
+            Under the hood, the following will be applied depending on the arguments:
+
+            * greedy decoding by calling greedy_search() if num_beams=1 and do_sample=False
+            * contrastive search by calling contrastive_search() if penalty_alpha>0. and top_k>1
+            * multinomial sampling by calling sample() if num_beams=1 and do_sample=True
+            * beam-search decoding by calling beam_search() if num_beams>1 and do_sample=False
+            * beam-search multinomial sampling by calling beam_sample() if num_beams>1 and do_sample=True
+            * diverse beam-search decoding by calling group_beam_search(), if num_beams>1 and num_beam_groups>1
+            * constrained beam-search decoding by calling constrained_beam_search(), if constraints!=None or force_words_ids!=None
+            * assisted decoding by calling assisted_decoding(), if assistant_model is passed to .generate()
 
         Args:
             n_samples: number of sequences to return
@@ -334,6 +575,7 @@ class SAFEMolDesign:
                 self._DEFAULT_MAX_LENGTH,  # this was the defaul
             )
 
+        input_ids = safe_prefix
         if isinstance(safe_prefix, str):
             # EN: should we address the special token issues
             input_ids = pretrained_tk(
@@ -343,24 +585,35 @@ class SAFEMolDesign:
 
         num_beams = num_beams or None
         do_sample = do_sample or False
+
         if how == "random":
             do_sample = True
-        elif "beam" in how:
+
+        elif how is not None and "beam" in how:
             num_beams = max((num_beams or 0), n_samples)
 
         is_greedy = how == "greedy" or (num_beams in [0, 1, None]) and do_sample is False
 
-        kwargs["generation_config"] = self.generation_config
         kwargs["do_sample"] = do_sample
-        kwargs["num_beams"] = num_beams
-        kwargs["num_beam_groups"] = num_beam_groups
+        if num_beams is not None:
+            kwargs["num_beams"] = num_beams
+        if num_beam_groups is not None:
+            kwargs["num_beam_groups"] = num_beam_groups
         kwargs["output_scores"] = True
         kwargs["return_dict_in_generate"] = True
         kwargs["num_return_sequences"] = n_samples
         kwargs["max_length"] = max_length
         kwargs.setdefault("early_stopping", True)
-
         # EN we don't do anything with the score that the model might return on generate ...
+        if not isinstance(input_ids, Mapping):
+            input_ids = {"inputs": None}
+        else:
+            # EN: we remove the EOS token added before running the prediction
+            # because the model output nonsense when we keep it.
+            # I don't know why it works for text generation but not here
+            for k in input_ids:
+                input_ids[k] = input_ids[k][:, :-1]
+
         if is_greedy:
             kwargs["num_return_sequences"] = 1
             if num_beams is not None and num_beams > 1:
@@ -368,7 +621,8 @@ class SAFEMolDesign:
             # under greedy decoding there can only be a single solution
             # we just duplicate the solution several time for efficiency
             outputs = self.model.generate(
-                input_ids,
+                **input_ids,
+                generation_config=self.generation_config,
                 **kwargs,
             )
             sequences = [
@@ -377,78 +631,9 @@ class SAFEMolDesign:
 
         else:
             outputs = self.model.generate(
-                input_ids,
+                **input_ids,
+                generation_config=self.generation_config,
                 **kwargs,
             )
             sequences = pretrained_tk.batch_decode(outputs.sequences, skip_special_tokens=True)
         return sequences
-
-    def _completion(
-        self,
-        fragment: Union[str, dm.Mol],
-        n_samples_per_trial: int = 10,
-        n_trials: Optional[int] = 1,
-        do_not_fragment_further: Optional[bool] = False,
-        sanitize: bool = False,
-        random_seed: Optional[int] = None,
-        **kwargs,
-    ):
-        """Perform sentence completion using a prefix fragment
-
-        Args:
-            scaffold: scaffold (with attachment points) to decorate
-            n_samples_per_trial: number of new molecules to generate for each randomization
-            n_trials: number of randomization to perform
-            do_not_fragment_further: whether to fragment the scaffold further or not
-            sanitize: whether to sanitize the generated molecules
-            random_seed: random seed to use
-            kwargs: any argument to provide to the underlying generation function
-        """
-
-        # EN: lazy programming much ?
-        kwargs.setdefault("how", "random")
-        if kwargs["how"] != "random" and not kwargs.get("do_sample"):
-            logger.warning(
-                "I don't think you know what you are doing ... for de novo generation `do_sample=True` or `how='random'` is expected !"
-            )
-
-        # Step 1: we conver the fragment into the relevant safe string format
-        # we use the provided safe encoder with the slicer that was expected
-
-        rng = random.Random(random_seed)
-        new_seed = rng.randint(1, 1000)
-
-        total_sequences = []
-        n_trials = n_trials or 1
-        for _ in range(n_trials):
-            with dm.without_rdkit_log():
-                try:
-                    if not do_not_fragment_further:
-                        with sf.utils.attr_as(self.safe_encoder, "slicer", None):
-                            encoded_fragment = self.safe_encoder.encoder(
-                                fragment,
-                                canonical=False,
-                                randomize=True,
-                                constraints=None,
-                                seed=new_seed,
-                            )
-                    else:
-                        encoded_fragment = self.safe_encoder.encoder(
-                            fragment,
-                            canonical=False,
-                            randomize=True,
-                            constraints=None,
-                            seed=new_seed,
-                        )
-                except Exception as e:
-                    raise sf.SafeEncodeError(f"Failed to encode {fragment}") from e
-
-            # we add a bit of randomization, just for fun
-
-            sequences = self._generate(
-                n_samples=n_samples_per_trial, safe_prefix=encoded_fragment, **kwargs
-            )
-            sequences = self._decode_safe(sequences, canonical=True, remove_invalid=sanitize)
-            total_sequences.extend(sequences)
-
-        return total_sequences

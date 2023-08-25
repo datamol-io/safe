@@ -5,7 +5,7 @@
         members:
             - encode
             - decode
-            - SafeConverter
+            - SAFEConverter
         show_root_heading: false
 
 

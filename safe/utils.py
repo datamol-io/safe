@@ -3,27 +3,41 @@ from typing import Any
 from typing import Union
 from typing import List
 from typing import Tuple
-from functools import partial
-from collections import deque
-from itertools import combinations
-from contextlib import contextmanager, suppress
-from networkx.utils import py_random_state
-from rdkit.Chem import EditableMol, Atom
 
+from collections import deque
+from contextlib import contextmanager, suppress
+from functools import partial
+from itertools import combinations
+from itertools import compress
+from loguru import logger
+from networkx.utils import py_random_state
+
+from rdkit.Chem import EditableMol, Atom
 from rdkit.Chem.rdmolops import ReplaceCore
 from rdkit.Chem.rdmolops import AdjustQueryParameters
 from rdkit.Chem.rdmolops import AdjustQueryProperties
 from rdkit.Chem.rdChemReactions import ReactionFromSmarts
 
-import itertools
 import networkx as nx
 import numpy as np
 import random
+import re
 import datamol as dm
 import safe as sf
 
 __implicit_carbon_query = dm.from_smarts("[#6;h]")
 __mmpa_query = dm.from_smarts("[*;!$(*=,#[!#6])]!@!=!#[*]")
+
+_SMILES_ATTACHMENT_POINT_TOKEN = "\\*"
+# The following allows discovering and extracting valid dummy atoms in smiles/smarts.
+_SMILES_ATTACHMENT_POINTS = [
+    # parse any * not preceeded by "[" or ":"" and not followed by "]" or ":" as attachment
+    r"(?<![:\[]){0}(?![:\]])".format(_SMILES_ATTACHMENT_POINT_TOKEN),
+    # fix some edge cases of the above for attachment in the "()" environment or in SMARTS notation
+    r"(?<![\[(\[\w)]){0}".format(_SMILES_ATTACHMENT_POINT_TOKEN),
+    # parse attachment in optionally mapped isotope smarts atoms. eg. [1*:3]
+    r"\[(\d*){0}:?(\d*)\]".format(_SMILES_ATTACHMENT_POINT_TOKEN),
+]
 
 
 @contextmanager
@@ -189,7 +203,7 @@ def convert_to_safe(
     x = None
     try:
         x = sf.encode(mol, canonical=canonical, randomize=randomize, slicer=slicer, seed=seed)
-    except sf.SafeFragmentationError:
+    except sf.SAFEFragmentationError:
         if split_fragment:
             if "." in mol:
                 return None
@@ -206,16 +220,16 @@ def convert_to_safe(
                         seed=seed,
                     ),
                 )
-            except (sf.SafeEncodeError, sf.SafeFragmentationError):
+            except (sf.SAFEEncodeError, sf.SAFEFragmentationError):
                 # logger.exception(e)
                 return x
         # we need to resplit using attachment point but here we are only adding
-    except sf.SafeEncodeError:
+    except sf.SAFEEncodeError:
         return x
     return x
 
 
-def compute_side_chains(mol: dm.Mol, core: dm.Mol, **kwargs: Any):
+def compute_side_chains(mol: dm.Mol, core: dm.Mol, label_by_index: bool = False):
     """Compute the side chain of a molecule given a core
 
     !!! note "Finding the side chains"
@@ -249,7 +263,7 @@ def compute_side_chains(mol: dm.Mol, core: dm.Mol, **kwargs: Any):
     core_query_param.makeBondsGeneric = False
     core_query = AdjustQueryProperties(core, core_query_param)
     return ReplaceCore(
-        mol, core_query, labelByIndex=False, replaceDummies=False, requireDummyMatch=False
+        mol, core_query, labelByIndex=label_by_index, replaceDummies=False, requireDummyMatch=False
     )
 
 
@@ -278,8 +292,8 @@ def list_individual_attach_points(mol: dm.Mol, depth: Optional[int] = None):
                     sm = dm.to_smiles(m, canonical=True)
                     sm = dm.reactions.add_brackets_to_attachment_points(sm)
                     prods.add(dm.reactions.convert_attach_to_isotope(sm, as_smiles=True))
-                except:
-                    pass
+                except Exception as e:
+                    logger.error(e)
         curated_prods.update(prods)
         mols = prods
         depth -= 1
@@ -298,7 +312,9 @@ def filter_by_substructure_constraints(
 
     """
 
-    substruct = dm.to_mol(substruct)
+    if isinstance(substruct, str):
+        substruct = standardize_attach(substruct)
+        substruct = dm.from_smarts(substruct)
 
     def _check_match(mol):
         with suppress(Exception):
@@ -307,4 +323,17 @@ def filter_by_substructure_constraints(
         return False
 
     matches = dm.parallelized(_check_match, sequences, n_jobs=n_jobs)
-    return list(itertools.compress(sequences, matches))
+    return list(compress(sequences, matches))
+
+
+def standardize_attach(inputs: str, standard_attach: str = "[*]"):
+    """Standardize the attachment points of a molecule
+
+    Args:
+        inputs: input molecule
+        standard_attach: standard attachment point to use
+    """
+
+    for attach_regex in _SMILES_ATTACHMENT_POINTS:
+        inputs = re.sub(attach_regex, standard_attach, inputs)
+    return inputs

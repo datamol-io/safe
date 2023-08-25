@@ -13,12 +13,13 @@ from collections import Counter
 
 from rdkit import Chem
 from rdkit.Chem import BRICS
-from ._exception import SafeDecodeError
-from ._exception import SafeEncodeError
-from ._exception import SafeFragmentationError
+from ._exception import SAFEDecodeError
+from ._exception import SAFEEncodeError
+from ._exception import SAFEFragmentationError
+from .utils import standardize_attach
 
 
-class SafeConverter:
+class SAFEConverter:
     """Molecule line notation conversion from SMILES to SAFE
 
     A SAFE representation is a string based representation of a molecule decomposition into fragment components,
@@ -98,7 +99,8 @@ class SafeConverter:
         atom_indices = rng.permutation(atom_indices).tolist()
         return Chem.RenumberAtoms(mol, atom_indices)
 
-    def _find_branch_number(self, inp: str):
+    @classmethod
+    def _find_branch_number(cls, inp: str):
         """Find the branch number and ring closure in the SMILES representation using regexp
 
         Args:
@@ -149,7 +151,7 @@ class SafeConverter:
         Args:
             inp: input SAFE representation to decode as a valid molecule or smiles
             as_mol: whether to return a molecule object or a smiles string
-            canonical: whether to return a canonical&standardized molecule.
+            canonical: whether to return a canonical
             fix: whether to fix the SAFE representation to take into account non-connected attachment points
             remove_dummies: whether to remove dummy atoms from the SAFE representation. Note that removing_dummies is incompatible with
             remove_added_hs: whether to remove all the added hydrogen atoms after applying dummy removal for recovery
@@ -172,7 +174,7 @@ class SafeConverter:
             return mol
         out = dm.to_smiles(mol, canonical=canonical, explicit_hs=(not remove_added_hs))
         if canonical:
-            out = dm.standardize_smiles(out, tautomer=True)
+            out = dm.standardize_smiles(out)
         return out
 
     def _fragment(self, mol: dm.Mol, allow_empty: bool = False):
@@ -183,10 +185,13 @@ class SafeConverter:
             mol: input molecule to split
             allow_empty: whether to allow the slicing algorithm to return empty bonds
         Raises:
-            SafeFragmentationError: if the slicing algorithm return empty bonds
+            SAFEFragmentationError: if the slicing algorithm return empty bonds
         """
 
-        if callable(self.slicer):
+        if self.slicer is None:
+            matching_bonds = []
+
+        elif callable(self.slicer):
             matching_bonds = self.slicer(mol)
 
         elif self.slicer == "brics":
@@ -200,8 +205,9 @@ class SafeConverter:
                     tuple(sorted(match)) for match in mol.GetSubstructMatches(smarts, uniquify=True)
                 }
             matching_bonds = list(matches)
+
         if matching_bonds is None or len(matching_bonds) == 0 and not allow_empty:
-            raise SafeFragmentationError(
+            raise SAFEFragmentationError(
                 "Slicing algorithms did not return any bonds that can be cut !"
             )
         return matching_bonds or []
@@ -240,10 +246,21 @@ class SafeConverter:
         if isinstance(inp, dm.Mol):
             inp = dm.to_smiles(inp, canonical=canonical, randomize=False, ordered=False)
 
+        # EN: we first normalize the attachment if the molecule is a query:
+        # inp = dm.reactions.convert_attach_to_isotope(inp, as_smiles=True)
+
         # TODO(maclandrol): RDKit supports some extended form of ring closure, up to 5 digits
         # https://www.rdkit.org/docs/RDKit_Book.html#ring-closures and I should try to include them
         branch_numbers = self._find_branch_number(inp)
         mol = dm.to_mol(inp, remove_hs=False)
+
+        bond_map_id = 1
+        for atom in mol.GetAtoms():
+            if atom.GetAtomicNum() == 0:
+                atom.SetAtomMapNum(0)
+                atom.SetIsotope(bond_map_id)
+                bond_map_id += 1
+
         if self.require_hs:
             mol = dm.add_hs(mol)
         matching_bonds = self._fragment(mol, allow_empty=allow_empty)
@@ -268,9 +285,12 @@ class SafeConverter:
             bonds.append(obond.GetIdx())
         if len(bonds) > 0:
             mol = Chem.FragmentOnBonds(
-                mol, bonds, dummyLabels=[(i + 1, i + 1) for i in range(len(bonds))]
+                mol,
+                bonds,
+                dummyLabels=[(i + bond_map_id, i + bond_map_id) for i in range(len(bonds))],
             )
         # here we need to be clever and disable rooted atom as the atom with mapping
+
         frags = list(Chem.GetMolFrags(mol, asMols=True))
 
         if randomize:
@@ -281,9 +301,12 @@ class SafeConverter:
                 key=lambda x: x.GetNumAtoms(),
                 reverse=True,
             )
+
         frags_str = []
         for frag in frags:
-            non_map_atom_idxs = [a.GetIdx() for a in frag.GetAtoms() if a.GetSymbol() != "*"]
+            non_map_atom_idxs = [
+                atom.GetIdx() for atom in frag.GetAtoms() if atom.GetAtomicNum() != 0
+            ]
             frags_str.append(
                 Chem.MolToSmiles(
                     frag,
@@ -299,10 +322,12 @@ class SafeConverter:
         for attach in attach_pos:
             val = str(starting_num) if starting_num < 10 else f"%{starting_num}"
             # we cannot have anything of the form "\([@=-#-$/\]*\d+\)"
-            attach_regexp = re.compile(r"\(?([\.:@=\-#$/\\])?(" + re.escape(attach) + r")\)?")
-            scaffold_str = attach_regexp.sub(r"\g<1>" + val, scaffold_str)
+            attach_regexp = re.compile(r"(" + re.escape(attach) + r")")
+            scaffold_str = attach_regexp.sub(val, scaffold_str)
             starting_num += 1
-        return scaffold_str
+        # now we need to remove all the parenthesis around difig only number
+        wrong_attach = re.compile(r"\(([\%\d]*)\)")
+        return wrong_attach.sub(r"\g<1>", scaffold_str)
 
 
 def encode(
@@ -329,15 +354,15 @@ def encode(
     if slicer is None:
         slicer = "brics"
     with dm.without_rdkit_log():
-        safe_obj = SafeConverter(slicer=slicer, require_hs=require_hs)
+        safe_obj = SAFEConverter(slicer=slicer, require_hs=require_hs)
         try:
             encoded = safe_obj.encoder(
                 inp, canonical=canonical, randomize=randomize, constraints=constraints, seed=seed
             )
-        except SafeFragmentationError as e:
+        except SAFEFragmentationError as e:
             raise e
         except Exception as e:
-            raise SafeEncodeError(f"Failed to encode {inp} with {slicer}") from e
+            raise SAFEEncodeError(f"Failed to encode {inp} with {slicer}") from e
         return encoded
 
 
@@ -355,6 +380,7 @@ def decode(
         inp: input SAFE representation to decode as a valid molecule or smiles
         as_mol: whether to return a molecule object or a smiles string
         canonical: whether to return a canonical smiles or a randomized smiles
+        standardize: whether to standardize the molecule
         fix: whether to fix the SAFE representation to take into account non-connected attachment points
         remove_added_hs: whether to remove the hydrogen atoms that have been added to fix the string.
         remove_dummies: whether to remove dummy atoms from the SAFE representation
@@ -362,7 +388,7 @@ def decode(
 
     """
     with dm.without_rdkit_log():
-        safe_obj = SafeConverter()
+        safe_obj = SAFEConverter()
         try:
             decoded = safe_obj.decoder(
                 safe_str,
@@ -376,5 +402,5 @@ def decode(
         except Exception as e:
             if ignore_errors:
                 return None
-            raise SafeDecodeError(f"Failed to decode {safe_str}") from e
+            raise SAFEDecodeError(f"Failed to decode {safe_str}") from e
         return decoded
