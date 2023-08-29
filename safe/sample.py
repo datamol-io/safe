@@ -7,13 +7,15 @@ from contextlib import suppress
 from collections.abc import Mapping
 from collections import Counter
 from transformers.generation import PhrasalConstraint
+from transformers.generation import DisjunctiveConstraint
 from transformers import GenerationConfig
 from safe.trainer.model import SAFEDoubleHeadsModel
 from safe.tokenizer import SAFETokenizer
-from safe._constraint import LinkingLogitProcessor
 from loguru import logger
 
+import itertools
 import os
+import re
 import random
 import platformdirs
 import datamol as dm
@@ -88,6 +90,7 @@ class SAFEDesign:
         sanitize: bool = False,
         do_not_fragment_further: Optional[bool] = False,
         random_seed: Optional[int] = None,
+        model_only: Optional[bool] = False,
         **kwargs,
     ):
         """Perform linker generation using the pretrained SAFE model.
@@ -101,20 +104,25 @@ class SAFEDesign:
             do_not_fragment_further: whether to fragment the scaffold further or not
             sanitize: whether to sanitize the generated molecules
             random_seed: random seed to use
+            model_only: whether to use the model only ability and nothing more.
             kwargs: any argument to provide to the underlying generation function
         """
-        if len(groups) < 2 and self.verbose:
-            logger.warning(
-                f"It's advised to have at most two groups when generating a linker, got {len(groups)} fragments"
-            )
         side_chains = list(groups)
-        return self.scaffold_morphing(
+
+        if len(side_chains) != 2:
+            raise ValueError(
+                "Linker generation only works when providing two groups as side chains"
+            )
+
+        return self._fragment_linking(
             side_chains=side_chains,
             n_samples_per_trial=n_samples_per_trial,
             n_trials=n_trials,
             sanitize=sanitize,
             do_not_fragment_further=do_not_fragment_further,
             random_seed=random_seed,
+            is_linking=True,
+            model_only=model_only,
             **kwargs,
         )
 
@@ -152,6 +160,59 @@ class SAFEDesign:
             random_seed: random seed to use
             kwargs: any argument to provide to the underlying generation function
         """
+
+        return self._fragment_linking(
+            side_chains=side_chains,
+            mol=mol,
+            core=core,
+            n_samples_per_trial=n_samples_per_trial,
+            n_trials=n_trials,
+            sanitize=sanitize,
+            do_not_fragment_further=do_not_fragment_further,
+            random_seed=random_seed,
+            is_linking=False,
+            **kwargs,
+        )
+
+    def _fragment_linking(
+        self,
+        side_chains: Optional[Union[dm.Mol, str, List[Union[str, dm.Mol]]]] = None,
+        mol: Optional[Union[dm.Mol, str]] = None,
+        core: Optional[Union[dm.Mol, str]] = None,
+        n_samples_per_trial: int = 10,
+        n_trials: Optional[int] = 1,
+        sanitize: bool = False,
+        do_not_fragment_further: Optional[bool] = False,
+        random_seed: Optional[int] = None,
+        is_linking: Optional[bool] = False,
+        model_only: Optional[bool] = False,
+        **kwargs,
+    ):
+        """Perform scaffold morphing decoration using the pretrained SAFE model
+
+        For scaffold morphing, we try to replace the core by a new one. If the side_chains are provided, we use them.
+        If a combination of molecule and core is provided, then, we use them to extract the side chains and performing the
+        scaffold morphing then.
+
+        !!! note "Finding the side chains"
+            The algorithm to find the side chains from core assumes that the core we get as input has attachment points.
+            Those attachment points are never considered as part of the query, rather they are used to define the attachment points.
+            See ~sf.utils.compute_side_chains for more information.
+
+        Args:
+            side_chains: side chains to use to perform scaffold morphing (joining as best as possible the set of fragments)
+            mol: input molecules when side_chains are not provided
+            core: core to morph into another scaffold
+            n_samples_per_trial: number of new molecules to generate for each randomization
+            n_trials: number of randomization to perform
+            do_not_fragment_further: whether to fragment the scaffold further or not
+            sanitize: whether to sanitize the generated molecules
+            random_seed: random seed to use
+            is_linking: whether it's a linking task or not.
+                For linking tasks, we use a different custom strategy of completing up to the attachment signal
+            model_only: whether to use the model only ability and nothing more. Only relevant when doing linker generation
+            kwargs: any argument to provide to the underlying generation function
+        """
         if side_chains is None:
             if mol is None and core is None:
                 raise ValueError(
@@ -165,6 +226,7 @@ class SAFEDesign:
         )
 
         side_chains = ".".join([dm.to_smiles(x) for x in side_chains])
+
         if "*" not in side_chains and self.verbose:
             logger.warning(
                 f"Side chain {side_chains} does not contain any dummy atoms, this might not be what you want"
@@ -188,7 +250,7 @@ class SAFEDesign:
                         encoded_fragment = self.safe_encoder.encoder(
                             side_chains,
                             canonical=False,
-                            randomize=True,
+                            randomize=False,
                             constraints=None,
                             allow_empty=True,
                             seed=new_seed,
@@ -202,23 +264,120 @@ class SAFEDesign:
                         if old_slicer is not None:
                             self.safe_encoder.slicer = old_slicer
 
-            prefix = encoded_fragment
-            prefix, suffix = encoded_fragment.rsplit(".", 1)
+            fragments = encoded_fragment.split(".")
 
-            missing_closure = Counter(self.safe_encoder._find_branch_number(prefix))
+            missing_closure = Counter(self.safe_encoder._find_branch_number(encoded_fragment))
             missing_closure = [f"{str(x)}" for x in missing_closure if missing_closure[x] % 2 == 1]
-            word_ids = self.tokenizer.encode(missing_closure, add_special_tokens=False)
-            word_ids = self.tokenizer.encode([suffix], add_special_tokens=False)
-            constraints = [PhrasalConstraint(tkl) for tkl in word_ids]
-            # if not kwargs.get("do_sample"):
-            kwargs["constraints"] = constraints
-            kwargs["num_beams"] = n_samples_per_trial
-            kwargs["how"] = "beam"
-            # kwargs["logits_processor"] = [LinkingLogitProcessor(prefix, self.tokenizer, max_link_tokens=None)]
-            kwargs["early_stopping"] = False
 
-            sequences = self._generate(n_samples=n_samples_per_trial, safe_prefix=prefix, **kwargs)
-            sequences = self._decode_safe(sequences, canonical=True, remove_invalid=sanitize)
+            closure_pos = [
+                m.start() for x in missing_closure for m in re.finditer(x, encoded_fragment)
+            ]
+            fragment_pos = [m.start() for m in re.finditer(r"\.", encoded_fragment)]
+            min_pos = 0
+            while fragment_pos[min_pos] < closure_pos[0] and min_pos < len(fragment_pos):
+                min_pos += 1
+            min_pos += 1
+            max_pos = len(fragment_pos)
+            while fragment_pos[max_pos - 1] > closure_pos[-1] and max_pos > 0:
+                max_pos -= 1
+
+            split_index = rng.randint(min_pos, max_pos)
+            prefix, suffixes = ".".join(fragments[:split_index]), ".".join(fragments[split_index:])
+
+            missing_prefix_closure = Counter(self.safe_encoder._find_branch_number(prefix))
+            missing_suffix_closure = Counter(self.safe_encoder._find_branch_number(suffixes))
+
+            missing_prefix_closure = (
+                ["."] + [x for x in missing_closure if int(x) not in missing_prefix_closure] + ["."]
+            )
+            missing_suffix_closure = (
+                ["."] + [x for x in missing_closure if int(x) not in missing_suffix_closure] + ["."]
+            )
+
+            constraints_ids = []
+            for permutation in itertools.permutations(missing_closure + ["."]):
+                constraints_ids.append(
+                    self.tokenizer.encode(list(permutation), add_special_tokens=False)
+                )
+
+            # prefix_constraints_ids = self.tokenizer.encode(missing_prefix_closure, add_special_tokens=False)
+            # suffix_constraints_ids = self.tokenizer.encode(missing_suffix_closure, add_special_tokens=False)
+
+            # suffix_ids = self.tokenizer.encode([suffixes+self.tokenizer.tokenizer.eos_token], add_special_tokens=False)
+            # prefix_ids = self.tokenizer.encode([prefix], add_special_tokens=False)
+
+            prefix_kwargs = kwargs.copy()
+            suffix_kwargs = prefix_kwargs.copy()
+
+            if is_linking and model_only:
+                for _kwargs in [prefix_kwargs, suffix_kwargs]:
+                    _kwargs.setdefault("how", "beam")
+                    _kwargs.setdefault("num_beams", n_samples_per_trial)
+                    _kwargs.setdefault("do_sample", False)
+
+                prefix_kwargs["constraints"] = []
+                suffix_kwargs["constraints"] = []
+                # prefix_kwargs["constraints"] = [PhrasalConstraint(tkl) for tkl in suffix_constraints_ids]
+                # suffix_kwargs["constraints"] = [PhrasalConstraint(tkl) for tkl in prefix_constraints_ids]
+
+                # we first generate a part of the fragment with for unique constraint that it should contain
+                # the closure required to join something to the suffix.
+                prefix_kwargs["constraints"] += [
+                    DisjunctiveConstraint(tkl) for tkl in constraints_ids
+                ]
+                suffix_kwargs["constraints"] += [
+                    DisjunctiveConstraint(tkl) for tkl in constraints_ids
+                ]
+
+                prefix_sequences = self._generate(
+                    n_samples=n_samples_per_trial, safe_prefix=prefix, **prefix_kwargs
+                )
+                suffix_sequences = self._generate(
+                    n_samples=n_samples_per_trial, safe_prefix=suffixes, **suffix_kwargs
+                )
+
+                prefix_sequences = [
+                    self._find_fragment_cut(x, prefix, missing_prefix_closure[1])
+                    for x in prefix_sequences
+                ]
+                suffix_sequences = [
+                    self._find_fragment_cut(x, suffixes, missing_suffix_closure[1])
+                    for x in suffix_sequences
+                ]
+
+                linkers = [x for x in set(prefix_sequences + suffix_sequences) if x]
+                sequences = [f"{prefix}.{linker}.{suffixes}" for linker in linkers]
+                sequences += self._decode_safe(sequences, canonical=True, remove_invalid=sanitize)
+
+            else:
+                mol_linker_slicer = sf.utils.MolSlicer(
+                    shortest_linker=(not is_linking), require_ring_system=(not is_linking)
+                )
+                prefix_smiles = sf.decode(prefix, remove_dummies=False, as_mol=False)
+                suffix_smiles = sf.decode(suffixes, remove_dummies=False, as_mol=False)
+
+                prefix_sequences = self._generate(
+                    n_samples=n_samples_per_trial, safe_prefix=prefix + ".", **prefix_kwargs
+                )
+                suffix_sequences = self._generate(
+                    n_samples=n_samples_per_trial, safe_prefix=suffixes + ".", **suffix_kwargs
+                )
+
+                prefix_sequences = self._decode_safe(
+                    prefix_sequences, canonical=True, remove_invalid=True
+                )
+                suffix_sequences = self._decode_safe(
+                    suffix_sequences, canonical=True, remove_invalid=True
+                )
+                sequences = self.__mix_sequences(
+                    prefix_sequences,
+                    suffix_sequences,
+                    prefix_smiles,
+                    suffix_smiles,
+                    n_samples_per_trial,
+                    mol_linker_slicer,
+                )
+
             total_sequences.extend(sequences)
 
         # then we should filter out molecules that do not match the requested
@@ -401,6 +560,74 @@ class SAFEDesign:
                 f"After sanitization, {len(total_sequences)} / {n_samples_per_trial} ({len(total_sequences)*100/n_samples_per_trial:.2f} %)  generated molecules are valid !"
             )
         return total_sequences
+
+    def _find_fragment_cut(self, fragment: str, prefix_constraint: str, branching_id: str):
+        """
+        Perform a cut on the input fragment in such a way that it could be joined with another fragments sharing the same
+        branching id.
+
+        Args:
+            fragment: fragment to cut
+            prefix_constraint: prefix constraint to use
+            branching_id: branching id to use
+        """
+        prefix_constraint = prefix_constraint.rstrip(".") + "."
+        fragment = (
+            fragment.replace(prefix_constraint, "", 1)
+            if fragment.startswith(prefix_constraint)
+            else fragment
+        )
+        fragments = fragment.split(".")
+        i = 0
+        for x in fragments:
+            if branching_id in x:
+                i += 1
+                break
+        return ".".join(fragments[:i])
+
+    def __mix_sequences(
+        self,
+        prefix_sequences: List[str],
+        suffix_sequences: List[str],
+        prefix: str,
+        suffix: str,
+        n_samples: int,
+        mol_linker_slicer,
+    ):
+        """Use generated prefix and suffix sequences to form new molecules
+        that will be the merging of both. This is the two step scaffold morphing and linker generation scheme
+        Args:
+            prefix_sequences: list of prefix sequences
+            suffix_sequences: list of suffix sequences
+            prefix: decoded smiles of the prefix
+            suffix: decoded smiles of the suffix
+            n_samples: number of samples to generate
+        """
+        prefix_linkers = []
+        suffix_linkers = []
+        prefix_query = dm.from_smarts(prefix)
+        suffix_query = dm.from_smarts(suffix)
+
+        for x in prefix_sequences:
+            with suppress(Exception):
+                x = dm.to_mol(x)
+                out = mol_linker_slicer(x, prefix_query)
+                prefix_linkers.append(out[1])
+        for x in suffix_sequences:
+            with suppress(Exception):
+                x = dm.to_mol(x)
+                out = mol_linker_slicer(x, suffix_query)
+                suffix_linkers.append(out[1])
+        n_linked = 0
+        linked = []
+        linkers = prefix_linkers + suffix_linkers
+        linkers = [x for x in linkers if x is not None]
+        for n_linked, linker in enumerate(linkers):
+            linked.extend(mol_linker_slicer.link_fragments(linker, prefix, suffix))
+            if n_linked > n_samples:
+                break
+            linked = [x for x in linked if x]
+        return linked[:n_samples]
 
     def _decode_safe(
         self, sequences: List[str], canonical: bool = True, remove_invalid: bool = False

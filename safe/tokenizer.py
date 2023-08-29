@@ -323,6 +323,7 @@ class SAFETokenizer:
 
         new_ids_list = []
         for ids in old_id_list:
+            new_ids = ids
             if not ignore_stops:
                 new_ids = []
                 # if first tokens are stop, we just remove it
@@ -340,7 +341,7 @@ class SAFETokenizer:
             new_ids_list.append(new_ids)
         if len(new_ids_list) == 1:
             return self.tokenizer.decode(
-                list(new_ids_list), skip_special_tokens=skip_special_tokens
+                list(new_ids_list[0]), skip_special_tokens=skip_special_tokens
             )
         return self.tokenizer.decode_batch(
             list(new_ids_list), skip_special_tokens=skip_special_tokens

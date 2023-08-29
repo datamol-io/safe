@@ -12,16 +12,18 @@ from itertools import compress
 from loguru import logger
 from networkx.utils import py_random_state
 
+from rdkit import Chem
 from rdkit.Chem import EditableMol, Atom
 from rdkit.Chem.rdmolops import ReplaceCore
 from rdkit.Chem.rdmolops import AdjustQueryParameters
 from rdkit.Chem.rdmolops import AdjustQueryProperties
 from rdkit.Chem.rdChemReactions import ReactionFromSmarts
 
-import networkx as nx
-import numpy as np
+import itertools
 import random
 import re
+import numpy as np
+import networkx as nx
 import datamol as dm
 import safe as sf
 
@@ -38,6 +40,251 @@ _SMILES_ATTACHMENT_POINTS = [
     # parse attachment in optionally mapped isotope smarts atoms. eg. [1*:3]
     r"\[(\d*){0}:?(\d*)\]".format(_SMILES_ATTACHMENT_POINT_TOKEN),
 ]
+
+
+class MolSlicer:
+    """Slice a molecule into head-linker-tail"""
+
+    BOND_SPLITTERS = [
+        # two atoms connected by a non ring single bond, one of each is not in a ring and at least two heavy neighbor
+        "[R:1]-&!@[!R;!D1:2]",
+        # two atoms in different rings linked by a non-ring single bond
+        "[R:1]-&!@[R:2]",
+    ]
+    _BOND_BUFFER = 1  # buffer around substructure match size.
+    MAX_CUTS = 2  # maximum number of cuts. Here we need two cuts for head-linker-tail.
+
+    _MERGING_RXN = dm.reactions.rxn_from_smarts(
+        "[#0][*:1].[#0][*:4].([#0][*:2].[#0][*:3])>>([*:1][*:2].[*:3][*:4])"
+    )
+
+    def __init__(
+        self,
+        shortest_linker: bool = False,
+        min_linker_size: int = 0,
+        require_ring_system: bool = True,
+        verbose: bool = False,
+    ):
+        """
+        Constructor of bond slicer.
+
+        Args:
+            shortest_linker: whether to consider longuest or shortest linker.
+                Does not have any effect when expected_head group is provided during splitting
+            min_linker_size: minimum linker size
+            require_ring_system: whether all fragment needs to have a ring system
+            verbose: whether to allow verbosity in logging
+        """
+
+        self.bond_splitters = [dm.from_smarts(x) for x in self.BOND_SPLITTERS]
+        self.shortest_linker = shortest_linker
+        self.min_linker_size = min_linker_size
+        self.require_ring_system = require_ring_system
+        self.verbose = verbose
+
+    def get_ring_system(self, mol: dm.Mol):
+        """Get the list of ring system from a molecule
+
+        Args:
+            mol: input molecule for which we are computing the ring system
+        """
+        mol.UpdatePropertyCache()
+        ri = mol.GetRingInfo()
+        systems = []
+        for ring in ri.AtomRings():
+            ring_atoms = set(ring)
+            cur_system = []  # keep a track of ring system
+            for system in systems:
+                if len(ring_atoms.intersection(system)) > 0:
+                    ring_atoms = ring_atoms.union(system)  # merge ring system that overlap
+                else:
+                    cur_system.append(system)
+            cur_system.append(ring_atoms)
+            systems = cur_system
+        return systems
+
+    def _bond_selection_from_max_cuts(self, bond_list: List[int], dist_mat: np.ndarray):
+        """Select bonds based on maximum number of cuts allowed"""
+        # for now we are just implementing to 2 max cuts algorithms
+        if self.MAX_CUTS != 2:
+            raise ValueError(f"Only MAX_CUTS=2 is supported, got {self.MAX_CUTS}")
+
+        bond_pdist = np.full((len(bond_list), len(bond_list)), -1)
+        for i in range(len(bond_list)):
+            for j in range(i, len(bond_list)):
+                # we get the minimum topological distance between bond to cut
+                bond_pdist[i, j] = bond_pdist[j, i] = min(
+                    [dist_mat[a1, a2] for a1, a2 in itertools.product(bond_list[i], bond_list[j])]
+                )
+
+        masked_bond_pdist = np.ma.masked_less_equal(bond_pdist, self.min_linker_size)
+
+        if self.shortest_linker:
+            return np.unravel_index(np.ma.argmin(masked_bond_pdist), bond_pdist.shape)
+        return np.unravel_index(np.ma.argmax(masked_bond_pdist), bond_pdist.shape)
+
+    def _get_bonds_to_cut(self, mol: dm.Mol):
+        """Get possible bond to cuts
+
+        Args:
+            mol: input molecule
+        """
+        # use this if you want to enumerate yourself the possible cuts
+
+        ring_systems = self.get_ring_system(mol)
+        candidate_bonds = []
+        ring_query = Chem.rdqueries.IsInRingQueryAtom()
+
+        for query in self.bond_splitters:
+            bonds = mol.GetSubstructMatches(query, uniquify=True)
+            cur_unique_bonds = [set(cbond) for cbond in candidate_bonds]
+            # do not accept bonds part of the same ring system or already known
+            for b in bonds:
+                bond_id = mol.GetBondBetweenAtoms(*b).GetIdx()
+                bond_cut = Chem.GetMolFrags(
+                    Chem.FragmentOnBonds(mol, [bond_id], addDummies=False), asMols=True
+                )
+                can_add = not self.require_ring_system or all(
+                    len(frag.GetAtomsMatchingQuery(ring_query)) > 0 for frag in bond_cut
+                )
+                if can_add and not (
+                    set(b) in cur_unique_bonds or any(x.issuperset(set(b)) for x in ring_systems)
+                ):
+                    candidate_bonds.append(b)
+        return candidate_bonds
+
+    def _fragment_mol(self, mol: dm.Mol, bonds: List[dm.Bond]):
+        """Fragment molecules on bonds and return head, linker, tail combination
+
+        Args:
+            mol: input molecule
+            bonds: list of bonds to cut
+        """
+        tmp = Chem.rdmolops.FragmentOnBonds(mol, [b.GetIdx() for b in bonds])
+        _frags = list(Chem.GetMolFrags(tmp, asMols=True))
+        # linker is the one with 2 dummy atoms
+        linker_pos = 0
+        for pos, _frag in enumerate(_frags):
+            if sum([at.GetSymbol() == "*" for at in _frag.GetAtoms()]) == 2:
+                linker_pos = pos
+                break
+        linker = _frags.pop(linker_pos)
+        head, tail = _frags
+        return (head, linker, tail)
+
+    def _compute_linker_score(self, linker: dm.Mol):
+        """Compute the score of a linker to help select between linkers"""
+
+        # we need to take into account
+        # case where we require the linker to have a ring system
+        # case where we want the linker to be longuest or shortest
+
+        # find shortest path
+        attach1, attach2, *_ = [at.GetIdx() for at in linker.GetAtoms() if at.GetSymbol() == "*"]
+        score = len(Chem.rdmolops.GetShortestPath(linker, attach1, attach2))
+        ring_query = Chem.rdqueries.IsInRingQueryAtom()
+        linker_ring_count = len(linker.GetAtomsMatchingQuery(ring_query))
+        if self.require_ring_system:
+            score *= int(linker_ring_count > 0)
+        if score == 0:
+            return float("inf")
+        if not self.shortest_linker:
+            score = 1 / score
+        return score
+
+    def __call__(self, mol: Union[dm.Mol, str], expected_head: Union[dm.Mol, str] = None):
+        """Perform slicing of the input molecule
+
+        Args:
+            mol: input molecule
+            expected_head: substructure that should be part of the head.
+                The small fragment containing this substructure would be kept as head
+        """
+
+        mol = dm.to_mol(mol)
+        # remove salt and solution
+        mol = dm.keep_largest_fragment(mol)
+        Chem.rdDepictor.Compute2DCoords(mol)
+        dist_mat = Chem.rdmolops.GetDistanceMatrix(mol)
+
+        if expected_head is not None:
+            if isinstance(expected_head, str):
+                expected_head = dm.to_mol(expected_head)
+            if not mol.HasSubstructMatch(expected_head):
+                if self.verbose:
+                    logger.info(
+                        "Expected head was provided, but does not match molecules. It will be ignored"
+                    )
+                expected_head = None
+
+        candidate_bonds = self._get_bonds_to_cut(mol)
+
+        # we have all the candidate bonds we can cut
+        # now we need to pick the most plausible bonds
+        selected_bonds = [mol.GetBondBetweenAtoms(a1, a2) for (a1, a2) in candidate_bonds]
+
+        # CASE 1: no bond to cut ==> only head
+        if len(selected_bonds) == 0:
+            return (mol, None, None)
+
+        # CASE 2: only one bond ==> linker is empty
+        if len(selected_bonds) == 1:
+            # there is not linker
+            tmp = Chem.rdmolops.FragmentOnBonds(mol, [b.GetIdx() for b in selected_bonds])
+            head, tail = Chem.GetMolFrags(tmp, asMols=True)
+            return (head, None, tail)
+
+        # CASE 3a: we select the most plausible bond to cut on ourselves
+        if expected_head is None:
+            choice = self._bond_selection_from_max_cuts(candidate_bonds, dist_mat)
+            selected_bonds = [selected_bonds[c] for c in choice]
+            return self._fragment_mol(mol, selected_bonds)
+
+        # CASE 3b: slightly more complex case where we want the head to be the smallest graph containing the
+        # provided substructure
+        bond_combination = list(itertools.combinations(selected_bonds, self.MAX_CUTS))
+        bond_score = float("inf")
+        linker_score = float("inf")
+        head, linker, tail = (None, None, None)
+        for split_bonds in bond_combination:
+            cur_head, cur_linker, cur_tail = self._fragment_mol(mol, split_bonds)
+            # head can also be tail
+            head_match = cur_head.GetSubstructMatch(expected_head)
+            tail_match = cur_tail.GetSubstructMatch(expected_head)
+            if not head_match and not tail_match:
+                continue
+            if not head_match and tail_match:
+                cur_head, cur_tail = cur_tail, cur_head
+            cur_bond_score = cur_head.GetNumHeavyAtoms()
+            # compute linker score
+            cur_linker_score = self._compute_linker_score(cur_linker)
+            if (cur_bond_score < bond_score) or (
+                cur_bond_score < self._BOND_BUFFER + bond_score and cur_linker_score < linker_score
+            ):
+                head, linker, tail = cur_head, cur_linker, cur_tail
+                bond_score = cur_bond_score
+                linker_score = cur_linker_score
+
+        return (head, linker, tail)
+
+    @classmethod
+    def link_fragments(
+        cls, linker: Union[dm.Mol, str], head: Union[dm.Mol, str], tail: Union[dm.Mol, str]
+    ):
+        """Link fragments together using the provided linker
+
+        Args:
+            linker: linker to use
+            head: head fragment
+            tail: tail fragment
+        """
+        if isinstance(linker, dm.Mol):
+            linker = dm.to_smiles(linker)
+        linker = standardize_attach(linker)
+        reactants = [dm.to_mol(head), dm.to_mol(tail), dm.to_mol(linker)]
+        return dm.reactions.apply_reaction(
+            cls._MERGING_RXN, reactants, as_smiles=True, sanitize=True, product_index=0
+        )
 
 
 @contextmanager
