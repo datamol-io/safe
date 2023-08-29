@@ -420,7 +420,7 @@ class SAFEDesign:
             sanitize=sanitize,
             do_not_fragment_further=do_not_fragment_further,
             random_seed=random_seed,
-            add_dot=False,
+            add_dot=True,
             **kwargs,
         )
 
