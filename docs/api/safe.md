@@ -26,4 +26,4 @@
 
 ## Utils
 
-::: safe.trainer.safe_utils
+::: safe.utils
