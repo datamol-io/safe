@@ -5,7 +5,7 @@
         members:
             - encode
             - decode
-            - SafeConverter
+            - SAFEConverter
         show_root_heading: false
 
 
@@ -19,3 +19,11 @@
             - SAFESplitter
             - SAFETokenizer
         show_root_heading: false
+
+
+
+---
+
+## Utils
+
+::: safe.trainer.safe_utils

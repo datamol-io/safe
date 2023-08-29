@@ -1,2 +1,2 @@
-from . import safe_utils
+from .. import utils
 from . import model

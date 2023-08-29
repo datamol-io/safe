@@ -53,5 +53,4 @@ The input config file for training a `SAFE` model is very similar to the GPT2 co
 ## Data Utils
 ::: safe.trainer.data_utils
 
-::: safe.trainer.safe_utils
 
