@@ -69,3 +69,6 @@ site/
 data/
 output/
 wandb/
+oracle/
+expts/models/
+expts/dev-data/

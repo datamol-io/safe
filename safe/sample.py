@@ -12,6 +12,7 @@ from transformers import GenerationConfig
 from safe.trainer.model import SAFEDoubleHeadsModel
 from safe.tokenizer import SAFETokenizer
 from loguru import logger
+from tqdm.auto import tqdm
 
 import itertools
 import os
@@ -237,7 +238,7 @@ class SAFEDesign:
 
         total_sequences = []
         n_trials = n_trials or 1
-        for _ in range(n_trials):
+        for _ in tqdm(range(n_trials), disable=(not self.verbose), leave=False):
             with dm.without_rdkit_log():
                 context_mng = (
                     sf.utils.attr_as(self.safe_encoder, "slicer", None)
@@ -462,7 +463,7 @@ class SAFEDesign:
         # now also get the single openining of an attachment point
         total_sequences = []
         n_trials = n_trials or 1
-        for _ in range(n_trials):
+        for _ in tqdm(range(n_trials), disable=(not self.verbose), leave=False):
             core = cores[_ % len(cores)]
             old_verbose = self.verbose
             try:
@@ -536,7 +537,13 @@ class SAFEDesign:
                 )
         return total_sequences
 
-    def de_novo_generation(self, n_samples_per_trial: int = 10, sanitize: bool = False, **kwargs):
+    def de_novo_generation(
+        self,
+        n_samples_per_trial: int = 10,
+        sanitize: bool = False,
+        n_trials: Optional[int] = None,
+        **kwargs,
+    ):
         """Perform de novo generation using the pretrained SAFE model.
 
         De novo generation is equivalent to not having any prefix.
@@ -544,6 +551,7 @@ class SAFEDesign:
         Args:
             n_samples_per_trial: number of new molecules to generate
             sanitize: whether to perform sanitization, aka, perform control to ensure what is asked is what is returned
+            n_trials: number of randomization to perform
             kwargs: any argument to provide to the underlying generation function
         """
         # EN: lazy programming much ?
@@ -553,11 +561,18 @@ class SAFEDesign:
                 "I don't think you know what you are doing ... for de novo generation `do_sample=True` or `how='random'` is expected !"
             )
 
-        sequences = self._generate(n_samples=n_samples_per_trial, **kwargs)
-        total_sequences = self._decode_safe(sequences, canonical=True, remove_invalid=sanitize)
+        total_sequences = []
+        n_trials = n_trials or 1
+        for _ in tqdm(range(n_trials), disable=(not self.verbose), leave=False):
+            sequences = self._generate(n_samples=n_samples_per_trial, **kwargs)
+            total_sequences.extend(sequences)
+        total_sequences = self._decode_safe(
+            total_sequences, canonical=True, remove_invalid=sanitize
+        )
+
         if sanitize and self.verbose:
             logger.info(
-                f"After sanitization, {len(total_sequences)} / {n_samples_per_trial} ({len(total_sequences)*100/n_samples_per_trial:.2f} %)  generated molecules are valid !"
+                f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %) generated molecules are valid !"
             )
         return total_sequences
 
@@ -701,7 +716,7 @@ class SAFEDesign:
 
         total_sequences = []
         n_trials = n_trials or 1
-        for _ in range(n_trials):
+        for _ in tqdm(range(n_trials), disable=(not self.verbose), leave=False):
             if is_safe:
                 encoded_fragment = fragment
             else:
