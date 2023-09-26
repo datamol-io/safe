@@ -72,15 +72,19 @@ class SAFEDesign:
         self.safe_encoder = safe_encoder or sf.SAFEConverter()
 
     @classmethod
-    def load_default(cls, verbose: bool = False) -> "SAFEDesign":
+    def load_default(cls, verbose: bool = False, model_dir: Optional[str] = None) -> "SAFEDesign":
         """Load default SAFEGenerator model
 
         Args:
             verbose: whether to print out logging information during generation
+            model_dir: Optional path to model folder to use instead of the default one.
+                If provided the tokenizer should be in the model_dir named as `tokenizer.json`
         """
-        model = SAFEDoubleHeadsModel.from_pretrained(cls._DEFAULT_MODEL_PATH)
-        tokenizer = SAFETokenizer.load(os.path.join(cls._DEFAULT_MODEL_PATH, "tokenizer.json"))
-        gen_config = GenerationConfig.from_pretrained(cls._DEFAULT_MODEL_PATH)
+        if model_dir is None or not model_dir:
+            model_dir = cls._DEFAULT_MODEL_PATH
+        model = SAFEDoubleHeadsModel.from_pretrained(model_dir)
+        tokenizer = SAFETokenizer.load(os.path.join(model_dir, "tokenizer.json"))
+        gen_config = GenerationConfig.from_pretrained(model_dir)
         return cls(model=model, tokenizer=tokenizer, generation_config=gen_config, verbose=verbose)
 
     def linker_generation(
