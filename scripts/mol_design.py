@@ -3,22 +3,25 @@ from typing_extensions import Annotated
 
 import typer
 
+import os
 import torch
 import safe as sf
-import datamol as dm
 import numpy as np
 import pandas as pd
+import datamol as dm
+import itertools
 import wandb
+import fsspec
 
-
-from tqdm.auto import tqdm
 from enum import Enum
+from loguru import logger
+from tqdm.auto import tqdm
 from safe import SAFEDesign
 from tdc import Oracle
 from tdc import Evaluator
-from random import choices
 from trl import AutoModelForCausalLMWithValueHead, PPOConfig, PPOTrainer, create_reference_model
 
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
 app = typer.Typer()
 
@@ -26,8 +29,8 @@ app = typer.Typer()
 class DesignMode(str, Enum):
     denovo = "denovo"
     superstructure = "superstructure"
-    decoration = "decoration"
-    motif_extension = "motif_extension"
+    scaffold = "scaffold"
+    motif = "motif"
     morphing = "morphing"
     linker = "linker"
 
@@ -35,8 +38,66 @@ class DesignMode(str, Enum):
 class DesignObjective(str, Enum):
     clogp = "clogp"
     qed = "qed"
-    sas = "sa"
-    drd2 = "drd2"
+    sas = "sas"
+    tpsa = "tpsa"
+    mw = "mw"
+    cns = "cns"
+
+
+class TargetedReward:
+    """Reward function for goal directed design
+
+    reward = 1.0 / (1.0 + alpha * distance)
+    """
+
+    def __init__(self, objective="clogp", target=2, alpha=0.5):
+        self.obj = objective
+        self.target = target
+        self.alpha = alpha
+
+    @staticmethod
+    def _fail_silently(fn, *arg, **kwargs):
+        """Remains silent when the input function fails and return None instead"""
+        try:
+            return fn(*arg, **kwargs)
+        except Exception:
+            return None
+
+    def __call__(self, smiles):
+        if not isinstance(smiles, (list, tuple, np.ndarray)):
+            smiles = [smiles]
+        n_input = len(smiles)
+        mols = [TargetedReward._fail_silently(dm.to_mol, x) for x in smiles]
+        default_scores = np.zeros(len(mols))
+        valid = np.array([v is not None for v in mols])
+        if np.sum(valid) > 0:
+            valid_mol = list(itertools.compress(mols, valid))
+            out = self._metric(valid_mol)
+            default_scores[valid] = out
+        if n_input > 1:
+            return default_scores.astype(float)
+        return float(default_scores.flat[0])
+
+    def _metric(self, mols):
+        """Compute underlying metric objective for a set of smiles"""
+        if self.obj == "cns":
+            out = None
+        else:
+            if self.obj == "clogp":
+                out = [dm.descriptors.clogp(x) for x in mols]
+            elif self.obj == "mw":
+                out = [dm.descriptors.mw(x) for x in mols]
+            elif self.obj == "sas":
+                out = [dm.descriptors.sas(x) for x in mols]
+            elif self.obj == "tpsa":
+                out = [dm.descriptors.tpsa(x) for x in mols]
+            elif self.obj == "qed":
+                out = [dm.descriptors.qed(x) for x in mols]
+            else:
+                raise ValueError("Unknown objective")
+        out = np.asarray(out)
+        dist = np.abs(out - self.target)
+        return 1.0 / (1.0 + self.alpha * dist)
 
 
 def train(
@@ -49,29 +110,42 @@ def train(
     n_episodes=100,
     batch_size=32,
 ):
+    safe_encoder = sf.SAFEConverter()
     model_ref = create_reference_model(model)
     config = PPOConfig(**ppo_config)
 
     diversity_evaluator = Evaluator(name="Diversity")
-    Evaluator(name="Validity")
     uniqueness_evaluator = Evaluator(name="Uniqueness")
 
     ppo_trainer = PPOTrainer(config, model, model_ref, tokenizer)
-    if prefix is None:
-        prefix = tokenizer.bos_token
-
-    if isinstance(prefix, str):
-        prefix = [prefix]
-
-    if len(prefix) < batch_size:
-        prefix = choices(prefix, k=batch_size)
 
     for _ in tqdm(range(n_episodes)):
+        fragment = ""
+        if isinstance(prefix, str):
+            fragment = safe_encoder.encoder(
+                prefix,
+                canonical=False,
+                randomize=True,
+                constraints=None,
+                allow_empty=True,
+            )
+            fragment = fragment.rstrip(".") + "."
+
+        if isinstance(fragment, str):
+            fragment = [fragment]
+
+        batch_size = ppo_config.get("batch_size", 32)
+
+        if len(fragment) < batch_size:
+            fragment = np.random.choice(fragment, size=batch_size)
+
         game_data = {}
-        game_data["query"] = prefix
-        batch = tokenizer(prefix, return_tensors="pt", add_special_tokens=False).to(
-            model.pretrained_model.device
-        )
+        game_data["query"] = fragment
+        batch = tokenizer(
+            [tokenizer.bos_token + x for x in fragment],
+            return_tensors="pt",
+            add_special_tokens=False,
+        ).to(model.pretrained_model.device)
         query_tensor = batch["input_ids"]
         response_tensor = ppo_trainer.generate(
             list(query_tensor), return_prompt=False, **generation_kwargs
@@ -111,18 +185,20 @@ def train(
 @app.command()
 def sample(
     checkpoint: Annotated[Optional[str], typer.Option()] = None,
-    n_samples: Annotated[int, typer.Option(default=100)] = 1000,
-    n_trials: Annotated[int, typer.Option(default=1)] = 1,
-    sanitize: Annotated[bool, typer.Option(default=True)] = True,
-    allow_further_decomposition: Annotated[bool, typer.Option(default=False)] = False,
+    n_samples: Annotated[int, typer.Option()] = 1000,
+    n_trials: Annotated[int, typer.Option()] = 1,
+    sanitize: Annotated[bool, typer.Option()] = True,
+    allow_further_decomposition: Annotated[bool, typer.Option()] = False,
     mode: Annotated[DesignMode, typer.Option(case_sensitive=False)] = DesignMode.denovo,
     inputs: Annotated[str, typer.Option()] = None,
     seed: Annotated[int, typer.Option()] = 42,
+    max_n: Annotated[int, typer.Option()] = -1,
     outfile: Annotated[str, typer.Option(default=...)] = None,
 ):
     """Sample molecule using SAFEDesign"""
 
-    designer = SAFEDesign.load_default(verbose=False, model_dir=checkpoint)
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    designer = SAFEDesign.load_default(verbose=False, model_dir=checkpoint, device=device)
     generate_params = {
         "n_samples_per_trial": n_samples,
         "n_trials": n_trials,
@@ -131,66 +207,94 @@ def sample(
         "random_seed": seed,
     }
 
+    datas = []
     if mode.value == "denovo":
         generated = designer.de_novo_generation(
             n_samples_per_trial=n_samples, n_trials=n_trials, sanitize=sanitize
         )
-    elif mode.value == "decoration":
-        generated = designer.scaffold_decoration(scaffold=inputs, **generate_params)
-    elif mode.value == "superstructure":
-        generated = designer.super_structure(
-            core=inputs, attachment_point_depth=3, **generate_params
-        )
-    elif mode.value == "motif_extension":
-        generated = designer.motif_extension(
-            motif=inputs, min_length=len(inputs), **generate_params
-        )
-    elif mode.value == "morphing":
-        generated = designer.scaffold_morphing(side_chains=inputs, **generate_params)
-    elif mode.value == "linker":
-        generated = designer.linker_generation(*inputs.split("."), **generate_params)
+        data = {"smiles": generated}
+        data = pd.DataFrame(generated)
+        data["mode"] = mode.value
+        datas.append(data)
 
-    data = {"smiles": generated}
-    data = pd.DataFrame(generated)
-    if inputs is not None:
-        data["inputs"] = inputs
-    data.to_csv(outfile, index=False)
+    else:
+        inputs_df = pd.read_csv(inputs)
+        input_list = inputs_df[mode.value].tolist()
+        if max_n is not None and max_n > 0:
+            input_list = input_list[:max_n]
+        for cur_input in tqdm(input_list):
+            try:
+                if mode.value == "scaffold":
+                    generated = designer.scaffold_decoration(scaffold=cur_input, **generate_params)
+                elif mode.value == "superstructure":
+                    generated = designer.super_structure(
+                        core=cur_input, attachment_point_depth=3, **generate_params
+                    )
+                elif mode.value == "motif":
+                    generated = designer.motif_extension(
+                        motif=cur_input, min_length=len(inputs), **generate_params
+                    )
+                elif mode.value == "morphing":
+                    generated = designer.scaffold_morphing(side_chains=cur_input, **generate_params)
+                elif mode.value == "linker":
+                    generated = designer.linker_generation(*cur_input.split("."), **generate_params)
+
+                data = {"smiles": generated}
+                data = pd.DataFrame(generated)
+                if cur_input is not None:
+                    data["inputs"] = cur_input
+                data["mode"] = mode.value
+                datas.append(data)
+            except Exception as e:
+                logger.exception(e)
+    if len(datas) > 0:
+        datas = pd.concat(datas, ignore_index=True)
+        datas.to_csv(outfile, index=False)
 
 
 @app.command()
 def optim(
     checkpoint: Annotated[Optional[str], typer.Option()] = None,
-    n_samples: Annotated[int, typer.Option(default=100)] = 100,
-    n_trials: Annotated[int, typer.Option(default=1)] = 1,
-    sanitize: Annotated[bool, typer.Option(default=True)] = True,
-    allow_further_decomposition: Annotated[bool, typer.Option(default=False)] = False,
+    n_samples: Annotated[int, typer.Option()] = 500,
+    n_trials: Annotated[int, typer.Option()] = 2,
+    sanitize: Annotated[bool, typer.Option()] = True,
+    allow_further_decomposition: Annotated[bool, typer.Option()] = True,
     seed: Annotated[int, typer.Option()] = 42,
     inputs: Annotated[str, typer.Option()] = None,
-    objective: Annotated[
-        DesignObjective, typer.Option(case_sensitive=False)
-    ] = DesignObjective.denovo,
-    batch_size: Annotated[int, typer.Option(default=32)] = 32,
-    n_episodes: Annotated[int, typer.Option(default=100)] = 100,
-    max_new_tokens: Annotated[int, typer.Option(default=100)] = 100,
+    objective: Annotated[DesignObjective, typer.Option(case_sensitive=False)] = DesignObjective.mw,
+    batch_size: Annotated[int, typer.Option()] = 100,
+    n_episodes: Annotated[int, typer.Option()] = 100,
+    target: Annotated[int, typer.Option()] = 350,
+    alpha: Annotated[float, typer.Option()] = 0.5,
+    learning_rate: Annotated[float, typer.Option()] = 5e-5,
+    max_new_tokens: Annotated[int, typer.Option()] = 150,
     name: Annotated[str, typer.Option(default=...)] = None,
-    outfile: Annotated[str, typer.Option(default=...)] = None,
+    outdir: Annotated[str, typer.Option(default=...)] = None,
 ):
     """Perform optimization under a given objective"""
-
-    designer = SAFEDesign.load_default(verbose=False, model_dir=checkpoint)
-    oracle = Oracle(name=objective.value)
-
+    print(torch.cuda.is_available())
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    designer = SAFEDesign.load_default(verbose=False, model_dir=checkpoint, device=device)
+    reward_fn = TargetedReward(objective=objective.value, target=target, alpha=alpha)
     safe_tokenizer = designer.tokenizer
     tokenizer = safe_tokenizer.get_pretrained()
     model = AutoModelForCausalLMWithValueHead(designer.model)
     model.is_peft_model = False
 
+    if inputs == "None":
+        inputs = None
     if name is None:
         name = f"safe-{objective.value}"
 
-    ppo_config = {"batch_size": batch_size, "log_with": "wandb", "model_name": name}
+    ppo_config = {
+        "batch_size": batch_size,
+        "log_with": "wandb",
+        "model_name": "GPT",
+        "tracker_project_name": name,
+        "learning_rate": learning_rate,
+    }
+
     generation_kwargs = {
-        "min_length": -1,
         "top_k": 0.0,
         "top_p": 1.0,
         "do_sample": True,
@@ -206,8 +310,8 @@ def optim(
         generation_kwargs,
         model,
         tokenizer,
-        oracle,
-        prefix=inputs,
+        reward_fn,
+        prefix=inputs or None,
         n_episodes=n_episodes,
         batch_size=batch_size,
     )
@@ -215,7 +319,7 @@ def optim(
     designer.model = trained_model
 
     generate_params = {"n_samples_per_trial": n_samples, "n_trials": n_trials, "sanitize": sanitize}
-    if inputs is not None:
+    if inputs:
         generated = designer.scaffold_decoration(
             scaffold=inputs,
             do_not_fragment_further=(not allow_further_decomposition),
@@ -229,4 +333,11 @@ def optim(
     data = pd.DataFrame(generated)
     if inputs is not None:
         data["inputs"] = inputs
-    data.to_csv(outfile, index=False)
+
+    with fsspec.open(os.path.join(outdir, f"data-{name}.csv"), "w", auto_mkdir=True) as IN:
+        data.to_csv(IN, index=False)
+    trainer.save_pretrained(outdir)
+
+
+if __name__ == "__main__":
+    app()
