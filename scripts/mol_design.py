@@ -54,6 +54,11 @@ class TargetedReward:
         self.obj = objective
         self.target = target
         self.alpha = alpha
+        self.cns_predictor = None
+        if self.obj == "cns":
+            import vdmpk.pka
+
+            self.cns_predictor = vdmpk.pka.PkaPredictor.from_ada()
 
     @staticmethod
     def _fail_silently(fn, *arg, **kwargs):
@@ -78,23 +83,41 @@ class TargetedReward:
             return default_scores.astype(float)
         return float(default_scores.flat[0])
 
+    def _compute_cns(self, mols):
+        out = []
+        for mol in mols:
+            try:
+                results = self.cns_predictor.predict_pka(
+                    mol=mol,
+                    return_all_pka_values=False,
+                    return_states=False,
+                    return_mols=False,
+                    return_clogd=False,
+                    return_cns_score=True,
+                    clogd_ph=7.4,
+                    clogp=None,
+                )
+                out.append(results["mpo_score"])
+            except:
+                out.append(-1)
+        return np.asarray(out)
+
     def _metric(self, mols):
         """Compute underlying metric objective for a set of smiles"""
         if self.obj == "cns":
-            out = None
+            return self._compute_cns(mols)
+        if self.obj == "clogp":
+            out = [dm.descriptors.clogp(x) for x in mols]
+        elif self.obj == "mw":
+            out = [dm.descriptors.mw(x) for x in mols]
+        elif self.obj == "sas":
+            out = [dm.descriptors.sas(x) for x in mols]
+        elif self.obj == "tpsa":
+            out = [dm.descriptors.tpsa(x) for x in mols]
+        elif self.obj == "qed":
+            out = [dm.descriptors.qed(x) for x in mols]
         else:
-            if self.obj == "clogp":
-                out = [dm.descriptors.clogp(x) for x in mols]
-            elif self.obj == "mw":
-                out = [dm.descriptors.mw(x) for x in mols]
-            elif self.obj == "sas":
-                out = [dm.descriptors.sas(x) for x in mols]
-            elif self.obj == "tpsa":
-                out = [dm.descriptors.tpsa(x) for x in mols]
-            elif self.obj == "qed":
-                out = [dm.descriptors.qed(x) for x in mols]
-            else:
-                raise ValueError("Unknown objective")
+            raise ValueError("Unknown objective")
         out = np.asarray(out)
         dist = np.abs(out - self.target)
         return 1.0 / (1.0 + self.alpha * dist)
@@ -148,7 +171,7 @@ def train(
         ).to(model.pretrained_model.device)
         query_tensor = batch["input_ids"]
         response_tensor = ppo_trainer.generate(
-            list(query_tensor), return_prompt=False, **generation_kwargs
+            list(query_tensor), return_prompt=True, **generation_kwargs
         )
         decoded_safe_mols = tokenizer.batch_decode(response_tensor, skip_special_tokens=True)
 
@@ -166,12 +189,15 @@ def train(
         ]
 
         game_data["response"] = decoded_safe_mols
-        valid_position, valid_smiles = zip(
-            *[(i, x) for i, x in enumerate(decoded_smiles) if x is not None]
-        )
-        batch_reward = oracle(list(valid_smiles))
         rewards = np.zeros(len(decoded_smiles))
-        rewards[np.asarray(valid_position)] = batch_reward
+        try:
+            valid_position, valid_smiles = zip(
+                *[(i, x) for i, x in enumerate(decoded_smiles) if x is not None]
+            )
+            batch_reward = oracle(list(valid_smiles))
+            rewards[np.asarray(valid_position)] = batch_reward
+        except Exception as e:
+            logger.error(e)
         rewards = torch.from_numpy(rewards).to(device=model.pretrained_model.device)
         rewards = list(rewards)
         stats = ppo_trainer.step(list(query_tensor), list(response_tensor), rewards)
@@ -261,6 +287,7 @@ def optim(
     allow_further_decomposition: Annotated[bool, typer.Option()] = True,
     seed: Annotated[int, typer.Option()] = 42,
     inputs: Annotated[str, typer.Option()] = None,
+    task_id: Annotated[int, typer.Option()] = None,
     objective: Annotated[DesignObjective, typer.Option(case_sensitive=False)] = DesignObjective.mw,
     batch_size: Annotated[int, typer.Option()] = 100,
     n_episodes: Annotated[int, typer.Option()] = 100,
@@ -272,15 +299,36 @@ def optim(
     outdir: Annotated[str, typer.Option(default=...)] = None,
 ):
     """Perform optimization under a given objective"""
-    print(torch.cuda.is_available())
     device = "cuda" if torch.cuda.is_available() else "cpu"
     designer = SAFEDesign.load_default(verbose=False, model_dir=checkpoint, device=device)
-    reward_fn = TargetedReward(objective=objective.value, target=target, alpha=alpha)
+
     safe_tokenizer = designer.tokenizer
     tokenizer = safe_tokenizer.get_pretrained()
     model = AutoModelForCausalLMWithValueHead(designer.model)
     model.is_peft_model = False
-
+    TASKS = [
+        ("mw", 350),
+        ("mw", 400),
+        ("mw", 450),
+        ("clogp", 2),
+        ("clogp", 4),
+        ("clogp", 6),
+        ("tpsa", 40),
+        ("tpsa", 80),
+        ("tpsa", 120),
+        ("qed", 0.3),
+        ("qed", 0.5),
+        ("qed", 0.7),
+        ("cns", None),
+    ]
+    if task_id is None:
+        reward_fn = TargetedReward(objective=objective.value, target=target, alpha=alpha)
+    else:
+        reward_fn = TargetedReward(
+            objective=TASKS[task_id][0], target=TASKS[task_id][1], alpha=alpha
+        )
+        name = name + f"-{TASKS[task_id][0]}-{TASKS[task_id][1]}"
+        outdir = outdir.rstrip("/") + f"-{TASKS[task_id][0]}-{TASKS[task_id][1]}/"
     if inputs == "None":
         inputs = None
     if name is None:
@@ -316,6 +364,7 @@ def optim(
         batch_size=batch_size,
     )
 
+    trained_model.eval()
     designer.model = trained_model
 
     generate_params = {"n_samples_per_trial": n_samples, "n_trials": n_trials, "sanitize": sanitize}
@@ -336,7 +385,7 @@ def optim(
 
     with fsspec.open(os.path.join(outdir, f"data-{name}.csv"), "w", auto_mkdir=True) as IN:
         data.to_csv(IN, index=False)
-    trainer.save_pretrained(outdir)
+    trained_model.save_pretrained(os.path.join(outdir, "model"))
 
 
 if __name__ == "__main__":

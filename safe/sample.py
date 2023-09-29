@@ -17,6 +17,7 @@ from tqdm.auto import tqdm
 import itertools
 import os
 import re
+import torch
 import random
 import platformdirs
 import datamol as dm
@@ -864,6 +865,10 @@ class SAFEDesign:
             # I don't know why it works for text generation but not here
             for k in input_ids:
                 input_ids[k] = input_ids[k][:, :-1]
+
+        for k, v in input_ids.items():
+            if torch.is_tensor(v):
+                input_ids[k] = v.to(self.model.device)
 
         if is_greedy:
             kwargs["num_return_sequences"] = 1
