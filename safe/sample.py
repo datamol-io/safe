@@ -17,6 +17,7 @@ from tqdm.auto import tqdm
 import itertools
 import os
 import re
+import torch
 import random
 import platformdirs
 import datamol as dm
@@ -72,15 +73,24 @@ class SAFEDesign:
         self.safe_encoder = safe_encoder or sf.SAFEConverter()
 
     @classmethod
-    def load_default(cls, verbose: bool = False) -> "SAFEDesign":
+    def load_default(
+        cls, verbose: bool = False, model_dir: Optional[str] = None, device: str = None
+    ) -> "SAFEDesign":
         """Load default SAFEGenerator model
 
         Args:
             verbose: whether to print out logging information during generation
+            model_dir: Optional path to model folder to use instead of the default one.
+                If provided the tokenizer should be in the model_dir named as `tokenizer.json`
+            device: optional device where to move the model
         """
-        model = SAFEDoubleHeadsModel.from_pretrained(cls._DEFAULT_MODEL_PATH)
-        tokenizer = SAFETokenizer.load(os.path.join(cls._DEFAULT_MODEL_PATH, "tokenizer.json"))
-        gen_config = GenerationConfig.from_pretrained(cls._DEFAULT_MODEL_PATH)
+        if model_dir is None or not model_dir:
+            model_dir = cls._DEFAULT_MODEL_PATH
+        model = SAFEDoubleHeadsModel.from_pretrained(model_dir)
+        tokenizer = SAFETokenizer.load(os.path.join(model_dir, "tokenizer.json"))
+        gen_config = GenerationConfig.from_pretrained(model_dir)
+        if device is not None:
+            model = model.to(device)
         return cls(model=model, tokenizer=tokenizer, generation_config=gen_config, verbose=verbose)
 
     def linker_generation(
@@ -855,6 +865,10 @@ class SAFEDesign:
             # I don't know why it works for text generation but not here
             for k in input_ids:
                 input_ids[k] = input_ids[k][:, :-1]
+
+        for k, v in input_ids.items():
+            if torch.is_tensor(v):
+                input_ids[k] = v.to(self.model.device)
 
         if is_greedy:
             kwargs["num_return_sequences"] = 1
