@@ -72,3 +72,4 @@ wandb/
 oracle/
 expts/models/
 expts/dev-data/
+expts/notebooks/
