@@ -1,0 +1,33 @@
+name: release-new-version
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-version:
+        description: "A valid Semver version string"
+        required: true
+
+jobs:
+  release-with-rever:
+    runs-on: "ubuntu-latest"
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v3
+
+      - name: Fetch Valence Actions
+        uses: actions/checkout@v3
+        with:
+          repository: valence-platform/valence-actions
+          ref: latest
+          token: ${{ secrets.VALENCE_GITHUB_TOKEN_PLATFORM }}
+          path: .github/valence-actions
+
+      - name: Release with rever
+        uses: ./.github/valence-actions/release-with-rever
+        with:
+          release-version: ${{ github.event.inputs.release-version }}
+          git-token: ${{ secrets.VALENCE_GITHUB_TOKEN_PLATFORM }}
