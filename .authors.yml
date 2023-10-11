@@ -1,0 +1,8 @@
+- name: Emmanuel Noutahi
+  email: emmanuel.noutahi@hotmail.ca
+  alternate_emails:
+  - emmanuel_invivoai_com@vslurm-login-lkyml7kj-001.c.valenceslurm.internal
+  aliases:
+  - maclandrol
+  num_commits: 53
+  first_commit: 2023-07-02 18:37:21
