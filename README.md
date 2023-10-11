@@ -58,11 +58,19 @@ The construction of a SAFE strings requires definition a molecular fragmentation
 
 ### Installation
 
-You can install `safe` using pip.
+You can install `safe` using pip, when the package is public
 
 ```bash
-pip install safe-mol
+pip install safe-mol 
 ```
+
+
+You can use conda/mamba. Ask @maclandrol for credentials to the conda forge or for a token
+
+```bash
+mamba install -c invivoai safe
+```
+
 
 Alternatively clone this repo, install the dependencies, install `safe` locally and you are good to go:
 
