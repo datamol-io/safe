@@ -42,11 +42,12 @@ markdown_extensions:
   - toc:
       permalink: true
 
+watch:
+  - safe/
+
 plugins:
   - search
   - mkdocstrings:
-      watch:
-        - safe/
       handlers:
         python:
           import:

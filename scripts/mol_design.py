@@ -217,7 +217,7 @@ def sample(
     allow_further_decomposition: Annotated[bool, typer.Option()] = False,
     mode: Annotated[DesignMode, typer.Option(case_sensitive=False)] = DesignMode.denovo,
     inputs: Annotated[str, typer.Option()] = None,
-    seed: Annotated[int, typer.Option()] = 42,
+    seed: Annotated[int, typer.Option()] = None,
     max_n: Annotated[int, typer.Option()] = -1,
     outfile: Annotated[str, typer.Option(default=...)] = None,
 ):
