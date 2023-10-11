@@ -8,7 +8,7 @@ except ModuleNotFoundError:
 
 
 try:
-    __version__ = version("safe")
+    __version__ = "0.0.1"
 except PackageNotFoundError:
     # package is not installed
-    __version__ = "dev"
+    __version__ = "0.0.1"
