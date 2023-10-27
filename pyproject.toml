@@ -6,43 +6,50 @@ build-backend = "setuptools.build_meta"
 name = "safe"
 description = "Implementation of the 'Gotta be SAFE: a new framework for molecular design' paper"
 dynamic = ["version"]
-authors = [
-    { name = "Emmanuel Noutahi", email = "emmanuel.noutahi@gmail.com" },
-]
+authors = [{ name = "Emmanuel Noutahi", email = "emmanuel.noutahi@gmail.com" }]
 readme = "README.md"
-license = {text = "Apache-2.0"}
-requires-python = ">=3.8"
+license = { text = "Apache-2.0" }
+requires-python = ">=3.9"
 classifiers = [
-        "Development Status :: 3 - Alpha",
-        "Intended Audience :: Developers",
-        "Intended Audience :: Healthcare Industry",
-        "Intended Audience :: Science/Research",
-        "Topic :: Scientific/Engineering :: Artificial Intelligence",
-        "Topic :: Scientific/Engineering :: Bio-Informatics",
-        "Topic :: Scientific/Engineering :: Information Analysis",
-        "Topic :: Scientific/Engineering :: Medical Science Apps.",
-        "Natural Language :: English",
-        "Operating System :: OS Independent",
-        "Programming Language :: Python",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
+    "Development Status :: 3 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Healthcare Industry",
+    "Intended Audience :: Science/Research",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Medical Science Apps.",
+    "Natural Language :: English",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
 ]
 
 keywords = ["safe", "smiles", "de novo", "design", "molecules"]
 dependencies = [
+    "tqdm",
+    "loguru",
+    "typer",
     "datamol",
-    "tokenizer",
     "numpy",
+    "pytorch>=2.0",
+    "transformers",
     "datasets",
-    "transformers"
+    "tokenizers",
+    "accelerate",
+    "evaluate",
+    "wandb",
+    "huggingface-hub",
 ]
 
 [project.urls]
-"Source Code" = "https://github.com/maclandrol/safe"
-"Bug Tracker" = "https://github.com/maclandrol/safe/issues"
-Documentation = "https://maclandrol.github.io/safe"
+"Source Code" = "https://github.com/datamol-io/safe"
+"Bug Tracker" = "https://github.com/datamol-io/safe/issues"
+Documentation = "https://safe-docs.datamol.io/"
 
 
 [project.scripts]
@@ -64,7 +71,7 @@ namespaces = true
 
 [tool.black]
 line-length = 100
-target-version = ['py39', 'py310']
+target-version = ['py310', 'py311']
 include = '\.pyi?$'
 
 [tool.pytest.ini_options]
@@ -79,18 +86,19 @@ max-doc-length = 150
 line-length = 120
 # Enable Pyflakes `E` and `F` codes by default.
 select = [
-    "E", "W",  # see: https://pypi.org/project/pycodestyle
-    "F",  # see: https://pypi.org/project/pyflakes
-    "S",  # see: https://pypi.org/project/flake8-bandit
+    "E",
+    "W", # see: https://pypi.org/project/pycodestyle
+    "F", # see: https://pypi.org/project/pyflakes
+    "S", # see: https://pypi.org/project/flake8-bandit
 ]
 extend-select = [
     "C4",  # see: https://pypi.org/project/flake8-comprehensions
-    "SIM",  # see: https://pypi.org/project/flake8-simplify
-    "RET",  # see: https://pypi.org/project/flake8-return
+    "SIM", # see: https://pypi.org/project/flake8-simplify
+    "RET", # see: https://pypi.org/project/flake8-return
     "PT",  # see: https://pypi.org/project/flake8-pytest-style
 ]
 ignore = [
-    "E731",  # Do not assign a lambda expression, use a def
+    "E731", # Do not assign a lambda expression, use a def
     "S108",
     "F401",
     "S105",
@@ -98,9 +106,5 @@ ignore = [
     "E722",
 ]
 # Exclude a variety of commonly ignored directories.
-exclude = [
-    ".git",
-    "docs",
-    "_notebooks"
-]
+exclude = [".git", "docs", "_notebooks"]
 ignore-init-module-imports = true

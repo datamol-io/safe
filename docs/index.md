@@ -10,7 +10,7 @@
     <a href="" target="_blank">
       Paper
   </a> |
-  <a href="https://github.com/valence-labs/safe/" target="_blank">
+  <a href="https://github.com/datamol-io/safe/" target="_blank">
       Github
   </a> |
   <a href="#" target="_blank">
@@ -34,7 +34,7 @@ SAFE *is the* deep learning molecular representation. It's an encoding leveragin
 - scaffold decoration
 - motif extension
 - linker generation
-- scaffold morphing. 
+- scaffold morphing.
 
 The construction of a SAFE strings requires definition a molecular fragmentation algorithm. By default, we use [BRICS], but any other fragmentation algorithm can be used. The image below illustrate the process of building a SAFE string. The resulting string is a valid SMILES that can be read by [datamol](https://github.com/datamol-io/datamol) or [RDKit](https://github.com/rdkit/rdkit).
 
@@ -67,14 +67,14 @@ pip install -e .
 
 ### Datasets and Models
 
-We provided a pretained GPT2 model (XXM parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B): 
+We provided a pretained GPT2 model (XXM parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B):
 
 - *Safe-XXM* [maclandrol/safe-XXM]()
 
 
 ### Usage
 
-To get started with SAFE, please see the tutorials: 
+To get started with SAFE, please see the tutorials:
 - xxx
 - xxx
 

@@ -1,8 +1,8 @@
 site_name: "SAFE"
 site_description: "Gotta be SAFE: a new framework for molecular design"
-site_url: "https://github.com/valence-labs/safe"
-repo_url: "https://github.com/valence-labs/safe"
-repo_name: "valence-labs/safe"
+site_url: "https://github.com/datamol-io/safe"
+repo_url: "https://github.com/datamol-io/safe"
+repo_name: "datamol-io/safe"
 copyright: Copyright 2023 Valence Labs
 
 remote_branch: "gh-pages"
@@ -87,8 +87,8 @@ extra:
 
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/valence-labs
+      link: https://github.com/datamol-io
     - icon: fontawesome/brands/twitter
-      link: https://twitter.com/ENoutahi
+      link: https://twitter.com/datamol_io
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/safe-mol/

@@ -395,7 +395,7 @@ def train(model_args, data_args, training_args):
     kwargs = {"finetuned_from": model_args.model_path, "tasks": "text-generation"}
     kwargs["dataset_tags"] = data_args.dataset
     kwargs["dataset"] = data_args.dataset
-    kwargs["tags"] = ["safe", "valence-labs", "molecule-design", "smiles"]
+    kwargs["tags"] = ["safe", "datamol-io", "molecule-design", "smiles"]
 
     if training_args.push_to_hub:
         kwargs["private"] = True
