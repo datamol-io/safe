@@ -9,7 +9,7 @@ ROOT_DIR = pathlib.Path(__file__).parent.resolve()
 
 TUTORIALS_DIR = ROOT_DIR.parent / "docs" / "tutorials"
 DISABLE_NOTEBOOKS = []
-NOTEBOOK_PATHS = sorted(list(TUTORIALS_DIR.glob("*.ipynb")))
+NOTEBOOK_PATHS = sorted(TUTORIALS_DIR.glob("*.ipynb"))
 NOTEBOOK_PATHS = list(filter(lambda x: x.name not in DISABLE_NOTEBOOKS, NOTEBOOK_PATHS))
 
 # Discard some notebooks
