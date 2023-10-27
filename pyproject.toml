@@ -3,7 +3,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "safe"
+name = "safe-mol"
 description = "Implementation of the 'Gotta be SAFE: a new framework for molecular design' paper"
 dynamic = ["version"]
 authors = [{ name = "Emmanuel Noutahi", email = "emmanuel.noutahi@gmail.com" }]
@@ -11,7 +11,7 @@ readme = "README.md"
 license = { text = "Apache-2.0" }
 requires-python = ">=3.9"
 classifiers = [
-    "Development Status :: 3 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Healthcare Industry",
     "Intended Audience :: Science/Research",
