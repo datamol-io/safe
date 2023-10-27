@@ -1,35 +1,47 @@
-
 <h1 align="center">  🦺 SAFE </h1>
-<h4 align="center">S</b>equential <b>A</b>ttachment-based <b>F</b>ragment <b>E</b>mbedding (SAFE) is a novel molecular line notation that represents molecules as an unordered sequence of fragment blocks to improve molecule design using generative models.</h4>
+<h4 align="center"><b>S</b>equential <b>A</b>ttachment-based <b>F</b>ragment <b>E</b>mbedding (SAFE) is a novel molecular line notation that represents molecules as an unordered sequence of fragment blocks to improve molecule design using generative models.</h4>
 
 </br>
 <div align="center">
     <img src="assets/safe-tasks.svg" width="100%">
 </div>
+</br>
+
 <p align="center">
-    <a href="" target="_blank">
+    <a href="https://arxiv.org/pdf/2310.10773.pdf" target="_blank">
       Paper
   </a> |
-  <a href="https://github.com/datamol-io/safe/" target="_blank">
-      Github
+  <a href="https://safe-docs.datamol.io/" target="_blank">
+      Docs
   </a> |
-  <a href="#" target="_blank">
+  <a href="https://huggingface.co/datamol-io/safe" target="_blank">
     🤗 Model
   </a>
 </p>
 
 ---
 
+</br>
 
-## 🆕 News
-- \[**September 2023**\] We've released a SAFE GPT-like pretrained model on a combination of ZINC and UniChem
-
+[![PyPI](https://img.shields.io/pypi/v/safe-mol)](https://pypi.org/project/safe-mol/)
+[![Conda](https://img.shields.io/conda/v/conda-forge/safe-mol?label=conda&color=success)](https://anaconda.org/conda-forge/safe-mol)
+[![PyPI - Downloads](https://img.shields.io/pypi/dm/safe-mol)](https://pypi.org/project/safe-mol/)
+[![Conda](https://img.shields.io/conda/dn/conda-forge/safe-mol)](https://anaconda.org/conda-forge/safe-mol)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/safe-mol)](https://pypi.org/project/safe-mol/)
+[![Code license](https://img.shields.io/badge/Code%20License-Apache_2.0-green.svg)](https://github.com/datamol-io/safe/blob/main/LICENSE)
+[![Data License](https://img.shields.io/badge/Data%20License-CC%20BY%204.0-red.svg)](https://github.com/datamol-io/safe/blob/main/DATA_LICENSE)[![GitHub Repo stars](https://img.shields.io/github/stars/datamol-io/safe)](https://github.com/datamol-io/safe/stargazers)
+[![GitHub Repo stars](https://img.shields.io/github/forks/datamol-io/safe)](https://github.com/datamol-io/safe/network/members)
+[![test](https://github.com/datamol-io/safe/actions/workflows/test.yml/badge.svg)](https://github.com/datamol-io/safe/actions/workflows/test.yml)
+[![release](https://github.com/datamol-io/safe/actions/workflows/release.yml/badge.svg)](https://github.com/datamol-io/safe/actions/workflows/release.yml)
+[![code-check](https://github.com/datamol-io/safe/actions/workflows/code-check.yml/badge.svg)](https://github.com/datamol-io/safe/actions/workflows/code-check.yml)
+[![doc](https://github.com/datamol-io/safe/actions/workflows/doc.yml/badge.svg)](https://github.com/datamol-io/safe/actions/workflows/doc.yml)
+[![arXiv](https://img.shields.io/badge/arXiv-2310.10773-b31b1b.svg)](https://arxiv.org/pdf/2310.10773.pdf)
 
 ## Overview of SAFE
 
-SAFE *is the* deep learning molecular representation. It's an encoding leveraging a peculiarity in the decoding schemes of SMILES, to allow representation of molecules as contiguous sequence of connected fragment. SAFE strings are valid SMILES string, and thus are able to preserve the same amount of information.  The intuitive representation of molecules as unordered sequence of connected fragments gretly simplify the following tasks often encoutered in molecular design:
+SAFE _is the_ deep learning molecular representation. It's an encoding leveraging a peculiarity in the decoding schemes of SMILES, to allow representation of molecules as contiguous sequence of connected fragment. SAFE strings are valid SMILES string, and thus are able to preserve the same amount of information. The intuitive representation of molecules as unordered sequence of connected fragments gretly simplify the following tasks often encoutered in molecular design:
 
-- *de novo* design
+- _de novo_ design
 - superstructure generation
 - scaffold decoration
 - motif extension
@@ -40,59 +52,124 @@ The construction of a SAFE strings requires definition a molecular fragmentation
 
 </br>
 <div align="center">
-    <img src="assets/safe-construction.svg" width="100%">
+    <img src="docs/assets/safe-construction.svg" width="100%">
 </div>
 
 ### Installation
 
-
-You can install `safe` using pip.
+You can install `safe` using pip:
 
 ```bash
 pip install safe-mol
 ```
 
-Alternatively clone this repo, install the dependencies, install `safe` locally and you are good to go:
-
+You can use conda/mamba. Ask @maclandrol for credentials to the conda forge or for a token
 
 ```bash
-git clone https://github.com/maclandrol/safe.git
-cd safe
-mamba env create -f env.yml -n "safe-space" # :)
-pip install -e .
+mamba install -c conda-forge safe-mol
 ```
 
 `safe` mostly depends on [transformers](https://huggingface.co/docs/transformers/index) and [datasets](https://huggingface.co/docs/datasets/index). Please see the [env.yml](./env.yml) file for a complete list of dependencies.
 
-
 ### Datasets and Models
 
-We provided a pretained GPT2 model (XXM parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B):
+We provided a pretained GPT2 model (XX M parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B):
 
-- *Safe-XXM* [maclandrol/safe-XXM]()
+- _Safe-XXM_ TODO
 
+## Usage
 
-### Usage
+Please refer to the [documentation](https://safe-docs.datamol.io/), which contains tutorials for getting started with `safe` and detailed descriptions of the functions provided.
 
-To get started with SAFE, please see the tutorials:
-- xxx
-- xxx
+### API
 
+We summarize some key functions provided by the `safe` package below.
+
+| Function      | Description                                                                                                                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `safe.encode` | Translates a SMILES string into its corresponding SAFE string.                                                                                                                                          |
+| `safe.decode` | Translates a SAFE string into its corresponding SMILES string. The SAFE decoder just augment RDKit's `Chem.MolFromSmiles` with an optional correction argument to take care of missing hydrogens bonds. |
+| `safe.split`  | Tokenizes a SAFE string to build a generative model.                                                                                                                                                    |
+
+### Examples
+
+#### Translation between SAFE and SMILES representations
+
+```python
+import safe
+
+ibuprofen = "CC(Cc1ccc(cc1)C(C(=O)O)C)C"
+
+# SMILES -> SAFE -> SMILES translation
+try:
+    ibuprofen_sf = safe.encode(ibuprofen)  # [C][=C][C][=C][C][=C][Ring1][=Branch1]
+    ibuprofen_smi = safe.decode(ibuprofen_sf, canonical=True)  # CC(Cc1ccc(cc1)C(C(=O)O)C)C
+except safe.EncoderError:
+    pass
+except safe.DecoderError:
+    pass
+
+ibuprofen_tokens = list(safe.split(ibuprofen_sf))
+# ['[C]', '[=C]', '[C]', '[=C]', '[C]', '[=C]', '[Ring1]', '[=Branch1]']
+```
+
+### Training a new models
+
+A command line interface is available to train a new model, please run `safe-train --help`
+
+For example:
+
+```bash
+safe-train --config <path to config> \
+    --model-path <path to model> \
+    --tokenizer  <path to tokenizer> \
+    --dataset <path to dataset> \
+    --num_labels 9 \
+    --torch_compile True \
+    --optim "adamw_torch" \
+    --learning_rate 1e-5 \
+    --prop_loss_coeff 1e-3 \
+    --gradient_accumulation_steps 1 \
+    --output_dir "<path to outputdir>" \
+    --max_steps 5
+```
 
 ## References
-If you use this repository, please cite the following related paper:
 
-```
-@article{,
-  title={Gotta be SAFE: a new framework for molecular design.},
-  author={},
-  journal={},
-  year={2023}
+If you use this repository, please cite the following related [paper](https://arxiv.org/abs/2310.10773#):
+
+```bib
+@misc{noutahi2023gotta,
+      title={Gotta be SAFE: A New Framework for Molecular Design},
+      author={Emmanuel Noutahi and Cristian Gabellini and Michael Craig and Jonathan S. C Lim and Prudencio Tossou},
+      year={2023},
+      eprint={2310.10773},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
 }
 ```
 
 ## License
 
-Please note that all data and model weights of **SAFE** are exclusively licensed for research purposes. The accompanying dataset is licensed under CC BY 4.0, which permits solely non-commercial usage. See [DATA_LICENSE](DATA_LICENSE) for details.
+Note that all data and model weights of **SAFE** are exclusively licensed for research purposes. The accompanying dataset is licensed under CC BY 4.0, which permits solely non-commercial usage. See [DATA_LICENSE](DATA_LICENSE) for details.
 
 This code base is licensed under the Apache-2.0 license. See [LICENSE](LICENSE) for details.
+
+## Development lifecycle
+
+### Setup dev environment
+
+```bash
+mamba create -n safe -f env.yml
+mamba activate safe
+
+pip install --no-deps -e .
+```
+
+### Tests
+
+You can run tests locally with:
+
+```bash
+pytest
+```
