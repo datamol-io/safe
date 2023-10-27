@@ -48,7 +48,7 @@ jobs:
         run: pytest
 
       - name: Test CLI
-        run: safe --help
+        run: safe-train --help
 
       - name: Test building the doc
         run: mkdocs build
