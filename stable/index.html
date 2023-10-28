@@ -454,7 +454,27 @@
         
   
   <span class="md-ellipsis">
-    Molecular design with Pretrained SAFE
+    Molecular design
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tutorials/how-it-works.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    How SAFE encoding works?
   </span>
   
 
@@ -807,6 +827,9 @@
   </a> |
   <a href="https://huggingface.co/datamol-io/safe" target="_blank">
     🤗 Model
+  </a> |
+  <a href="https://huggingface.co/datasets/datamol-io/safe-gpt" target="_blank">
+    🤗 Training Dataset
   </a>
 </p>
 
@@ -850,10 +873,40 @@
 <div class="highlight"><pre><span></span><code>mamba<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>safe-mol
 </code></pre></div>
 <h3 id="datasets-and-models">Datasets and Models<a class="headerlink" href="#datasets-and-models" title="Permanent link">&para;</a></h3>
-<p>We provided a pretained GPT2 model (XX M parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B):</p>
-<ul>
-<li><em>Safe-XXM</em> TODO</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Name</th>
+<th>Infos</th>
+<th>Size</th>
+<th>Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model</td>
+<td><a href="https://huggingface.co/datamol-io/safe-gpt">datamol-io/safe-gpt</a></td>
+<td>87M params</td>
+<td>350M</td>
+<td>Default model</td>
+</tr>
+<tr>
+<td>Dataset</td>
+<td><a href="https://huggingface.co/datasets/datamol-io/safe-gpt">datamol-io/safe-gpt</a></td>
+<td>1.1B rows</td>
+<td>250GB</td>
+<td>Training dataset</td>
+</tr>
+<tr>
+<td>Dataset</td>
+<td><a href="https://huggingface.co/datasets/datamol-io/safe-drugs">datamol-io/safe-drugs</a></td>
+<td>26 rows</td>
+<td>20 kB</td>
+<td>Benchmarking dataset</td>
+</tr>
+</tbody>
+</table>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <p>Please refer to the <a href="https://safe-docs.datamol.io/">documentation</a>, which contains tutorials for getting started with <code>safe</code> and detailed descriptions of the functions provided.</p>
 <h3 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h3>
@@ -888,15 +941,14 @@
 
 <span class="c1"># SMILES -&gt; SAFE -&gt; SMILES translation</span>
 <span class="k">try</span><span class="p">:</span>
-    <span class="n">ibuprofen_sf</span> <span class="o">=</span> <span class="n">safe</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">ibuprofen</span><span class="p">)</span>  <span class="c1"># [C][=C][C][=C][C][=C][Ring1][=Branch1]</span>
-    <span class="n">ibuprofen_smi</span> <span class="o">=</span> <span class="n">safe</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">ibuprofen_sf</span><span class="p">,</span> <span class="n">canonical</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># CC(Cc1ccc(cc1)C(C(=O)O)C)C</span>
+    <span class="n">ibuprofen_sf</span> <span class="o">=</span> <span class="n">safe</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">ibuprofen</span><span class="p">)</span>  <span class="c1"># c12ccc3cc1.C3(C)C(=O)O.CC(C)C2</span>
+    <span class="n">ibuprofen_smi</span> <span class="o">=</span> <span class="n">safe</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">ibuprofen_sf</span><span class="p">,</span> <span class="n">canonical</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>  <span class="c1"># CC(C)Cc1ccc(C(C)C(=O)O)cc1</span>
 <span class="k">except</span> <span class="n">safe</span><span class="o">.</span><span class="n">EncoderError</span><span class="p">:</span>
     <span class="k">pass</span>
 <span class="k">except</span> <span class="n">safe</span><span class="o">.</span><span class="n">DecoderError</span><span class="p">:</span>
     <span class="k">pass</span>
 
 <span class="n">ibuprofen_tokens</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">safe</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">ibuprofen_sf</span><span class="p">))</span>
-<span class="c1"># [&#39;[C]&#39;, &#39;[=C]&#39;, &#39;[C]&#39;, &#39;[=C]&#39;, &#39;[C]&#39;, &#39;[=C]&#39;, &#39;[Ring1]&#39;, &#39;[=Branch1]&#39;]</span>
 </code></pre></div>
 <h3 id="training-a-new-models">Training a new models<a class="headerlink" href="#training-a-new-models" title="Permanent link">&para;</a></h3>
 <p>A command line interface is available to train a new model, please run <code>safe-train --help</code></p>
