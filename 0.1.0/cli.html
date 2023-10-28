@@ -1,0 +1,989 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Gotta be SAFE: a new framework for molecular design">
+      
+      
+      
+        <link rel="canonical" href="https://github.com/datamol-io/safe/0.1.0/cli.html">
+      
+      
+        <link rel="prev" href="api/safe.models.html">
+      
+      
+        <link rel="next" href="license.html">
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.6">
+    
+    
+      
+        <title>CLI - SAFE</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.35e1ed30.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce((e,_)=>(e<<5)-e+_.charCodeAt(0),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&"object"==typeof palette.color)for(var key of Object.keys(palette.color))document.body.setAttribute("data-md-color-"+key,palette.color[key])</script>
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#cli-for-model-training" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="index.html" title="SAFE" class="md-header__button md-logo" aria-label="SAFE" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2Z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            SAFE
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              CLI
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.516 6.516 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5Z"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11h12Z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41Z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/datamol-io/safe" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    datamol-io/safe
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="index.html" title="SAFE" class="md-nav__button md-logo" aria-label="SAFE" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54Z"/></svg>
+
+    </a>
+    SAFE
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/datamol-io/safe" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81z"/></svg>
+  </div>
+  <div class="md-source__repository">
+    datamol-io/safe
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="index.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Overview
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Tutorials
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            Tutorials
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tutorials/getting-started.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Getting Started with SAFE
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tutorials/design-with-safe.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Molecular design
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="tutorials/how-it-works.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    How SAFE encoding works?
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    
+    
+    
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    API
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            API
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api/safe.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    SAFE
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api/safe.viz.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Visualization
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="api/safe.models.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Model training
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+      <a href="cli.html" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    CLI
+  </span>
+  
+
+      </a>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="license.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="data_license.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="cli-for-model-training">CLI for model Training<a class="headerlink" href="#cli-for-model-training" title="Permanent link">&para;</a></h1>
+<p>You can train a new <code>SAFE</code> generative models using the provided CLI, which uses 🤗 Transformers !</p>
+<p>Usage: </p>
+<div class="highlight"><pre><span></span><code>safe-train [-h] [--model_path MODEL_PATH] [--config CONFIG] [--tokenizer TOKENIZER] [--num_labels NUM_LABELS]
+              [--include_descriptors [INCLUDE_DESCRIPTORS]] [--no_include_descriptors] [--prop_loss_coeff PROP_LOSS_COEFF]
+              [--wandb_project WANDB_PROJECT] [--wandb_watch {gradients,all}] [--cache_dir CACHE_DIR]
+              [--torch_dtype {auto,bfloat16,float16,float32}] [--low_cpu_mem_usage [LOW_CPU_MEM_USAGE]] [--model_max_length MODEL_MAX_LENGTH]
+              [--dataset DATASET] [--is_tokenized [IS_TOKENIZED]] [--streaming [STREAMING]] [--text_column TEXT_COLUMN] --output_dir
+              OUTPUT_DIR [--overwrite_output_dir [OVERWRITE_OUTPUT_DIR]] [--do_train [DO_TRAIN]] [--do_eval [DO_EVAL]]
+              [--do_predict [DO_PREDICT]] [--evaluation_strategy {no,steps,epoch}] [--prediction_loss_only [PREDICTION_LOSS_ONLY]]
+              [--per_device_train_batch_size PER_DEVICE_TRAIN_BATCH_SIZE] [--per_device_eval_batch_size PER_DEVICE_EVAL_BATCH_SIZE]
+              [--per_gpu_train_batch_size PER_GPU_TRAIN_BATCH_SIZE] [--per_gpu_eval_batch_size PER_GPU_EVAL_BATCH_SIZE]
+              [--gradient_accumulation_steps GRADIENT_ACCUMULATION_STEPS] [--eval_accumulation_steps EVAL_ACCUMULATION_STEPS]
+              [--eval_delay EVAL_DELAY] [--learning_rate LEARNING_RATE] [--weight_decay WEIGHT_DECAY] [--adam_beta1 ADAM_BETA1]
+              [--adam_beta2 ADAM_BETA2] [--adam_epsilon ADAM_EPSILON] [--max_grad_norm MAX_GRAD_NORM] [--num_train_epochs NUM_TRAIN_EPOCHS]
+              [--max_steps MAX_STEPS]
+              [--lr_scheduler_type {linear,cosine,cosine_with_restarts,polynomial,constant,constant_with_warmup,inverse_sqrt,reduce_lr_on_plateau}]
+              [--warmup_ratio WARMUP_RATIO] [--warmup_steps WARMUP_STEPS] [--log_level {debug,info,warning,error,critical,passive}]
+              [--log_level_replica {debug,info,warning,error,critical,passive}] [--log_on_each_node [LOG_ON_EACH_NODE]]
+              [--no_log_on_each_node] [--logging_dir LOGGING_DIR] [--logging_strategy {no,steps,epoch}]
+              [--logging_first_step [LOGGING_FIRST_STEP]] [--logging_steps LOGGING_STEPS] [--logging_nan_inf_filter [LOGGING_NAN_INF_FILTER]]
+              [--no_logging_nan_inf_filter] [--save_strategy {no,steps,epoch}] [--save_steps SAVE_STEPS] [--save_total_limit SAVE_TOTAL_LIMIT]
+              [--save_safetensors [SAVE_SAFETENSORS]] [--save_on_each_node [SAVE_ON_EACH_NODE]] [--no_cuda [NO_CUDA]]
+              [--use_mps_device [USE_MPS_DEVICE]] [--seed SEED] [--data_seed DATA_SEED] [--jit_mode_eval [JIT_MODE_EVAL]]
+              [--use_ipex [USE_IPEX]] [--bf16 [BF16]] [--fp16 [FP16]] [--fp16_opt_level FP16_OPT_LEVEL]
+              [--half_precision_backend {auto,cuda_amp,apex,cpu_amp}] [--bf16_full_eval [BF16_FULL_EVAL]] [--fp16_full_eval [FP16_FULL_EVAL]]
+              [--tf32 TF32] [--local_rank LOCAL_RANK] [--ddp_backend {nccl,gloo,mpi,ccl}] [--tpu_num_cores TPU_NUM_CORES]
+              [--tpu_metrics_debug [TPU_METRICS_DEBUG]] [--debug DEBUG [DEBUG ...]] [--dataloader_drop_last [DATALOADER_DROP_LAST]]
+              [--eval_steps EVAL_STEPS] [--dataloader_num_workers DATALOADER_NUM_WORKERS] [--past_index PAST_INDEX] [--run_name RUN_NAME]
+              [--disable_tqdm DISABLE_TQDM] [--remove_unused_columns [REMOVE_UNUSED_COLUMNS]] [--no_remove_unused_columns]
+              [--label_names LABEL_NAMES [LABEL_NAMES ...]] [--load_best_model_at_end [LOAD_BEST_MODEL_AT_END]]
+              [--metric_for_best_model METRIC_FOR_BEST_MODEL] [--greater_is_better GREATER_IS_BETTER] [--ignore_data_skip [IGNORE_DATA_SKIP]]
+              [--sharded_ddp SHARDED_DDP] [--fsdp FSDP] [--fsdp_min_num_params FSDP_MIN_NUM_PARAMS] [--fsdp_config FSDP_CONFIG]
+              [--fsdp_transformer_layer_cls_to_wrap FSDP_TRANSFORMER_LAYER_CLS_TO_WRAP] [--deepspeed DEEPSPEED]
+              [--label_smoothing_factor LABEL_SMOOTHING_FACTOR]
+              [--optim {adamw_hf,adamw_torch,adamw_torch_fused,adamw_torch_xla,adamw_apex_fused,adafactor,adamw_anyprecision,sgd,adagrad,adamw_bnb_8bit,adamw_8bit,lion_8bit,lion_32bit,paged_adamw_32bit,paged_adamw_8bit,paged_lion_32bit,paged_lion_8bit}]
+              [--optim_args OPTIM_ARGS] [--adafactor [ADAFACTOR]] [--group_by_length [GROUP_BY_LENGTH]]
+              [--length_column_name LENGTH_COLUMN_NAME] [--report_to REPORT_TO [REPORT_TO ...]]
+              [--ddp_find_unused_parameters DDP_FIND_UNUSED_PARAMETERS] [--ddp_bucket_cap_mb DDP_BUCKET_CAP_MB]
+              [--ddp_broadcast_buffers DDP_BROADCAST_BUFFERS] [--dataloader_pin_memory [DATALOADER_PIN_MEMORY]] [--no_dataloader_pin_memory]
+              [--skip_memory_metrics [SKIP_MEMORY_METRICS]] [--no_skip_memory_metrics]
+              [--use_legacy_prediction_loop [USE_LEGACY_PREDICTION_LOOP]] [--push_to_hub [PUSH_TO_HUB]]
+              [--resume_from_checkpoint RESUME_FROM_CHECKPOINT] [--hub_model_id HUB_MODEL_ID]
+              [--hub_strategy {end,every_save,checkpoint,all_checkpoints}] [--hub_token HUB_TOKEN] [--hub_private_repo [HUB_PRIVATE_REPO]]
+              [--gradient_checkpointing [GRADIENT_CHECKPOINTING]] [--include_inputs_for_metrics [INCLUDE_INPUTS_FOR_METRICS]]
+              [--fp16_backend {auto,cuda_amp,apex,cpu_amp}] [--push_to_hub_model_id PUSH_TO_HUB_MODEL_ID]
+              [--push_to_hub_organization PUSH_TO_HUB_ORGANIZATION] [--push_to_hub_token PUSH_TO_HUB_TOKEN] [--mp_parameters MP_PARAMETERS]
+              [--auto_find_batch_size [AUTO_FIND_BATCH_SIZE]] [--full_determinism [FULL_DETERMINISM]] [--torchdynamo TORCHDYNAMO]
+              [--ray_scope RAY_SCOPE] [--ddp_timeout DDP_TIMEOUT] [--torch_compile [TORCH_COMPILE]]
+              [--torch_compile_backend TORCH_COMPILE_BACKEND] [--torch_compile_mode TORCH_COMPILE_MODE] [--xpu_backend {mpi,ccl,gloo}]
+</code></pre></div>
+<p>Options:</p>
+<div class="highlight"><pre><span></span><code>-h, --help            show this help message and exit
+--model_path MODEL_PATH
+                        Optional model path or model name to use as a starting point for the safe model (default: None)
+--config CONFIG       Path to the default config file to use for the safe model (default: None)
+--tokenizer TOKENIZER
+--num_labels NUM_LABELS
+                        Optional number of labels for the descriptors (default: None)
+--include_descriptors [INCLUDE_DESCRIPTORS]
+                        Whether to train with descriptors if they are available or Not (default: True)
+--no_include_descriptors
+                        Whether to train with descriptors if they are available or Not (default: False)
+--prop_loss_coeff PROP_LOSS_COEFF
+                        coefficient for the propery loss (default: 0.01)
+--wandb_project WANDB_PROJECT
+                        Name of the wandb project to use to log the SAFE model parameter (default: safe-gpt2)
+--wandb_watch {gradients,all}
+                        Whether to watch the wandb models or not (default: None)
+--cache_dir CACHE_DIR
+                        Where do you want to store the pretrained models downloaded from s3 (default: None)
+--torch_dtype {auto,bfloat16,float16,float32}
+                        Override the default `torch.dtype` and load the model under this dtype. If `auto` is passed, the dtype will be
+                        automatically derived from the model&#39;s weights. (default: None)
+--low_cpu_mem_usage [LOW_CPU_MEM_USAGE]
+                        It is an option to create the model as an empty shell, then only materialize its parameters when the pretrained weights
+                        are loaded.set True will benefit LLM loading time and RAM consumption. Only valid when loading a pretrained model
+                        (default: False)
+--model_max_length MODEL_MAX_LENGTH
+                        Maximum sequence length. Sequences will be right padded (and possibly truncated) up to that value. (default: 1024)
+--dataset DATASET     Path to the preprocessed dataset to use for the safe model building (default: None)
+--is_tokenized [IS_TOKENIZED]
+                        whether the dataset submitted as input is already tokenized or not (default: False)
+--streaming [STREAMING]
+                        Whether to use a streaming dataset or not (default: False)
+--text_column TEXT_COLUMN
+                        Column containing text data to process. (default: inputs)
+--output_dir OUTPUT_DIR
+                        The output directory where the model predictions and checkpoints will be written. (default: None)
+--overwrite_output_dir [OVERWRITE_OUTPUT_DIR]
+                        Overwrite the content of the output directory. Use this to continue training if output_dir points to a checkpoint
+                        directory. (default: False)
+--do_train [DO_TRAIN]
+                        Whether to run training. (default: False)
+--do_eval [DO_EVAL]   Whether to run eval on the dev set. (default: False)
+--do_predict [DO_PREDICT]
+                        Whether to run predictions on the test set. (default: False)
+--evaluation_strategy {no,steps,epoch}
+                        The evaluation strategy to use. (default: no)
+--prediction_loss_only [PREDICTION_LOSS_ONLY]
+                        When performing evaluation and predictions, only returns the loss. (default: False)
+--per_device_train_batch_size PER_DEVICE_TRAIN_BATCH_SIZE
+                        Batch size per GPU/TPU core/CPU for training. (default: 8)
+--per_device_eval_batch_size PER_DEVICE_EVAL_BATCH_SIZE
+                        Batch size per GPU/TPU core/CPU for evaluation. (default: 8)
+--per_gpu_train_batch_size PER_GPU_TRAIN_BATCH_SIZE
+                        Deprecated, the use of `--per_device_train_batch_size` is preferred. Batch size per GPU/TPU core/CPU for training.
+                        (default: None)
+--per_gpu_eval_batch_size PER_GPU_EVAL_BATCH_SIZE
+                        Deprecated, the use of `--per_device_eval_batch_size` is preferred. Batch size per GPU/TPU core/CPU for evaluation.
+                        (default: None)
+--gradient_accumulation_steps GRADIENT_ACCUMULATION_STEPS
+                        Number of updates steps to accumulate before performing a backward/update pass. (default: 1)
+--eval_accumulation_steps EVAL_ACCUMULATION_STEPS
+                        Number of predictions steps to accumulate before moving the tensors to the CPU. (default: None)
+--eval_delay EVAL_DELAY
+                        Number of epochs or steps to wait for before the first evaluation can be performed, depending on the evaluation_strategy.
+                        (default: 0)
+--learning_rate LEARNING_RATE
+                        The initial learning rate for AdamW. (default: 5e-05)
+--weight_decay WEIGHT_DECAY
+                        Weight decay for AdamW if we apply some. (default: 0.0)
+--adam_beta1 ADAM_BETA1
+                        Beta1 for AdamW optimizer (default: 0.9)
+--adam_beta2 ADAM_BETA2
+                        Beta2 for AdamW optimizer (default: 0.999)
+--adam_epsilon ADAM_EPSILON
+                        Epsilon for AdamW optimizer. (default: 1e-08)
+--max_grad_norm MAX_GRAD_NORM
+                        Max gradient norm. (default: 1.0)
+--num_train_epochs NUM_TRAIN_EPOCHS
+                        Total number of training epochs to perform. (default: 3.0)
+--max_steps MAX_STEPS
+                        If &gt; 0: set total number of training steps to perform. Override num_train_epochs. (default: -1)
+--lr_scheduler_type {linear,cosine,cosine_with_restarts,polynomial,constant,constant_with_warmup,inverse_sqrt,reduce_lr_on_plateau}
+                        The scheduler type to use. (default: linear)
+--warmup_ratio WARMUP_RATIO
+                        Linear warmup over warmup_ratio fraction of total steps. (default: 0.0)
+--warmup_steps WARMUP_STEPS
+                        Linear warmup over warmup_steps. (default: 0)
+--log_level {debug,info,warning,error,critical,passive}
+                        Logger log level to use on the main node. Possible choices are the log levels as strings: &#39;debug&#39;, &#39;info&#39;, &#39;warning&#39;,
+                        &#39;error&#39; and &#39;critical&#39;, plus a &#39;passive&#39; level which doesn&#39;t set anything and lets the application set the level. Defaults
+                        to &#39;passive&#39;. (default: passive)
+--log_level_replica {debug,info,warning,error,critical,passive}
+                        Logger log level to use on replica nodes. Same choices and defaults as ``log_level`` (default: warning)
+--log_on_each_node [LOG_ON_EACH_NODE]
+                        When doing a multinode distributed training, whether to log once per node or just once on the main node. (default: True)
+--no_log_on_each_node
+                        When doing a multinode distributed training, whether to log once per node or just once on the main node. (default: False)
+--logging_dir LOGGING_DIR
+                        Tensorboard log dir. (default: None)
+--logging_strategy {no,steps,epoch}
+                        The logging strategy to use. (default: steps)
+--logging_first_step [LOGGING_FIRST_STEP]
+                        Log the first global_step (default: False)
+--logging_steps LOGGING_STEPS
+                        Log every X updates steps. Should be an integer or a float in range `[0,1)`.If smaller than 1, will be interpreted as
+                        ratio of total training steps. (default: 500)
+--logging_nan_inf_filter [LOGGING_NAN_INF_FILTER]
+                        Filter nan and inf losses for logging. (default: True)
+--no_logging_nan_inf_filter
+                        Filter nan and inf losses for logging. (default: False)
+--save_strategy {no,steps,epoch}
+                        The checkpoint save strategy to use. (default: steps)
+--save_steps SAVE_STEPS
+                        Save checkpoint every X updates steps. Should be an integer or a float in range `[0,1)`.If smaller than 1, will be
+                        interpreted as ratio of total training steps. (default: 500)
+--save_total_limit SAVE_TOTAL_LIMIT
+                        If a value is passed, will limit the total amount of checkpoints. Deletes the older checkpoints in `output_dir`. When
+                        `load_best_model_at_end` is enabled, the &#39;best&#39; checkpoint according to `metric_for_best_model` will always be retained in
+                        addition to the most recent ones. For example, for `save_total_limit=5` and `load_best_model_at_end=True`, the four last
+                        checkpoints will always be retained alongside the best model. When `save_total_limit=1` and `load_best_model_at_end=True`,
+                        it is possible that two checkpoints are saved: the last one and the best one (if they are different). Default is unlimited
+                        checkpoints (default: None)
+--save_safetensors [SAVE_SAFETENSORS]
+                        Use safetensors saving and loading for state dicts instead of default torch.load and torch.save. (default: False)
+--save_on_each_node [SAVE_ON_EACH_NODE]
+                        When doing multi-node distributed training, whether to save models and checkpoints on each node, or only on the main one
+                        (default: False)
+--no_cuda [NO_CUDA]   Do not use CUDA even when it is available (default: False)
+--use_mps_device [USE_MPS_DEVICE]
+                        This argument is deprecated. `mps` device will be used if available similar to `cuda` device. It will be removed in
+                        version 5.0 of 🤗 Transformers (default: False)
+--seed SEED           Random seed that will be set at the beginning of training. (default: 42)
+--data_seed DATA_SEED
+                        Random seed to be used with data samplers. (default: None)
+--jit_mode_eval [JIT_MODE_EVAL]
+                        Whether or not to use PyTorch jit trace for inference (default: False)
+--use_ipex [USE_IPEX]
+                        Use Intel extension for PyTorch when it is available, installation: &#39;https://github.com/intel/intel-extension-for-pytorch&#39;
+                        (default: False)
+--bf16 [BF16]         Whether to use bf16 (mixed) precision instead of 32-bit. Requires Ampere or higher NVIDIA architecture or using CPU
+                        (no_cuda). This is an experimental API and it may change. (default: False)
+--fp16 [FP16]         Whether to use fp16 (mixed) precision instead of 32-bit (default: False)
+--fp16_opt_level FP16_OPT_LEVEL
+                        For fp16: Apex AMP optimization level selected in [&#39;O0&#39;, &#39;O1&#39;, &#39;O2&#39;, and &#39;O3&#39;]. See details at
+                        https://nvidia.github.io/apex/amp.html (default: O1)
+--half_precision_backend {auto,cuda_amp,apex,cpu_amp}
+                        The backend to be used for half precision. (default: auto)
+--bf16_full_eval [BF16_FULL_EVAL]
+                        Whether to use full bfloat16 evaluation instead of 32-bit. This is an experimental API and it may change. (default: False)
+--fp16_full_eval [FP16_FULL_EVAL]
+                        Whether to use full float16 evaluation instead of 32-bit (default: False)
+--tf32 TF32           Whether to enable tf32 mode, available in Ampere and newer GPU architectures. This is an experimental API and it may
+                        change. (default: None)
+--local_rank LOCAL_RANK
+                        For distributed training: local_rank (default: -1)
+--ddp_backend {nccl,gloo,mpi,ccl}
+                        The backend to be used for distributed training (default: None)
+--tpu_num_cores TPU_NUM_CORES
+                        TPU: Number of TPU cores (automatically passed by launcher script) (default: None)
+--tpu_metrics_debug [TPU_METRICS_DEBUG]
+                        Deprecated, the use of `--debug tpu_metrics_debug` is preferred. TPU: Whether to print debug metrics (default: False)
+--debug DEBUG [DEBUG ...]
+                        Whether or not to enable debug mode. Current options: `underflow_overflow` (Detect underflow and overflow in activations
+                        and weights), `tpu_metrics_debug` (print debug metrics on TPU). (default: None)
+--dataloader_drop_last [DATALOADER_DROP_LAST]
+                        Drop the last incomplete batch if it is not divisible by the batch size. (default: False)
+--eval_steps EVAL_STEPS
+                        Run an evaluation every X steps. Should be an integer or a float in range `[0,1)`.If smaller than 1, will be interpreted
+                        as ratio of total training steps. (default: None)
+--dataloader_num_workers DATALOADER_NUM_WORKERS
+                        Number of subprocesses to use for data loading (PyTorch only). 0 means that the data will be loaded in the main process.
+                        (default: 0)
+--past_index PAST_INDEX
+                        If &gt;=0, uses the corresponding part of the output as the past state for next step. (default: -1)
+--run_name RUN_NAME   An optional descriptor for the run. Notably used for wandb logging. (default: None)
+--disable_tqdm DISABLE_TQDM
+                        Whether or not to disable the tqdm progress bars. (default: None)
+--remove_unused_columns [REMOVE_UNUSED_COLUMNS]
+                        Remove columns not required by the model when using an nlp.Dataset. (default: True)
+--no_remove_unused_columns
+                        Remove columns not required by the model when using an nlp.Dataset. (default: False)
+--label_names LABEL_NAMES [LABEL_NAMES ...]
+                        The list of keys in your dictionary of inputs that correspond to the labels. (default: None)
+--load_best_model_at_end [LOAD_BEST_MODEL_AT_END]
+                        Whether or not to load the best model found during training at the end of training. When this option is enabled, the best
+                        checkpoint will always be saved. See `save_total_limit` for more. (default: False)
+--metric_for_best_model METRIC_FOR_BEST_MODEL
+                        The metric to use to compare two different models. (default: None)
+--greater_is_better GREATER_IS_BETTER
+                        Whether the `metric_for_best_model` should be maximized or not. (default: None)
+--ignore_data_skip [IGNORE_DATA_SKIP]
+                        When resuming training, whether or not to skip the first epochs and batches to get to the same training data. (default:
+                        False)
+--sharded_ddp SHARDED_DDP
+                        Whether or not to use sharded DDP training (in distributed training only). The base option should be `simple`, `zero_dp_2`
+                        or `zero_dp_3` and you can add CPU-offload to `zero_dp_2` or `zero_dp_3` like this: zero_dp_2 offload` or `zero_dp_3
+                        offload`. You can add auto-wrap to `zero_dp_2` or `zero_dp_3` with the same syntax: zero_dp_2 auto_wrap` or `zero_dp_3
+                        auto_wrap`. (default: )
+--fsdp FSDP           Whether or not to use PyTorch Fully Sharded Data Parallel (FSDP) training (in distributed training only). The base option
+                        should be `full_shard`, `shard_grad_op` or `no_shard` and you can add CPU-offload to `full_shard` or `shard_grad_op` like
+                        this: full_shard offload` or `shard_grad_op offload`. You can add auto-wrap to `full_shard` or `shard_grad_op` with the
+                        same syntax: full_shard auto_wrap` or `shard_grad_op auto_wrap`. (default: )
+--fsdp_min_num_params FSDP_MIN_NUM_PARAMS
+                        This parameter is deprecated. FSDP&#39;s minimum number of parameters for Default Auto Wrapping. (useful only when `fsdp`
+                        field is passed). (default: 0)
+--fsdp_config FSDP_CONFIG
+                        Config to be used with FSDP (Pytorch Fully Sharded Data Parallel). The value is either afsdp json config file (e.g.,
+                        `fsdp_config.json`) or an already loaded json file as `dict`. (default: None)
+--fsdp_transformer_layer_cls_to_wrap FSDP_TRANSFORMER_LAYER_CLS_TO_WRAP
+                        This parameter is deprecated. Transformer layer class name (case-sensitive) to wrap, e.g, `BertLayer`, `GPTJBlock`,
+                        `T5Block` .... (useful only when `fsdp` flag is passed). (default: None)
+--deepspeed DEEPSPEED
+                        Enable deepspeed and pass the path to deepspeed json config file (e.g. ds_config.json) or an already loaded json file as a
+                        dict (default: None)
+--label_smoothing_factor LABEL_SMOOTHING_FACTOR
+                        The label smoothing epsilon to apply (zero means no label smoothing). (default: 0.0)
+--optim {adamw_hf,adamw_torch,adamw_torch_fused,adamw_torch_xla,adamw_apex_fused,adafactor,adamw_anyprecision,sgd,adagrad,adamw_bnb_8bit,adamw_8bit,lion_8bit,lion_32bit,paged_adamw_32bit,paged_adamw_8bit,paged_lion_32bit,paged_lion_8bit}
+                        The optimizer to use. (default: adamw_hf)
+--optim_args OPTIM_ARGS
+                        Optional arguments to supply to optimizer. (default: None)
+--adafactor [ADAFACTOR]
+                        Whether or not to replace AdamW by Adafactor. (default: False)
+--group_by_length [GROUP_BY_LENGTH]
+                        Whether or not to group samples of roughly the same length together when batching. (default: False)
+--length_column_name LENGTH_COLUMN_NAME
+                        Column name with precomputed lengths to use when grouping by length. (default: length)
+--report_to REPORT_TO [REPORT_TO ...]
+                        The list of integrations to report the results and logs to. (default: None)
+--ddp_find_unused_parameters DDP_FIND_UNUSED_PARAMETERS
+                        When using distributed training, the value of the flag `find_unused_parameters` passed to `DistributedDataParallel`.
+                        (default: None)
+--ddp_bucket_cap_mb DDP_BUCKET_CAP_MB
+                        When using distributed training, the value of the flag `bucket_cap_mb` passed to `DistributedDataParallel`. (default:
+                        None)
+--ddp_broadcast_buffers DDP_BROADCAST_BUFFERS
+                        When using distributed training, the value of the flag `broadcast_buffers` passed to `DistributedDataParallel`. (default:
+                        None)
+--dataloader_pin_memory [DATALOADER_PIN_MEMORY]
+                        Whether or not to pin memory for DataLoader. (default: True)
+--no_dataloader_pin_memory
+                        Whether or not to pin memory for DataLoader. (default: False)
+--skip_memory_metrics [SKIP_MEMORY_METRICS]
+                        Whether or not to skip adding of memory profiler reports to metrics. (default: True)
+--no_skip_memory_metrics
+                        Whether or not to skip adding of memory profiler reports to metrics. (default: False)
+--use_legacy_prediction_loop [USE_LEGACY_PREDICTION_LOOP]
+                        Whether or not to use the legacy prediction_loop in the Trainer. (default: False)
+--push_to_hub [PUSH_TO_HUB]
+                        Whether or not to upload the trained model to the model hub after training. (default: False)
+--resume_from_checkpoint RESUME_FROM_CHECKPOINT
+                        The path to a folder with a valid checkpoint for your model. (default: None)
+--hub_model_id HUB_MODEL_ID
+                        The name of the repository to keep in sync with the local `output_dir`. (default: None)
+--hub_strategy {end,every_save,checkpoint,all_checkpoints}
+                        The hub strategy to use when `--push_to_hub` is activated. (default: every_save)
+--hub_token HUB_TOKEN
+                        The token to use to push to the Model Hub. (default: None)
+--hub_private_repo [HUB_PRIVATE_REPO]
+                        Whether the model repository is private or not. (default: False)
+--gradient_checkpointing [GRADIENT_CHECKPOINTING]
+                        If True, use gradient checkpointing to save memory at the expense of slower backward pass. (default: False)
+--include_inputs_for_metrics [INCLUDE_INPUTS_FOR_METRICS]
+                        Whether or not the inputs will be passed to the `compute_metrics` function. (default: False)
+--fp16_backend {auto,cuda_amp,apex,cpu_amp}
+                        Deprecated. Use half_precision_backend instead (default: auto)
+--push_to_hub_model_id PUSH_TO_HUB_MODEL_ID
+                        The name of the repository to which push the `Trainer`. (default: None)
+--push_to_hub_organization PUSH_TO_HUB_ORGANIZATION
+                        The name of the organization in with to which push the `Trainer`. (default: None)
+--push_to_hub_token PUSH_TO_HUB_TOKEN
+                        The token to use to push to the Model Hub. (default: None)
+--mp_parameters MP_PARAMETERS
+                        Used by the SageMaker launcher to send mp-specific args. Ignored in Trainer (default: )
+--auto_find_batch_size [AUTO_FIND_BATCH_SIZE]
+                        Whether to automatically decrease the batch size in half and rerun the training loop again each time a CUDA Out-of-Memory
+                        was reached (default: False)
+--full_determinism [FULL_DETERMINISM]
+                        Whether to call enable_full_determinism instead of set_seed for reproducibility in distributed training. Important: this
+                        will negatively impact the performance, so only use it for debugging. (default: False)
+--torchdynamo TORCHDYNAMO
+                        This argument is deprecated, use `--torch_compile_backend` instead. (default: None)
+--ray_scope RAY_SCOPE
+                        The scope to use when doing hyperparameter search with Ray. By default, `&quot;last&quot;` will be used. Ray will then use the last
+                        checkpoint of all trials, compare those, and select the best one. However, other options are also available. See the Ray
+                        documentation (https://docs.ray.io/en/latest/tune/api_docs/analysis.html#ray.tune.ExperimentAnalysis.get_best_trial) for
+                        more options. (default: last)
+--ddp_timeout DDP_TIMEOUT
+                        Overrides the default timeout for distributed training (value should be given in seconds). (default: 1800)
+--torch_compile [TORCH_COMPILE]
+                        If set to `True`, the model will be wrapped in `torch.compile`. (default: False)
+--torch_compile_backend TORCH_COMPILE_BACKEND
+                        Which backend to use with `torch.compile`, passing one will trigger a model compilation. (default: None)
+--torch_compile_mode TORCH_COMPILE_MODE
+                        Which mode to use with `torch.compile`, passing one will trigger a model compilation. (default: None)
+--xpu_backend {mpi,ccl,gloo}
+                        The backend to be used for distributed training on Intel XPU. (default: None)
+</code></pre></div>
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      Copyright 2023 Valence Labs
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/datamol-io" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6zm-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3zm44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9zM244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8zM97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1zm-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7zm32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1zm-11.4-14.7c-1.6 1-1.6 3.6 0 5.9 1.6 2.3 4.3 3.3 5.6 2.3 1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://twitter.com/datamol_io" target="_blank" rel="noopener" title="twitter.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M459.37 151.716c.325 4.548.325 9.097.325 13.645 0 138.72-105.583 298.558-298.558 298.558-59.452 0-114.68-17.219-161.137-47.106 8.447.974 16.568 1.299 25.34 1.299 49.055 0 94.213-16.568 130.274-44.832-46.132-.975-84.792-31.188-98.112-72.772 6.498.974 12.995 1.624 19.818 1.624 9.421 0 18.843-1.3 27.614-3.573-48.081-9.747-84.143-51.98-84.143-102.985v-1.299c13.969 7.797 30.214 12.67 47.431 13.319-28.264-18.843-46.781-51.005-46.781-87.391 0-19.492 5.197-37.36 14.294-52.954 51.655 63.675 129.3 105.258 216.365 109.807-1.624-7.797-2.599-15.918-2.599-24.04 0-57.828 46.782-104.934 104.934-104.934 30.213 0 57.502 12.67 76.67 33.137 23.715-4.548 46.456-13.32 66.599-25.34-7.798 24.366-24.366 44.833-46.132 57.827 21.117-2.273 41.584-8.122 60.426-16.243-14.292 20.791-32.161 39.308-52.628 54.253z"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/safe-mol/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.4.2 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2023 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6zM286.2 404c11.1 0 20.1 9.1 20.1 20.3 0 11.3-9 20.4-20.1 20.4-11 0-20.1-9.2-20.1-20.4.1-11.3 9.1-20.3 20.1-20.3zM167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4zm-6.7-142.6c-11.1 0-20.1-9.1-20.1-20.3.1-11.3 9-20.4 20.1-20.4 11 0 20.1 9.2 20.1 20.4s-9 20.3-20.1 20.3z"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    <script id="__config" type="application/json">{"base": ".", "features": ["navigation.expand"], "search": "assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="assets/javascripts/bundle.aecac24b.min.js"></script>
+      
+    
+  </body>
+</html>
