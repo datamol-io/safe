@@ -14,7 +14,7 @@
   <a href="https://safe-docs.datamol.io/" target="_blank">
       Docs
   </a> |
-  <a href="https://huggingface.co/datamol-io/safe" target="_blank">
+  <a href="https://huggingface.co/datamol-io/safe-gpt" target="_blank">
     🤗 Model
   </a> |
   <a href="https://huggingface.co/datasets/datamol-io/safe-gpt" target="_blank">
