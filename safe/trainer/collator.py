@@ -12,7 +12,7 @@ from collections.abc import Mapping
 from transformers.data.data_collator import _torch_collate_batch
 from safe.tokenizer import SAFETokenizer
 
-from tokenizer import Tokenizer
+from tokenizers import Tokenizer
 
 
 class SAFECollator:
