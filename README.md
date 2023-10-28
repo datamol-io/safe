@@ -71,8 +71,6 @@ You can use conda/mamba. Ask @maclandrol for credentials to the conda forge or f
 mamba install -c conda-forge safe-mol
 ```
 
-`safe` mostly depends on [transformers](https://huggingface.co/docs/transformers/index) and [datasets](https://huggingface.co/docs/datasets/index). Please see the [env.yml](./env.yml) file for a complete list of dependencies.
-
 ### Datasets and Models
 
 We provided a pretained GPT2 model (XX M parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B):
