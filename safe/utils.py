@@ -268,7 +268,9 @@ class MolSlicer:
         return (head, linker, tail)
 
     @classmethod
-    def link_fragments(cls, linker: Union[dm.Mol, str], head: Union[dm.Mol, str], tail: Union[dm.Mol, str]):
+    def link_fragments(
+        cls, linker: Union[dm.Mol, str], head: Union[dm.Mol, str], tail: Union[dm.Mol, str]
+    ):
         """Link fragments together using the provided linker
 
         Args:
@@ -326,7 +328,9 @@ def _selective_add_hs(mol: dm.Mol, fraction_hs: Optional[bool] = None):
 
 
 @py_random_state("seed")
-def mol_partition(mol: dm.Mol, query: Optional[dm.Mol] = None, seed: Optional[int] = None, **kwargs: Any):
+def mol_partition(
+    mol: dm.Mol, query: Optional[dm.Mol] = None, seed: Optional[int] = None, **kwargs: Any
+):
     """Partition a molecule into fragments using a bond query
 
     Args:
@@ -344,7 +348,9 @@ def mol_partition(mol: dm.Mol, query: Optional[dm.Mol] = None, seed: Optional[in
         query = __mmpa_query
 
     G = dm.graph.to_graph(mol)
-    bond_partition = [tuple(sorted(match)) for match in mol.GetSubstructMatches(query, uniquify=True)]
+    bond_partition = [
+        tuple(sorted(match)) for match in mol.GetSubstructMatches(query, uniquify=True)
+    ]
 
     def get_relevant_edges(e1, e2):
         return tuple(sorted([e1, e2])) not in bond_partition
@@ -353,7 +359,9 @@ def mol_partition(mol: dm.Mol, query: Optional[dm.Mol] = None, seed: Optional[in
 
     partition = [{u} for u in G.nodes()]
     inner_partition = sorted(nx.connected_components(subgraphs), key=lambda x: min(x))
-    mod = nx.algorithms.community.modularity(G, inner_partition, resolution=resolution, weight=weight)
+    mod = nx.algorithms.community.modularity(
+        G, inner_partition, resolution=resolution, weight=weight
+    )
     is_directed = G.is_directed()
     graph = G.__class__()
     graph.add_nodes_from(G)

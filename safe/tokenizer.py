@@ -54,7 +54,9 @@ class SAFESplitter:
             tokens = list(self.regex.findall(line))
             reconstruction = "".join(tokens)
             if line != reconstruction:
-                logger.error(f"Tokens different from sample:\ntokens {reconstruction}\nsample {line}.")
+                logger.error(
+                    f"Tokens different from sample:\ntokens {reconstruction}\nsample {line}."
+                )
                 raise ValueError(line)
         else:
             idxs = re.finditer(self.regex, str(line))
@@ -343,8 +345,12 @@ class SAFETokenizer:
                     new_ids.append(id)
             new_ids_list.append(new_ids)
         if len(new_ids_list) == 1:
-            return self.tokenizer.decode(list(new_ids_list[0]), skip_special_tokens=skip_special_tokens)
-        return self.tokenizer.decode_batch(list(new_ids_list), skip_special_tokens=skip_special_tokens)
+            return self.tokenizer.decode(
+                list(new_ids_list[0]), skip_special_tokens=skip_special_tokens
+            )
+        return self.tokenizer.decode_batch(
+            list(new_ids_list), skip_special_tokens=skip_special_tokens
+        )
 
     def get_pretrained(self, **kwargs) -> PreTrainedTokenizerFast:
         r"""
