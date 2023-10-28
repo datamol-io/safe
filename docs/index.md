@@ -54,7 +54,7 @@ The construction of a SAFE strings requires definition a molecular fragmentation
 
 </br>
 <div align="center">
-    <img src="docs/assets/safe-construction.svg" width="100%">
+    <img src="assets/safe-construction.svg" width="100%">
 </div>
 
 ### Installation
