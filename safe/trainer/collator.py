@@ -8,8 +8,11 @@ import copy
 import functools
 import torch
 from collections.abc import Mapping
+
 from transformers.data.data_collator import _torch_collate_batch
 from safe.tokenizer import SAFETokenizer
+
+from tokenizer import Tokenizer
 
 
 class SAFECollator:
@@ -23,7 +26,7 @@ class SAFECollator:
 
     def __init__(
         self,
-        tokenizer,
+        tokenizer: Tokenizer,
         pad_to_multiple_of: Optional[int] = None,
         input_key: str = "inputs",
         label_key: str = "labels",

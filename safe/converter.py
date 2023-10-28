@@ -89,7 +89,7 @@ class SAFEConverter:
 
         Args:
             mol: molecules to randomize
-            seed: optional seed to use
+            rng: optional seed to use
         """
         if isinstance(rng, int):
             rng = np.random.default_rng(rng)
@@ -225,7 +225,6 @@ class SAFEConverter:
 
         Args:
             inp: input smiles
-            bond_smarts: decomposition type or smarts string or list of smarts strings to use for bond breaking
             canonical: whether to return canonical smiles string. Defaults to True
             randomize: whether to randomize the safe string encoding. Will be ignored if canonical is provided
             seed: optional seed to use when allowing randomization of the SAFE encoding.

@@ -1,5 +1,7 @@
 from typing import Optional
 from typing import List
+from typing import Any
+from typing import Iterator
 
 import re
 import fsspec
@@ -52,9 +54,7 @@ class SAFESplitter:
             tokens = list(self.regex.findall(line))
             reconstruction = "".join(tokens)
             if line != reconstruction:
-                logger.error(
-                    f"Tokens different from sample:\ntokens {reconstruction}\nsample {line}."
-                )
+                logger.error(f"Tokens different from sample:\ntokens {reconstruction}\nsample {line}.")
                 raise ValueError(line)
         else:
             idxs = re.finditer(self.regex, str(line))
@@ -132,7 +132,12 @@ class SAFETokenizer:
         return self.tokenizer.token_to_id(self.tokenizer.eos_token)
 
     @classmethod
-    def set_special_tokens(cls, tokenizer, bos_token=CLS_TOKEN, eos_token=SEP_TOKEN):
+    def set_special_tokens(
+        cls,
+        tokenizer: Tokenizer,
+        bos_token: str = CLS_TOKEN,
+        eos_token: str = SEP_TOKEN,
+    ):
         """Set special tokens for a tokenizer
 
         Args:
@@ -147,6 +152,7 @@ class SAFETokenizer:
         tokenizer.unk_token = UNK_TOKEN
         tokenizer.eos_token = eos_token
         tokenizer.bos_token = bos_token
+
         if isinstance(tokenizer, Tokenizer):
             tokenizer.add_special_tokens(
                 [
@@ -190,7 +196,7 @@ class SAFETokenizer:
         d["tokenizer"].__dict__.update(d.get("tokenizer_attrs", {}))
         self.__dict__.update(d)
 
-    def train_from_iterator(self, data, **kwargs):
+    def train_from_iterator(self, data: Iterator, **kwargs: Any):
         """Train the Tokenizer using the provided iterator.
 
         You can provide anything that is a Python Iterator
@@ -199,8 +205,8 @@ class SAFETokenizer:
             * A Numpy array of strings
 
         Args:
-            data (iterator): data
-            kwargs: additional keyword argument for the tokenizer `train_from_iterator`
+            data: data iterator
+            **kwargs: additional keyword argument for the tokenizer `train_from_iterator`
         """
         self.tokenizer.train_from_iterator(data, trainer=self.trainer, **kwargs)
 
@@ -211,17 +217,16 @@ class SAFETokenizer:
         """
         return len(self.tokenizer.get_vocab().keys())
 
-    def encode(self, sample_str, ids_only=True, **kwargs):
+    def encode(self, sample_str: str, ids_only: bool = True, **kwargs) -> list:
         r"""
         Encodes a given molecule string once training is done
 
-        Args
-            sample_str (str): Sample string to encode molecule
-            ids_only (bool): whether to return only the ids or the encoding objet
+        Args:
+            sample_str: Sample string to encode molecule
+            ids_only: whether to return only the ids or the encoding objet
 
         Returns:
             object: Returns encoded list of IDs
-
         """
         if isinstance(sample_str, str):
             enc = self.tokenizer.encode(sample_str, **kwargs)
@@ -266,7 +271,7 @@ class SAFETokenizer:
             OUT.write(out_str)
 
     @classmethod
-    def from_dict(cls, data):
+    def from_dict(cls, data: dict):
         """Load tokenizer from dict
 
         Args:
@@ -296,24 +301,22 @@ class SAFETokenizer:
 
     def decode(
         self,
-        ids,
+        ids: list,
         skip_special_tokens: bool = True,
         ignore_stops: bool = False,
         stop_token_ids: Optional[List[int]] = None,
-    ):
+    ) -> str:
         r"""
         Decodes a list of ids to molecular representation in the format in which this tokenizer was created.
 
         Args:
             ids: list of IDs
-            pretrained_tokenizer: pretrained tokenizer to use
             skip_special_tokens: whether to skip all special tokens when encountering them
             ignore_stops: whether to ignore the stop tokens, thus decoding till the end
             stop_token_ids: optional list of stop token ids to use
 
         Returns:
             sequence: str representation of molecule
-
         """
         old_id_list = ids
         if not isinstance(ids[0], (list, np.ndarray)) and not torch.is_tensor(ids[0]):
@@ -340,14 +343,10 @@ class SAFETokenizer:
                     new_ids.append(id)
             new_ids_list.append(new_ids)
         if len(new_ids_list) == 1:
-            return self.tokenizer.decode(
-                list(new_ids_list[0]), skip_special_tokens=skip_special_tokens
-            )
-        return self.tokenizer.decode_batch(
-            list(new_ids_list), skip_special_tokens=skip_special_tokens
-        )
+            return self.tokenizer.decode(list(new_ids_list[0]), skip_special_tokens=skip_special_tokens)
+        return self.tokenizer.decode_batch(list(new_ids_list), skip_special_tokens=skip_special_tokens)
 
-    def get_pretrained(self, **kwargs):
+    def get_pretrained(self, **kwargs) -> PreTrainedTokenizerFast:
         r"""
         Get a pretrained tokenizer from this tokenizer
 

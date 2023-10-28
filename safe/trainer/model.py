@@ -50,9 +50,7 @@ class PropertyHead(torch.nn.Module):
             last_hidden_size = config.summary_hidden_size
 
         activation_string = getattr(config, "summary_activation", None)
-        self.activation: Callable = (
-            get_activation(activation_string) if activation_string else nn.Identity()
-        )
+        self.activation: Callable = get_activation(activation_string) if activation_string else nn.Identity()
 
         self.out = torch.nn.Identity()
         if getattr(config, "num_labels", None) and config.num_labels > 0:
@@ -60,16 +58,18 @@ class PropertyHead(torch.nn.Module):
             self.out = nn.Linear(last_hidden_size, num_labels)
 
     def forward(
-        self, hidden_states: torch.FloatTensor, cls_index: Optional[torch.LongTensor] = None
+        self,
+        hidden_states: torch.FloatTensor,
+        cls_index: Optional[torch.LongTensor] = None,
     ) -> torch.FloatTensor:
         """
         Compute a single vector summary of a sequence hidden states.
 
         Args:
-            hidden_states (`torch.FloatTensor` of shape `[batch_size, seq_len, hidden_size]`):
+            hidden_states: `torch.FloatTensor` of shape `[batch_size, seq_len, hidden_size]`)
                 The hidden states of the last layer.
-            cls_index (`torch.LongTensor` of shape `[batch_size]` or `[batch_size, ...]`
-                where ... are optional leading dimensions of `hidden_states`, *optional*):
+            cls_index: `torch.LongTensor` of shape `[batch_size]` or `[batch_size, ...]`
+                where ... are optional leading dimensions of `hidden_states`, *optional*
                 Used if `summary_type == "cls_index"` and takes the last token of the sequence as classification token.
 
         Returns:
@@ -172,9 +172,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
         lm_logits = self.lm_head(hidden_states)
 
         if mc_token_ids is None and self.config.pad_token_id is not None and input_ids is not None:
-            mc_token_ids = (torch.ne(input_ids, self.config.pad_token_id).sum(-1) - 1).to(
-                lm_logits.device
-            )
+            mc_token_ids = (torch.ne(input_ids, self.config.pad_token_id).sum(-1) - 1).to(lm_logits.device)
 
         # Set device for model parallelism
         if self.model_parallel:
@@ -187,9 +185,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
             mc_logits = self.multiple_choice_head(hidden_states, mc_token_ids).squeeze(-1)
             mc_labels = mc_labels.to(mc_logits.device)
             loss_fct = MSELoss()
-            mc_loss = loss_fct(
-                mc_logits.view(-1, mc_logits.size(-1)), mc_labels.view(-1, mc_logits.size(-1))
-            )
+            mc_loss = loss_fct(mc_logits.view(-1, mc_logits.size(-1)), mc_labels.view(-1, mc_logits.size(-1)))
 
         lm_loss = None
         if labels is not None:

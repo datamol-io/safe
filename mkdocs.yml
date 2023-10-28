@@ -8,6 +8,7 @@ copyright: Copyright 2023 Valence Labs
 remote_branch: "gh-pages"
 docs_dir: "docs"
 use_directory_urls: false
+strict: true
 
 nav:
   - Overview: index.md
@@ -20,6 +21,7 @@ nav:
       - Model training: api/safe.models.md
   - CLI: cli.md
   - License: license.md
+  - Data License: data_license.md
 
 theme:
   name: material
