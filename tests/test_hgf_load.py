@@ -9,7 +9,7 @@ def test_load_default_safe_model():
     assert isinstance(model, SAFEDoubleHeadsModel)
 
 
-def tes_load_default_safe_tokenizer():
+def test_load_default_safe_tokenizer():
     tokenizer = SAFETokenizer.from_pretrained("datamol-io/safe-gpt")
     assert isinstance(tokenizer, SAFETokenizer)
 
