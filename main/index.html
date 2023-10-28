@@ -807,6 +807,9 @@
   </a> |
   <a href="https://huggingface.co/datamol-io/safe" target="_blank">
     🤗 Model
+  </a> |
+  <a href="https://huggingface.co/datasets/datamol-io/safe-gpt" target="_blank">
+    🤗 Training Dataset
   </a>
 </p>
 
@@ -850,10 +853,40 @@
 <div class="highlight"><pre><span></span><code>mamba<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>safe-mol
 </code></pre></div>
 <h3 id="datasets-and-models">Datasets and Models<a class="headerlink" href="#datasets-and-models" title="Permanent link">&para;</a></h3>
-<p>We provided a pretained GPT2 model (XX M parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B):</p>
-<ul>
-<li><em>Safe-XXM</em> TODO</li>
-</ul>
+<table>
+<thead>
+<tr>
+<th>Type</th>
+<th>Name</th>
+<th>Infos</th>
+<th>Size</th>
+<th>Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Model</td>
+<td><a href="https://huggingface.co/datamol-io/safe-gpt">datamol-io/safe-gpt</a></td>
+<td>87M params</td>
+<td>350M</td>
+<td>Default model</td>
+</tr>
+<tr>
+<td>Dataset</td>
+<td><a href="https://huggingface.co/datamol-io/safe-gpt">datamol-io/safe-gpt</a></td>
+<td>1.1B rows</td>
+<td>250GB</td>
+<td>Training dataset</td>
+</tr>
+<tr>
+<td>Dataset</td>
+<td><a href="https://huggingface.co/datamol-io/safe-drugs">datamol-io/safe-drugs</a></td>
+<td>26 rows</td>
+<td>20 kB</td>
+<td>Benchmarking dataset</td>
+</tr>
+</tbody>
+</table>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <p>Please refer to the <a href="https://safe-docs.datamol.io/">documentation</a>, which contains tutorials for getting started with <code>safe</code> and detailed descriptions of the functions provided.</p>
 <h3 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h3>
