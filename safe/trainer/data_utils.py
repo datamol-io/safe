@@ -1,11 +1,17 @@
 from typing import Optional
 from typing import Callable
+from typing import Any
+from typing import Union
+from typing import Dict
+
 from collections.abc import Mapping
 from tqdm.auto import tqdm
 from functools import partial
+
 import itertools
 import upath
 import datasets
+
 from safe.tokenizer import SAFETokenizer
 
 
@@ -14,10 +20,12 @@ def take(n, iterable):
     return list(itertools.islice(iterable, n))
 
 
-def get_dataset_column_names(dataset):
+def get_dataset_column_names(dataset: Union[datasets.Dataset, datasets.IterableDataset, Mapping]):
     """Get the column names in a dataset
+
     Args:
         dataset: dataset to get the column names from
+
     """
     if isinstance(dataset, (datasets.IterableDatasetDict, Mapping)):
         column_names = {split: dataset[split].column_names for split in dataset}
@@ -29,8 +37,8 @@ def get_dataset_column_names(dataset):
 
 
 def tokenize_fn(
-    row,
-    tokenizer,
+    row: Dict[str, Any],
+    tokenizer: Callable,
     tokenize_column: str = "inputs",
     max_length: Optional[int] = None,
     padding: bool = False,

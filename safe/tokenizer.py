@@ -2,16 +2,21 @@ from typing import Optional
 from typing import List
 from typing import Any
 from typing import Iterator
+from typing import Union
+from typing import Dict
 
 import re
+import os
+import contextlib
 import fsspec
 import copy
 import torch
 import numpy as np
 import json
-from loguru import logger
+import warnings
+import packaging.version
 
-from .utils import attr_as
+from loguru import logger
 from tokenizers import decoders
 from tokenizers import Tokenizer
 from tokenizers.models import BPE, WordLevel
@@ -19,6 +24,16 @@ from tokenizers.trainers import BpeTrainer, WordLevelTrainer
 from tokenizers.pre_tokenizers import Whitespace, PreTokenizer
 from tokenizers.processors import TemplateProcessing
 from transformers import PreTrainedTokenizerFast
+from transformers import __version__ as transformers_version
+from transformers.utils import PushToHubMixin
+from transformers.utils import is_offline_mode
+from transformers.utils import is_remote_url
+from transformers.utils import cached_file
+from transformers.utils import download_url
+from transformers.utils import extract_commit_hash
+from transformers.utils import working_or_temp_dir
+
+from .utils import attr_as
 
 
 SPECIAL_TOKENS = ["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
@@ -40,7 +55,7 @@ class SAFESplitter:
 
     REGEX_PATTERN = r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%[0-9]{2}|[0-9])"""
 
-    name = "smiles"
+    name = "safe"
 
     def __init__(self, pattern: Optional[str] = None):
         # do not use this as raw strings (not r before)
@@ -49,7 +64,7 @@ class SAFESplitter:
         self.regex = re.compile(pattern)
 
     def tokenize(self, line):
-        """Tokenize a molecule into SMILES."""
+        """Tokenize a safe string into characters."""
         if isinstance(line, str):
             tokens = list(self.regex.findall(line))
             reconstruction = "".join(tokens)
@@ -74,15 +89,17 @@ class SAFESplitter:
         return self.tokenize(normalized)
 
     def pre_tokenize(self, pretok):
-        """Pretokenize using an input pretokenizer"""
+        """Pretokenize using an input pretokenizer object from the tokenizer library"""
         pretok.split(self.split)
 
 
-class SAFETokenizer:
+class SAFETokenizer(PushToHubMixin):
     """
     Class to initialize and train a tokenizer for SAFE string
     Once trained, you can use the converted version of the tokenizer to an HuggingFace PreTrainedTokenizerFast
     """
+
+    vocab_files_names: str = "tokenizer.json"
 
     def __init__(
         self,
@@ -214,8 +231,7 @@ class SAFETokenizer:
 
     def __len__(self):
         r"""
-        Returns: Gets the count of tokens in vocab along with special tokens.
-
+        Gets the count of tokens in vocab along with special tokens.
         """
         return len(self.tokenizer.get_vocab().keys())
 
@@ -279,7 +295,7 @@ class SAFETokenizer:
         Args:
             data: dictionary containing the tokenizer info
         """
-        tokenizer_type = data.pop("tokenizer_type", "smiles")
+        tokenizer_type = data.pop("tokenizer_type", "safe")
         tokenizer_attrs = data.pop("tokenizer_attrs", None)
         custom_pre_tokenizer = data.pop("custom_pre_tokenizer", False)
         tokenizer = Tokenizer.from_str(json.dumps(data))
@@ -386,3 +402,241 @@ class SAFETokenizer:
                 getattr(self.tokenizer, "model_max_length"),
             )
         return tk
+
+    def push_to_hub(
+        self,
+        repo_id: str,
+        use_temp_dir: Optional[bool] = None,
+        commit_message: Optional[str] = None,
+        private: Optional[bool] = None,
+        token: Optional[Union[bool, str]] = None,
+        max_shard_size: Optional[Union[int, str]] = "10GB",
+        create_pr: bool = False,
+        safe_serialization: bool = False,
+        **deprecated_kwargs,
+    ) -> str:
+        """
+        Upload the tokenizer to the 🤗 Model Hub.
+
+        Args:
+            repo_id: The name of the repository you want to push your {object} to. It should contain your organization name
+                when pushing to a given organization.
+            use_temp_dir: Whether or not to use a temporary directory to store the files saved before they are pushed to the Hub.
+                Will default to `True` if there is no directory named like `repo_id`, `False` otherwise.
+            commit_message: Message to commit while pushing. Will default to `"Upload {object}"`.
+            private: Whether or not the repository created should be private.
+            token: The token to use as HTTP bearer authorization for remote files. If `True`, will use the token generated
+                when running `huggingface-cli login` (stored in `~/.huggingface`). Will default to `True` if `repo_url`
+                is not specified.
+            max_shard_size: Only applicable for models. The maximum size for a checkpoint before being sharded. Checkpoints shard
+                will then be each of size lower than this size. If expressed as a string, needs to be digits followed
+                by a unit (like `"5MB"`).
+            create_pr: Whether or not to create a PR with the uploaded files or directly commit.
+            safe_serialization: Whether or not to convert the model weights in safetensors format for safer serialization.
+        """
+        use_auth_token = deprecated_kwargs.pop("use_auth_token", None)
+        if use_auth_token is not None:
+            warnings.warn(
+                "The `use_auth_token` argument is deprecated and will be removed in v5 of Transformers.",
+                FutureWarning,
+            )
+            if token is not None:
+                raise ValueError(
+                    "`token` and `use_auth_token` are both specified. Please set only the argument `token`."
+                )
+            token = use_auth_token
+
+        repo_path_or_name = deprecated_kwargs.pop("repo_path_or_name", None)
+        if repo_path_or_name is not None:
+            # Should use `repo_id` instead of `repo_path_or_name`. When using `repo_path_or_name`, we try to infer
+            # repo_id from the folder path, if it exists.
+            warnings.warn(
+                "The `repo_path_or_name` argument is deprecated and will be removed in v5 of Transformers. Use "
+                "`repo_id` instead.",
+                FutureWarning,
+            )
+            if repo_id is not None:
+                raise ValueError(
+                    "`repo_id` and `repo_path_or_name` are both specified. Please set only the argument `repo_id`."
+                )
+            if os.path.isdir(repo_path_or_name):
+                # repo_path: infer repo_id from the path
+                repo_id = repo_id.split(os.path.sep)[-1]
+                working_dir = repo_id
+            else:
+                # repo_name: use it as repo_id
+                repo_id = repo_path_or_name
+                working_dir = repo_id.split("/")[-1]
+        else:
+            # Repo_id is passed correctly: infer working_dir from it
+            working_dir = repo_id.split("/")[-1]
+
+        # Deprecation warning will be sent after for repo_url and organization
+        repo_url = deprecated_kwargs.pop("repo_url", None)
+        organization = deprecated_kwargs.pop("organization", None)
+
+        repo_id = self._create_repo(
+            repo_id, private, token, repo_url=repo_url, organization=organization
+        )
+
+        if use_temp_dir is None:
+            use_temp_dir = not os.path.isdir(working_dir)
+
+        with working_or_temp_dir(working_dir=working_dir, use_temp_dir=use_temp_dir) as work_dir:
+            files_timestamps = self._get_files_timestamps(work_dir)
+
+            # Save all files.
+            with contextlib.suppress(Exception):
+                self.save_pretrained(
+                    work_dir, max_shard_size=max_shard_size, safe_serialization=safe_serialization
+                )
+
+            self.save(os.path.join(work_dir, self.vocab_files_names))
+
+            return self._upload_modified_files(
+                work_dir,
+                repo_id,
+                files_timestamps,
+                commit_message=commit_message,
+                token=token,
+                create_pr=create_pr,
+            )
+
+    @classmethod
+    def from_pretrained(
+        cls,
+        pretrained_model_name_or_path: Union[str, os.PathLike],
+        cache_dir: Optional[Union[str, os.PathLike]] = None,
+        force_download: bool = False,
+        local_files_only: bool = False,
+        token: Optional[Union[str, bool]] = None,
+        return_fast_tokenizer: Optional[bool] = False,
+        proxies: Optional[Dict[str, str]] = None,
+        **kwargs,
+    ):
+        r"""
+        Instantiate a [`~tokenization_utils_base.PreTrainedTokenizerBase`] (or a derived class) from a predefined
+        tokenizer.
+
+        Args:
+            pretrained_model_name_or_path:
+                Can be either:
+
+                - A string, the *model id* of a predefined tokenizer hosted inside a model repo on huggingface.co.
+                  Valid model ids can be located at the root-level, like `bert-base-uncased`, or namespaced under a
+                  user or organization name, like `dbmdz/bert-base-german-cased`.
+                - A path to a *directory* containing vocabulary files required by the tokenizer, for instance saved
+                  using the [`~tokenization_utils_base.PreTrainedTokenizerBase.save_pretrained`] method, e.g.,
+                  `./my_model_directory/`.
+                - (**Deprecated**, not applicable to all derived classes) A path or url to a single saved vocabulary
+                  file (if and only if the tokenizer only requires a single vocabulary file like Bert or XLNet), e.g.,
+                  `./my_model_directory/vocab.txt`.
+            cache_dir: Path to a directory in which a downloaded predefined tokenizer vocabulary files should be cached if the
+                standard cache should not be used.
+            force_download: Whether or not to force the (re-)download the vocabulary files and override the cached versions if they exist.
+            proxies: A dictionary of proxy servers to use by protocol or endpoint, e.g.,
+                `{'http': 'foo.bar:3128', 'http://hostname': 'foo.bar:4012'}`. The proxies are used on each request.
+            token: The token to use as HTTP bearer authorization for remote files.
+                If `True`, will use the token generated when running `huggingface-cli login` (stored in `~/.huggingface`).
+            local_files_only: Whether or not to only rely on local files and not to attempt to download any files.
+            return_fast_tokenizer: Whether to return fast tokenizer or not.
+
+        Examples:
+        ``` py
+            # We can't instantiate directly the base class *PreTrainedTokenizerBase* so let's show our examples on a derived class: BertTokenizer
+            # Download vocabulary from huggingface.co and cache.
+            tokenizer = SAFETokenizer.from_pretrained("datamol-io/safe-gpt")
+
+            # If vocabulary files are in a directory (e.g. tokenizer was saved using *save_pretrained('./test/saved_model/')*)
+            tokenizer = SAFETokenizer.from_pretrained("./test/saved_model/")
+
+            # If the tokenizer uses a single vocabulary file, you can point directly to this file
+            tokenizer = BertTokenizer.from_pretrained("./test/saved_model/tokenizer.json")
+        ```
+        """
+        resume_download = kwargs.pop("resume_download", False)
+        use_auth_token = kwargs.pop("use_auth_token", None)
+        subfolder = kwargs.pop("subfolder", None)
+        from_pipeline = kwargs.pop("_from_pipeline", None)
+        from_auto_class = kwargs.pop("_from_auto", False)
+        commit_hash = kwargs.pop("_commit_hash", None)
+
+        if use_auth_token is not None:
+            warnings.warn(
+                "The `use_auth_token` argument is deprecated and will be removed in v5 of Transformers.",
+                FutureWarning,
+            )
+            if token is not None:
+                raise ValueError(
+                    "`token` and `use_auth_token` are both specified. Please set only the argument `token`."
+                )
+            token = use_auth_token
+
+        user_agent = {
+            "file_type": "tokenizer",
+            "from_auto_class": from_auto_class,
+            "is_fast": "Fast" in cls.__name__,
+        }
+        if from_pipeline is not None:
+            user_agent["using_pipeline"] = from_pipeline
+
+        if is_offline_mode() and not local_files_only:
+            logger.info("Offline mode: forcing local_files_only=True")
+            local_files_only = True
+
+        pretrained_model_name_or_path = str(pretrained_model_name_or_path)
+
+        os.path.isdir(pretrained_model_name_or_path)
+        file_path = None
+        if os.path.isfile(pretrained_model_name_or_path):
+            file_path = pretrained_model_name_or_path
+        elif is_remote_url(pretrained_model_name_or_path):
+            file_path = download_url(pretrained_model_name_or_path, proxies=proxies)
+
+        else:
+            # EN: remove this when transformers package has uniform API
+            cached_file_extra_kwargs = {"use_auth_token": token}
+            if packaging.version.parse(transformers_version) >= packaging.version.parse("5.0"):
+                cached_file_extra_kwargs = {"token": token}
+            # Try to get the tokenizer config to see if there are versioned tokenizer files.
+            resolved_vocab_files = cached_file(
+                pretrained_model_name_or_path,
+                cls.vocab_files_names,
+                cache_dir=cache_dir,
+                force_download=force_download,
+                resume_download=resume_download,
+                proxies=proxies,
+                local_files_only=local_files_only,
+                subfolder=subfolder,
+                user_agent=user_agent,
+                _raise_exceptions_for_missing_entries=False,
+                _raise_exceptions_for_connection_errors=False,
+                _commit_hash=commit_hash,
+                **cached_file_extra_kwargs,
+            )
+            commit_hash = extract_commit_hash(resolved_vocab_files, commit_hash)
+            file_path = resolved_vocab_files
+
+        if not os.path.isfile(file_path):
+            logger.info(
+                f"Can't load the following file: {file_path} required for loading the tokenizer"
+            )
+
+        tokenizer = cls.load(file_path)
+        if return_fast_tokenizer:
+            return tokenizer.get_pretrained()
+        return tokenizer
+
+
+def split(safe_str: str):
+    """Split a safe string into a list of character.
+
+    !!! note
+        It's recommended to use a trained tokenizer (e.g `SAFETokenizer`) when building deeplearning models
+
+    Args:
+        safe_str: input safe string to split
+    """
+
+    splitter = SAFESplitter()
+    return splitter.tokenize(safe_str)

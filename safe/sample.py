@@ -19,7 +19,6 @@ import os
 import re
 import torch
 import random
-import platformdirs
 import datamol as dm
 import safe as sf
 
@@ -28,9 +27,7 @@ class SAFEDesign:
     """Molecular generation using SAFE pretrained model"""
 
     _DEFAULT_MAX_LENGTH = 1024  # default max length used during training
-    _DEFAULT_MODEL_PATH = platformdirs.user_cache_dir(
-        "safe/default_model"
-    )  # EN to change this as soon as possible
+    _DEFAULT_MODEL_PATH = "datamol-io/safe-gpt"
 
     def __init__(
         self,
@@ -87,7 +84,7 @@ class SAFEDesign:
         if model_dir is None or not model_dir:
             model_dir = cls._DEFAULT_MODEL_PATH
         model = SAFEDoubleHeadsModel.from_pretrained(model_dir)
-        tokenizer = SAFETokenizer.load(os.path.join(model_dir, "tokenizer.json"))
+        tokenizer = SAFETokenizer.from_pretrained(model_dir)
         gen_config = GenerationConfig.from_pretrained(model_dir)
         if device is not None:
             model = model.to(device)

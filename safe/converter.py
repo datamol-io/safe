@@ -376,10 +376,9 @@ def decode(
 ):
     """Convert input SAFE representation to smiles
     Args:
-        inp: input SAFE representation to decode as a valid molecule or smiles
+        safe_str: input SAFE representation to decode as a valid molecule or smiles
         as_mol: whether to return a molecule object or a smiles string
         canonical: whether to return a canonical smiles or a randomized smiles
-        standardize: whether to standardize the molecule
         fix: whether to fix the SAFE representation to take into account non-connected attachment points
         remove_added_hs: whether to remove the hydrogen atoms that have been added to fix the string.
         remove_dummies: whether to remove dummy atoms from the SAFE representation
