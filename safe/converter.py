@@ -193,6 +193,7 @@ class SAFEConverter:
 
         elif callable(self.slicer):
             matching_bonds = self.slicer(mol)
+            matching_bonds = list(matching_bonds)
 
         elif self.slicer == "brics":
             matching_bonds = BRICS.FindBRICSBonds(mol)
@@ -334,7 +335,7 @@ def encode(
     canonical: bool = True,
     randomize: Optional[bool] = False,
     seed: Optional[int] = None,
-    slicer: Optional[Union[str, Callable]] = None,
+    slicer: Optional[Union[List[str], str, Callable]] = None,
     require_hs: Optional[bool] = None,
     constraints: Optional[List[dm.Mol]] = None,
 ):

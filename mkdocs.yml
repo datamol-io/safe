@@ -13,8 +13,9 @@ strict: true
 nav:
   - Overview: index.md
   - Tutorials:
-      - Getting started with SAFE: tutorials/getting-started.ipynb
-      - Molecular design with Pretrained SAFE: tutorials/design-with-safe.ipynb
+      - Getting Started: tutorials/getting-started.ipynb
+      - Molecular design: tutorials/design-with-safe.ipynb
+      - How it works: tutorials/how-it-works.ipynb
   - API:
       - SAFE: api/safe.md
       - Visualization: api/safe.viz.md
@@ -78,7 +79,11 @@ plugins:
           signature_crossrefs: true
 
   - mkdocs-jupyter:
-      execute: false
+      execute: False
+      remove_tag_config:
+        remove_cell_tags: [remove_cell]
+        remove_all_outputs_tags: [remove_output]
+        remove_input_tags: [remove_input]
 
   - mike:
       version_selector: true
