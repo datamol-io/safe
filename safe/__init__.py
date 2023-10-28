@@ -3,6 +3,7 @@ from .converter import decode
 from .converter import SAFEConverter
 from .viz import to_image
 from .tokenizer import SAFETokenizer
+from .tokenizer import split
 from .sample import SAFEDesign
 from ._exception import SAFEDecodeError
 from ._exception import SAFEEncodeError

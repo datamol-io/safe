@@ -55,7 +55,7 @@ class SAFESplitter:
 
     REGEX_PATTERN = r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%[0-9]{2}|[0-9])"""
 
-    name = "smiles"
+    name = "safe"
 
     def __init__(self, pattern: Optional[str] = None):
         # do not use this as raw strings (not r before)
@@ -64,7 +64,7 @@ class SAFESplitter:
         self.regex = re.compile(pattern)
 
     def tokenize(self, line):
-        """Tokenize a molecule into SMILES."""
+        """Tokenize a safe string into characters."""
         if isinstance(line, str):
             tokens = list(self.regex.findall(line))
             reconstruction = "".join(tokens)
@@ -89,7 +89,7 @@ class SAFESplitter:
         return self.tokenize(normalized)
 
     def pre_tokenize(self, pretok):
-        """Pretokenize using an input pretokenizer"""
+        """Pretokenize using an input pretokenizer object from the tokenizer library"""
         pretok.split(self.split)
 
 
@@ -295,7 +295,7 @@ class SAFETokenizer(PushToHubMixin):
         Args:
             data: dictionary containing the tokenizer info
         """
-        tokenizer_type = data.pop("tokenizer_type", "smiles")
+        tokenizer_type = data.pop("tokenizer_type", "safe")
         tokenizer_attrs = data.pop("tokenizer_attrs", None)
         custom_pre_tokenizer = data.pop("custom_pre_tokenizer", False)
         tokenizer = Tokenizer.from_str(json.dumps(data))
@@ -626,3 +626,17 @@ class SAFETokenizer(PushToHubMixin):
         if return_fast_tokenizer:
             return tokenizer.get_pretrained()
         return tokenizer
+
+
+def split(safe_str: str):
+    """Split a safe string into a list of character.
+
+    !!! note
+        It's recommended to use a trained tokenizer (e.g `SAFETokenizer`) when building deeplearning models
+
+    Args:
+        safe_str: input safe string to split
+    """
+
+    splitter = SAFESplitter()
+    return splitter.tokenize(safe_str)
