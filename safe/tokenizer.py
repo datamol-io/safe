@@ -3,6 +3,7 @@ from typing import List
 from typing import Any
 from typing import Iterator
 from typing import Union
+from typing import Dict
 
 import re
 import os
@@ -230,8 +231,7 @@ class SAFETokenizer(PushToHubMixin):
 
     def __len__(self):
         r"""
-        Returns: Gets the count of tokens in vocab along with special tokens.
-
+        Gets the count of tokens in vocab along with special tokens.
         """
         return len(self.tokenizer.get_vocab().keys())
 
@@ -511,6 +511,7 @@ class SAFETokenizer(PushToHubMixin):
         local_files_only: bool = False,
         token: Optional[Union[str, bool]] = None,
         return_fast_tokenizer: Optional[bool] = False,
+        proxies: Optional[Dict[str, str]] = None,
         **kwargs,
     ):
         r"""
@@ -533,7 +534,6 @@ class SAFETokenizer(PushToHubMixin):
             cache_dir: Path to a directory in which a downloaded predefined tokenizer vocabulary files should be cached if the
                 standard cache should not be used.
             force_download: Whether or not to force the (re-)download the vocabulary files and override the cached versions if they exist.
-            resume_download: Whether or not to delete incompletely received files. Attempt to resume the download if such a file exists.
             proxies: A dictionary of proxy servers to use by protocol or endpoint, e.g.,
                 `{'http': 'foo.bar:3128', 'http://hostname': 'foo.bar:4012'}`. The proxies are used on each request.
             token: The token to use as HTTP bearer authorization for remote files.
@@ -555,7 +555,6 @@ class SAFETokenizer(PushToHubMixin):
         ```
         """
         resume_download = kwargs.pop("resume_download", False)
-        proxies = kwargs.pop("proxies", None)
         use_auth_token = kwargs.pop("use_auth_token", None)
         subfolder = kwargs.pop("subfolder", None)
         from_pipeline = kwargs.pop("_from_pipeline", None)

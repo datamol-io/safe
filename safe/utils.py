@@ -288,8 +288,9 @@ class MolSlicer:
 
 
 @contextmanager
-def attr_as(obj, field, value):
+def attr_as(obj: Any, field: str, value: Any):
     """Temporary replace the value of an object
+
     Args:
         obj: object to temporary patch
         field: name of the key to change

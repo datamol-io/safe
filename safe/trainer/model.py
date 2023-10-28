@@ -152,8 +152,6 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
             mc_labels (`torch.LongTensor` of shape `(batch_size, n_tasks)`, *optional*):
                 Labels for computing the supervized loss for regularization.
             inputs: List of inputs, put here because the trainer removes information not in signature
-
-        Returns:
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
         transformer_outputs = self.transformer(
