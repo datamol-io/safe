@@ -14,8 +14,11 @@
   <a href="https://safe-docs.datamol.io/" target="_blank">
       Docs
   </a> |
-  <a href="https://huggingface.co/datamol-io/safe" target="_blank">
+  <a href="https://huggingface.co/datamol-io/safe-gpt" target="_blank">
     🤗 Model
+  </a> |
+  <a href="https://huggingface.co/datasets/datamol-io/safe-gpt" target="_blank">
+    🤗 Training Dataset
   </a>
 </p>
 
@@ -73,9 +76,11 @@ mamba install -c conda-forge safe-mol
 
 ### Datasets and Models
 
-We provided a pretained GPT2 model (XX M parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B):
-
-- _Safe-XXM_ TODO
+| Type    | Name                                                                           | Infos      | Size  | Comment              |
+| ------- | ------------------------------------------------------------------------------ | ---------- | ----- | -------------------- |
+| Model   | [datamol-io/safe-gpt](https://huggingface.co/datamol-io/safe-gpt)              | 87M params | 350M  | Default model        |
+| Dataset | [datamol-io/safe-gpt](https://huggingface.co/datasets/datamol-io/safe-gpt)     | 1.1B rows  | 250GB | Training dataset     |
+| Dataset | [datamol-io/safe-drugs](https://huggingface.co/datasets/datamol-io/safe-drugs) | 26 rows    | 20 kB | Benchmarking dataset |
 
 ## Usage
 
