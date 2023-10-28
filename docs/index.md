@@ -76,11 +76,11 @@ mamba install -c conda-forge safe-mol
 
 ### Datasets and Models
 
-| Type    | Name                                                                  | Infos      | Size  | Comment              |
-| ------- | --------------------------------------------------------------------- | ---------- | ----- | -------------------- |
-| Model   | [datamol-io/safe-gpt](https://huggingface.co/datamol-io/safe-gpt)     | 87M params | 350M  | Default model        |
-| Dataset | [datamol-io/safe-gpt](https://huggingface.co/datamol-io/safe-gpt)     | 1.1B rows  | 250GB | Training dataset     |
-| Dataset | [datamol-io/safe-drugs](https://huggingface.co/datamol-io/safe-drugs) | 26 rows    | 20 kB | Benchmarking dataset |
+| Type    | Name                                                                           | Infos      | Size  | Comment              |
+| ------- | ------------------------------------------------------------------------------ | ---------- | ----- | -------------------- |
+| Model   | [datamol-io/safe-gpt](https://huggingface.co/datamol-io/safe-gpt)              | 87M params | 350M  | Default model        |
+| Dataset | [datamol-io/safe-gpt](https://huggingface.co/datasets/datamol-io/safe-gpt)     | 1.1B rows  | 250GB | Training dataset     |
+| Dataset | [datamol-io/safe-drugs](https://huggingface.co/datasets/datamol-io/safe-drugs) | 26 rows    | 20 kB | Benchmarking dataset |
 
 ## Usage
 
