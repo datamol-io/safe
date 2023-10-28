@@ -92,7 +92,7 @@ class SAFEDesign:
 
     def linker_generation(
         self,
-        *groups: List[Union[str, dm.Mol]],
+        *groups: Union[str, dm.Mol],
         n_samples_per_trial: int = 10,
         n_trials: Optional[int] = 1,
         sanitize: bool = False,
