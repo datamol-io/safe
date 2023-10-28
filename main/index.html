@@ -614,6 +614,25 @@
   
 
     
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="data_license.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -820,7 +839,7 @@
 <p>The construction of a SAFE strings requires definition a molecular fragmentation algorithm. By default, we use [BRICS], but any other fragmentation algorithm can be used. The image below illustrate the process of building a SAFE string. The resulting string is a valid SMILES that can be read by <a href="https://github.com/datamol-io/datamol">datamol</a> or <a href="https://github.com/rdkit/rdkit">RDKit</a>.</p>
 <p></br></p>
 <div align="center">
-    <img src="docs/assets/safe-construction.svg" width="100%">
+    <img src="assets/safe-construction.svg" width="100%">
 </div>
 
 <h3 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h3>
@@ -830,7 +849,6 @@
 <p>You can use conda/mamba. Ask @maclandrol for credentials to the conda forge or for a token</p>
 <div class="highlight"><pre><span></span><code>mamba<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>safe-mol
 </code></pre></div>
-<p><code>safe</code> mostly depends on <a href="https://huggingface.co/docs/transformers/index">transformers</a> and <a href="https://huggingface.co/docs/datasets/index">datasets</a>. Please see the <a href="./env.yml">env.yml</a> file for a complete list of dependencies.</p>
 <h3 id="datasets-and-models">Datasets and Models<a class="headerlink" href="#datasets-and-models" title="Permanent link">&para;</a></h3>
 <p>We provided a pretained GPT2 model (XX M parameters) using the SAFE molecular representation that has been trained on 1.1 billion molecules from Unichem (0.1B) + Zinc (1B):</p>
 <ul>
@@ -908,8 +926,8 @@
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="license">License<a class="headerlink" href="#license" title="Permanent link">&para;</a></h2>
-<p>Note that all data and model weights of <strong>SAFE</strong> are exclusively licensed for research purposes. The accompanying dataset is licensed under CC BY 4.0, which permits solely non-commercial usage. See <a href="DATA_LICENSE">DATA_LICENSE</a> for details.</p>
-<p>This code base is licensed under the Apache-2.0 license. See <a href="LICENSE">LICENSE</a> for details.</p>
+<p>Note that all data and model weights of <strong>SAFE</strong> are exclusively licensed for research purposes. The accompanying dataset is licensed under CC BY 4.0, which permits solely non-commercial usage. See <a href="data_license.html">DATA_LICENSE</a> for details.</p>
+<p>This code base is licensed under the Apache-2.0 license. See <a href="license.html">LICENSE</a> for details.</p>
 <h2 id="development-lifecycle">Development lifecycle<a class="headerlink" href="#development-lifecycle" title="Permanent link">&para;</a></h2>
 <h3 id="setup-dev-environment">Setup dev environment<a class="headerlink" href="#setup-dev-environment" title="Permanent link">&para;</a></h3>
 <div class="highlight"><pre><span></span><code>mamba<span class="w"> </span>create<span class="w"> </span>-n<span class="w"> </span>safe<span class="w"> </span>-f<span class="w"> </span>env.yml

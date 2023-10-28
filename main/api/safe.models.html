@@ -686,6 +686,25 @@
   
 
     
+      
+      
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data_license.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data License
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
   </ul>
 </nav>
                   </div>
@@ -1116,7 +1135,9 @@ config class of your model for the default values it uses):</p>
 <span class="normal">103</span>
 <span class="normal">104</span>
 <span class="normal">105</span>
-<span class="normal">106</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">PropertyHead</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">PropertyHead</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 <span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute a single vector summary of a sequence hidden states.</span>
 
@@ -1158,16 +1179,18 @@ config class of your model for the default values it uses):</p>
             <span class="bp">self</span><span class="o">.</span><span class="n">out</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">last_hidden_size</span><span class="p">,</span> <span class="n">num_labels</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
-        <span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">,</span> <span class="n">cls_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">hidden_states</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">,</span>
+        <span class="n">cls_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Compute a single vector summary of a sequence hidden states.</span>
 
 <span class="sd">        Args:</span>
-<span class="sd">            hidden_states (`torch.FloatTensor` of shape `[batch_size, seq_len, hidden_size]`):</span>
+<span class="sd">            hidden_states: `torch.FloatTensor` of shape `[batch_size, seq_len, hidden_size]`)</span>
 <span class="sd">                The hidden states of the last layer.</span>
-<span class="sd">            cls_index (`torch.LongTensor` of shape `[batch_size]` or `[batch_size, ...]`</span>
-<span class="sd">                where ... are optional leading dimensions of `hidden_states`, *optional*):</span>
+<span class="sd">            cls_index: `torch.LongTensor` of shape `[batch_size]` or `[batch_size, ...]`</span>
+<span class="sd">                where ... are optional leading dimensions of `hidden_states`, *optional*</span>
 <span class="sd">                Used if `summary_type == &quot;cls_index&quot;` and takes the last token of the sequence as classification token.</span>
 
 <span class="sd">        Returns:</span>
@@ -1249,15 +1272,32 @@ config class of your model for the default values it uses):</p>
         <tr>
           <td><code>hidden_states</code></td>
           <td>
-                <code>`torch.FloatTensor` of shape `[batch_size, seq_len, hidden_size]`</code>
+                <code><span title="torch.FloatTensor">FloatTensor</span></code>
           </td>
           <td>
             <div class="doc-md-description">
-              <p>The hidden states of the last layer.</p>
+              <p><code>torch.FloatTensor</code> of shape <code>[batch_size, seq_len, hidden_size]</code>)
+The hidden states of the last layer.</p>
             </div>
           </td>
           <td>
               <em>required</em>
+          </td>
+        </tr>
+        <tr>
+          <td><code>cls_index</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<span title="torch.LongTensor">LongTensor</span>]</code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p><code>torch.LongTensor</code> of shape <code>[batch_size]</code> or <code>[batch_size, ...]</code>
+where ... are optional leading dimensions of <code>hidden_states</code>, <em>optional</em>
+Used if <code>summary_type == "cls_index"</code> and takes the last token of the sequence as classification token.</p>
+            </div>
+          </td>
+          <td>
+                <code>None</code>
           </td>
         </tr>
     </tbody>
@@ -1333,17 +1373,21 @@ config class of your model for the default values it uses):</p>
 <span class="normal">103</span>
 <span class="normal">104</span>
 <span class="normal">105</span>
-<span class="normal">106</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
-    <span class="bp">self</span><span class="p">,</span> <span class="n">hidden_states</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">,</span> <span class="n">cls_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+    <span class="bp">self</span><span class="p">,</span>
+    <span class="n">hidden_states</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">,</span>
+    <span class="n">cls_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">LongTensor</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">FloatTensor</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Compute a single vector summary of a sequence hidden states.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        hidden_states (`torch.FloatTensor` of shape `[batch_size, seq_len, hidden_size]`):</span>
+<span class="sd">        hidden_states: `torch.FloatTensor` of shape `[batch_size, seq_len, hidden_size]`)</span>
 <span class="sd">            The hidden states of the last layer.</span>
-<span class="sd">        cls_index (`torch.LongTensor` of shape `[batch_size]` or `[batch_size, ...]`</span>
-<span class="sd">            where ... are optional leading dimensions of `hidden_states`, *optional*):</span>
+<span class="sd">        cls_index: `torch.LongTensor` of shape `[batch_size]` or `[batch_size, ...]`</span>
+<span class="sd">            where ... are optional leading dimensions of `hidden_states`, *optional*</span>
 <span class="sd">            Used if `summary_type == &quot;cls_index&quot;` and takes the last token of the sequence as classification token.</span>
 
 <span class="sd">    Returns:</span>
@@ -1413,9 +1457,7 @@ config class of your model for the default values it uses):</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/trainer/model.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">111</span>
 <span class="normal">112</span>
 <span class="normal">113</span>
 <span class="normal">114</span>
@@ -1521,7 +1563,9 @@ config class of your model for the default values it uses):</p>
 <span class="normal">214</span>
 <span class="normal">215</span>
 <span class="normal">216</span>
-<span class="normal">217</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">SAFEDoubleHeadsModel</span><span class="p">(</span><span class="n">GPT2DoubleHeadsModel</span><span class="p">):</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">SAFEDoubleHeadsModel</span><span class="p">(</span><span class="n">GPT2DoubleHeadsModel</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;The safe model is a dual head GPT2 model with a language modeling head and an optional multi-task regression head&quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">config</span><span class="p">):</span>
@@ -1738,9 +1782,7 @@ config class of your model for the default values it uses):</p>
 
           <details class="quote">
             <summary>Source code in <code>safe/trainer/model.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">121</span>
 <span class="normal">122</span>
 <span class="normal">123</span>
 <span class="normal">124</span>
@@ -1836,7 +1878,9 @@ config class of your model for the default values it uses):</p>
 <span class="normal">214</span>
 <span class="normal">215</span>
 <span class="normal">216</span>
-<span class="normal">217</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@add_start_docstrings_to_model_forward</span><span class="p">(</span><span class="n">GPT2_INPUTS_DOCSTRING</span><span class="p">)</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@add_start_docstrings_to_model_forward</span><span class="p">(</span><span class="n">GPT2_INPUTS_DOCSTRING</span><span class="p">)</span>
 <span class="nd">@replace_return_docstrings</span><span class="p">(</span><span class="n">output_type</span><span class="o">=</span><span class="n">GPT2DoubleHeadsModelOutput</span><span class="p">,</span> <span class="n">config_class</span><span class="o">=</span><span class="n">_CONFIG_FOR_DOC</span><span class="p">)</span>
 <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
@@ -2252,10 +2296,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
             <details class="quote">
               <summary>Source code in <code>safe/trainer/collator.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 15</span>
-<span class="normal"> 16</span>
-<span class="normal"> 17</span>
-<span class="normal"> 18</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 18</span>
 <span class="normal"> 19</span>
 <span class="normal"> 20</span>
 <span class="normal"> 21</span>
@@ -2349,7 +2390,10 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 <span class="normal">109</span>
 <span class="normal">110</span>
 <span class="normal">111</span>
-<span class="normal">112</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">SAFECollator</span><span class="p">:</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">SAFECollator</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Collate function for language modelling tasks</span>
 
 
@@ -2360,7 +2404,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">tokenizer</span><span class="p">,</span>
+        <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Tokenizer</span><span class="p">,</span>
         <span class="n">pad_to_multiple_of</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">input_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;inputs&quot;</span><span class="p">,</span>
         <span class="n">label_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;labels&quot;</span><span class="p">,</span>
@@ -2510,10 +2554,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
           <details class="quote">
             <summary>Source code in <code>safe/trainer/collator.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 61</span>
-<span class="normal"> 62</span>
-<span class="normal"> 63</span>
-<span class="normal"> 64</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 64</span>
 <span class="normal"> 65</span>
 <span class="normal"> 66</span>
 <span class="normal"> 67</span>
@@ -2561,7 +2602,10 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 <span class="normal">109</span>
 <span class="normal">110</span>
 <span class="normal">111</span>
-<span class="normal">112</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]):</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">samples</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]]):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Call collate function</span>
 
@@ -2651,6 +2695,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
         <tr>
           <td><code>tokenizer</code></td>
           <td>
+                <code><span title="tokenizer.Tokenizer">Tokenizer</span></code>
           </td>
           <td>
             <div class="doc-md-description">
@@ -2736,10 +2781,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
           <details class="quote">
             <summary>Source code in <code>safe/trainer/collator.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">24</span>
-<span class="normal">25</span>
-<span class="normal">26</span>
-<span class="normal">27</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">27</span>
 <span class="normal">28</span>
 <span class="normal">29</span>
 <span class="normal">30</span>
@@ -2764,9 +2806,12 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 <span class="normal">49</span>
 <span class="normal">50</span>
 <span class="normal">51</span>
-<span class="normal">52</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">52</span>
+<span class="normal">53</span>
+<span class="normal">54</span>
+<span class="normal">55</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
-    <span class="n">tokenizer</span><span class="p">,</span>
+    <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Tokenizer</span><span class="p">,</span>
     <span class="n">pad_to_multiple_of</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">input_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;inputs&quot;</span><span class="p">,</span>
     <span class="n">label_key</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;labels&quot;</span><span class="p">,</span>
@@ -2821,12 +2866,12 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
           <details class="quote">
             <summary>Source code in <code>safe/trainer/collator.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">54</span>
-<span class="normal">55</span>
-<span class="normal">56</span>
-<span class="normal">57</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">57</span>
 <span class="normal">58</span>
-<span class="normal">59</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">()</span>
+<span class="normal">59</span>
+<span class="normal">60</span>
+<span class="normal">61</span>
+<span class="normal">62</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@functools</span><span class="o">.</span><span class="n">lru_cache</span><span class="p">()</span>
 <span class="k">def</span> <span class="nf">get_tokenizer</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Get underlying tokenizer&quot;&quot;&quot;</span>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">SAFETokenizer</span><span class="p">):</span>

@@ -11,6 +11,11 @@
          <changefreq>daily</changefreq>
     </url>
     <url>
+         <loc>https://github.com/datamol-io/safe/main/data_license.html</loc>
+         <lastmod>2023-10-28</lastmod>
+         <changefreq>daily</changefreq>
+    </url>
+    <url>
          <loc>https://github.com/datamol-io/safe/main/license.html</loc>
          <lastmod>2023-10-28</lastmod>
          <changefreq>daily</changefreq>
