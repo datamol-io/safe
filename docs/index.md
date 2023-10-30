@@ -68,7 +68,7 @@ You can install `safe` using pip:
 pip install safe-mol
 ```
 
-You can use conda/mamba. Ask @maclandrol for credentials to the conda forge or for a token
+You can use conda/mamba:
 
 ```bash
 mamba install -c conda-forge safe-mol
