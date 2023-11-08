@@ -44,7 +44,7 @@
 
 ## Overview of SAFE
 
-SAFE _is the_ deep learning molecular representation. It's an encoding leveraging a peculiarity in the decoding schemes of SMILES, to allow representation of molecules as contiguous sequence of connected fragment. SAFE strings are valid SMILES string, and thus are able to preserve the same amount of information. The intuitive representation of molecules as unordered sequence of connected fragments gretly simplify the following tasks often encoutered in molecular design:
+SAFE _is the_  deep learning molecular representation. It's an encoding leveraging a peculiarity in the decoding schemes of SMILES, to allow representation of molecules as a contiguous sequence of connected fragments. SAFE strings are valid SMILES strings, and thus are able to preserve the same amount of information. The intuitive representation of molecules as an ordered sequence of connected fragments greatly simplifies the following tasks often encountered in molecular design:
 
 - _de novo_ design
 - superstructure generation
@@ -53,7 +53,7 @@ SAFE _is the_ deep learning molecular representation. It's an encoding leveragin
 - linker generation
 - scaffold morphing.
 
-The construction of a SAFE strings requires definition a molecular fragmentation algorithm. By default, we use [BRICS], but any other fragmentation algorithm can be used. The image below illustrate the process of building a SAFE string. The resulting string is a valid SMILES that can be read by [datamol](https://github.com/datamol-io/datamol) or [RDKit](https://github.com/rdkit/rdkit).
+The construction of a SAFE strings requires defining a molecular fragmentation algorithm. By default, we use [BRICS], but any other fragmentation algorithm can be used. The image below illustrates the process of building a SAFE string. The resulting string is a valid SMILES that can be read by [datamol](https://github.com/datamol-io/datamol) or [RDKit](https://github.com/rdkit/rdkit).
 
 </br>
 <div align="center">
@@ -76,25 +76,25 @@ mamba install -c conda-forge safe-mol
 
 ### Datasets and Models
 
-| Type    | Name                                                                           | Infos      | Size  | Comment              |
-| ------- | ------------------------------------------------------------------------------ | ---------- | ----- | -------------------- |
-| Model   | [datamol-io/safe-gpt](https://huggingface.co/datamol-io/safe-gpt)              | 87M params | 350M  | Default model        |
-| Dataset | [datamol-io/safe-gpt](https://huggingface.co/datasets/datamol-io/safe-gpt)     | 1.1B rows  | 250GB | Training dataset     |
-| Dataset | [datamol-io/safe-drugs](https://huggingface.co/datasets/datamol-io/safe-drugs) | 26 rows    | 20 kB | Benchmarking dataset |
+| Type                   | Name                                                                           | Infos      | Size  | Comment              |
+| ---------------------- | ------------------------------------------------------------------------------ | ---------- | ----- | -------------------- |
+| Model                  | [datamol-io/safe-gpt](https://huggingface.co/datamol-io/safe-gpt)              | 87M params | 350M  | Default model        |
+| Training Dataset       | [datamol-io/safe-gpt](https://huggingface.co/datasets/datamol-io/safe-gpt)     | 1.1B rows  | 250GB | Training dataset     |
+| Drug Benchmark Dataset | [datamol-io/safe-drugs](https://huggingface.co/datasets/datamol-io/safe-drugs) | 26 rows    | 20 kB | Benchmarking dataset |
 
 ## Usage
 
-Please refer to the [documentation](https://safe-docs.datamol.io/), which contains tutorials for getting started with `safe` and detailed descriptions of the functions provided.
+Please refer to the [documentation](https://safe-docs.datamol.io/), which contains tutorials for getting started with `safe` and detailed descriptions of the functions provided, as well as an example of how to get started with SAFE-GPT.
 
 ### API
 
 We summarize some key functions provided by the `safe` package below.
 
-| Function      | Description                                                                                                                                                                                             |
-| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `safe.encode` | Translates a SMILES string into its corresponding SAFE string.                                                                                                                                          |
-| `safe.decode` | Translates a SAFE string into its corresponding SMILES string. The SAFE decoder just augment RDKit's `Chem.MolFromSmiles` with an optional correction argument to take care of missing hydrogens bonds. |
-| `safe.split`  | Tokenizes a SAFE string to build a generative model.                                                                                                                                                    |
+| Function      | Description                                                                                                                                                                                            |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `safe.encode` | Translates a SMILES string into its corresponding SAFE string.                                                                                                                                         |
+| `safe.decode` | Translates a SAFE string into its corresponding SMILES string. The SAFE decoder just augment RDKit's `Chem.MolFromSmiles` with an optional correction argument to take care of missing hydrogen bonds. |
+| `safe.split`  | Tokenizes a SAFE string to build a generative model.                                                                                                                                                   |
 
 ### Examples
 
@@ -117,9 +117,9 @@ except safe.DecoderError:
 ibuprofen_tokens = list(safe.split(ibuprofen_sf))
 ```
 
-### Training a new models
+### Training/Finetuning a (new) model
 
-A command line interface is available to train a new model, please run `safe-train --help`
+A command line interface is available to train a new model, please run `safe-train --help`. You can also provide an existing checkpoint to continue training or finetune on you own dataset.
 
 For example:
 
