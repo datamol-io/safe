@@ -18,7 +18,7 @@
       
       
       <link rel="icon" href="assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.6">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.4.8">
     
     
       
@@ -26,7 +26,7 @@
       
     
     
-      <link rel="stylesheet" href="assets/stylesheets/main.35e1ed30.min.css">
+      <link rel="stylesheet" href="assets/stylesheets/main.4b4a2bd9.min.css">
       
       
 
@@ -326,8 +326,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#training-a-new-models" class="md-nav__link">
-    Training a new models
+  <a href="#trainingfinetuning-a-new-model" class="md-nav__link">
+    Training/Finetuning a (new) model
   </a>
   
 </li>
@@ -740,8 +740,8 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#training-a-new-models" class="md-nav__link">
-    Training a new models
+  <a href="#trainingfinetuning-a-new-model" class="md-nav__link">
+    Training/Finetuning a (new) model
   </a>
   
 </li>
@@ -850,7 +850,7 @@
 <a href="https://github.com/datamol-io/safe/actions/workflows/code-check.yml"><img alt="code-check" src="https://github.com/datamol-io/safe/actions/workflows/code-check.yml/badge.svg" /></a>
 <a href="https://github.com/datamol-io/safe/actions/workflows/doc.yml"><img alt="doc" src="https://github.com/datamol-io/safe/actions/workflows/doc.yml/badge.svg" /></a></p>
 <h2 id="overview-of-safe">Overview of SAFE<a class="headerlink" href="#overview-of-safe" title="Permanent link">&para;</a></h2>
-<p>SAFE <em>is the</em> deep learning molecular representation. It's an encoding leveraging a peculiarity in the decoding schemes of SMILES, to allow representation of molecules as contiguous sequence of connected fragment. SAFE strings are valid SMILES string, and thus are able to preserve the same amount of information. The intuitive representation of molecules as unordered sequence of connected fragments gretly simplify the following tasks often encoutered in molecular design:</p>
+<p>SAFE <em>is the</em>  deep learning molecular representation. It's an encoding leveraging a peculiarity in the decoding schemes of SMILES, to allow representation of molecules as a contiguous sequence of connected fragments. SAFE strings are valid SMILES strings, and thus are able to preserve the same amount of information. The intuitive representation of molecules as an ordered sequence of connected fragments greatly simplifies the following tasks often encountered in molecular design:</p>
 <ul>
 <li><em>de novo</em> design</li>
 <li>superstructure generation</li>
@@ -859,7 +859,7 @@
 <li>linker generation</li>
 <li>scaffold morphing.</li>
 </ul>
-<p>The construction of a SAFE strings requires definition a molecular fragmentation algorithm. By default, we use [BRICS], but any other fragmentation algorithm can be used. The image below illustrate the process of building a SAFE string. The resulting string is a valid SMILES that can be read by <a href="https://github.com/datamol-io/datamol">datamol</a> or <a href="https://github.com/rdkit/rdkit">RDKit</a>.</p>
+<p>The construction of a SAFE strings requires defining a molecular fragmentation algorithm. By default, we use [BRICS], but any other fragmentation algorithm can be used. The image below illustrates the process of building a SAFE string. The resulting string is a valid SMILES that can be read by <a href="https://github.com/datamol-io/datamol">datamol</a> or <a href="https://github.com/rdkit/rdkit">RDKit</a>.</p>
 <p></br></p>
 <div align="center">
     <img src="assets/safe-construction.svg" width="100%">
@@ -892,14 +892,14 @@
 <td>Default model</td>
 </tr>
 <tr>
-<td>Dataset</td>
+<td>Training Dataset</td>
 <td><a href="https://huggingface.co/datasets/datamol-io/safe-gpt">datamol-io/safe-gpt</a></td>
 <td>1.1B rows</td>
 <td>250GB</td>
 <td>Training dataset</td>
 </tr>
 <tr>
-<td>Dataset</td>
+<td>Drug Benchmark Dataset</td>
 <td><a href="https://huggingface.co/datasets/datamol-io/safe-drugs">datamol-io/safe-drugs</a></td>
 <td>26 rows</td>
 <td>20 kB</td>
@@ -908,7 +908,7 @@
 </tbody>
 </table>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
-<p>Please refer to the <a href="https://safe-docs.datamol.io/">documentation</a>, which contains tutorials for getting started with <code>safe</code> and detailed descriptions of the functions provided.</p>
+<p>The tutorials in the <a href="https://safe-docs.datamol.io/">documentation</a> can help you get started with <code>safe</code> and <code>SAFE-GPT</code>.</p>
 <h3 id="api">API<a class="headerlink" href="#api" title="Permanent link">&para;</a></h3>
 <p>We summarize some key functions provided by the <code>safe</code> package below.</p>
 <table>
@@ -950,8 +950,8 @@
 
 <span class="n">ibuprofen_tokens</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">safe</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">ibuprofen_sf</span><span class="p">))</span>
 </code></pre></div>
-<h3 id="training-a-new-models">Training a new models<a class="headerlink" href="#training-a-new-models" title="Permanent link">&para;</a></h3>
-<p>A command line interface is available to train a new model, please run <code>safe-train --help</code></p>
+<h3 id="trainingfinetuning-a-new-model">Training/Finetuning a (new) model<a class="headerlink" href="#trainingfinetuning-a-new-model" title="Permanent link">&para;</a></h3>
+<p>A command line interface is available to train a new model, please run <code>safe-train --help</code>. You can also provide an existing checkpoint to continue training or finetune on you own dataset.</p>
 <p>For example:</p>
 <div class="highlight"><pre><span></span><code>safe-train<span class="w"> </span>--config<span class="w"> </span>&lt;path<span class="w"> </span>to<span class="w"> </span>config&gt;<span class="w"> </span><span class="se">\</span>
 <span class="w">    </span>--model-path<span class="w"> </span>&lt;path<span class="w"> </span>to<span class="w"> </span>model&gt;<span class="w"> </span><span class="se">\</span>
@@ -1073,7 +1073,7 @@ pip<span class="w"> </span>install<span class="w"> </span>--no-deps<span class="
     <script id="__config" type="application/json">{"base": ".", "features": ["navigation.expand"], "search": "assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="assets/javascripts/bundle.aecac24b.min.js"></script>
+      <script src="assets/javascripts/bundle.81fa17fe.min.js"></script>
       
     
   </body>
