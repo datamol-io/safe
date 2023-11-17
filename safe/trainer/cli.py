@@ -19,7 +19,7 @@ from transformers.utils.logging import log_levels as LOG_LEVELS
 from transformers.trainer_utils import get_last_checkpoint
 from transformers import TrainingArguments
 from safe.trainer.model import SAFEDoubleHeadsModel
-from safe.tokenizer import SAFETokenizer
+from safe.tokenizer import SAFETokenizer, GroupSELFIESTokenizer
 from safe.trainer.data_utils import get_dataset
 from safe.trainer.collator import SAFECollator
 from safe.trainer.trainer_utils import SAFETrainer
@@ -198,7 +198,9 @@ def train(model_args, data_args, training_args):
 
     set_seed(training_args.seed)
     # load the tokenizer
-    if model_args.tokenizer.endswith(".json"):
+    if model_args.tokenizer.endswith(".groupselfies.json"):
+        tokenizer = GroupSELFIESTokenizer.from_pretrained(model_args.tokenizer)
+    elif model_args.tokenizer.endswith(".json"):
         tokenizer = SAFETokenizer.load(model_args.tokenizer)
     else:
         try:

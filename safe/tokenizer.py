@@ -32,6 +32,9 @@ from transformers.utils import cached_file
 from transformers.utils import download_url
 from transformers.utils import extract_commit_hash
 from transformers.utils import working_or_temp_dir
+from group_selfies import GroupGrammar
+
+import group_selfies as gsf
 
 from .utils import attr_as
 
@@ -640,3 +643,75 @@ def split(safe_str: str):
 
     splitter = SAFESplitter()
     return splitter.tokenize(safe_str)
+
+class GroupSELFIESTokenizer():
+    def __init__(
+        self,
+        grammar_filepath=None,
+        trainer_args=None,
+        decoder_args=None,
+        token_model_args=None,
+
+    ):
+        self.grammar_filepath = grammar_filepath
+        self.tokenizer = self._initialize_untrained_tokenizer()
+        self.trainer = WordLevelTrainer(special_tokens=SPECIAL_TOKENS, **self.token_model_args)
+        self.trainer_args = trainer_args or {}
+        self.decoder_args = decoder_args or {}
+        self.token_model_args = token_model_args or {}
+
+    def _initialize_untrained_tokenizer(self):
+        tokenizer = Tokenizer(WordLevel(unk_token=UNK_TOKEN))
+
+        tokenizer.pre_tokenizer = Split(pattern=Regex(r'\[.+?\]'), behavior="isolated", invert=False)
+        tokenizer.post_processor = TemplateProcessing(
+                    single=TEMPLATE_SINGLE,
+                    pair=TEMPLATE_PAIR,
+                    special_tokens=TEMPLATE_SPECIAL_TOKENS,
+        )
+        
+        tokenizer.decoder = BPEDecoder()
+
+        group_selfies_grammar = GroupGrammar.essential_set()
+
+        if self.grammar_filepath:
+            group_selfies_grammar = group_selfies_grammar | GroupGrammar.from_file(self.grammar_filepath)
+        
+        all_group_selfies_vocab_tokens = list(group_selfies_grammar.all_tokens()) + list(gsf.get_semantic_robust_alphabet())
+        tokenizer.add_tokens(all_group_selfies_vocab_tokens)
+        
+        return tokenizer
+    
+    def train_from_iterator(self, data):
+        self.tokenizer.train_from_iterator(data, trainer=self.trainer)
+    
+    @classmethod
+    def load(self, filepath):
+        """
+        Load the current tokenizer from file. Wraps get_pretrained()
+        """
+        return self.get_pretrained(filepath)
+    
+    def save(self, filepath):
+        self.tokenizer.save(save_path)
+    
+    @classmethod
+    def get_pretrained(self, filepath):
+        """
+        Get a pretrained tokenizer from this tokenizer
+
+        Returns:
+            Returns pre-trained fast tokenizer for hugging face models.
+        """
+        wrapped_tokenizer = PreTrainedTokenizerFast(
+        #     tokenizer_object=tokenizer,
+            tokenizer_file=filepath, 
+            pad_token=PADDING_TOKEN,
+            cls_token=CLS_TOKEN,
+            sep_token=SEP_TOKEN,
+            mask_token=MASK_TOKEN,
+            unk_token=UNK_TOKEN,
+            eos_token=EOS_TOKEN,
+            bos_token=BOS_TOKEN
+        )
+        return wrapped_tokenizer
