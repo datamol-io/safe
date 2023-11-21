@@ -199,7 +199,7 @@ def train(model_args, data_args, training_args):
     set_seed(training_args.seed)
     # load the tokenizer
     if model_args.tokenizer.endswith(".groupselfies.json"):
-        tokenizer = GroupSELFIESTokenizer.from_pretrained(model_args.tokenizer)
+        tokenizer = GroupSELFIESTokenizer.load(model_args.tokenizer)
     elif model_args.tokenizer.endswith(".json"):
         tokenizer = SAFETokenizer.load(model_args.tokenizer)
     else:

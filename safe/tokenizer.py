@@ -17,12 +17,12 @@ import warnings
 import packaging.version
 
 from loguru import logger
-from tokenizers import decoders
-from tokenizers import Tokenizer
+from tokenizers import decoders, Tokenizer, Regex
 from tokenizers.models import BPE, WordLevel
 from tokenizers.trainers import BpeTrainer, WordLevelTrainer
-from tokenizers.pre_tokenizers import Whitespace, PreTokenizer
+from tokenizers.pre_tokenizers import Whitespace, PreTokenizer, Split
 from tokenizers.processors import TemplateProcessing
+from tokenizers.decoders import BPEDecoder
 from transformers import PreTrainedTokenizerFast
 from transformers import __version__ as transformers_version
 from transformers.utils import PushToHubMixin
@@ -686,17 +686,17 @@ class GroupSELFIESTokenizer():
         self.tokenizer.train_from_iterator(data, trainer=self.trainer)
     
     @classmethod
-    def load(self, filepath):
+    def load(cls, filepath):
         """
         Load the current tokenizer from file. Wraps get_pretrained()
         """
-        return self.get_pretrained(filepath)
+        return cls.get_pretrained(filepath)
     
     def save(self, filepath):
-        self.tokenizer.save(save_path)
+        self.tokenizer.save(filepath)
     
     @classmethod
-    def get_pretrained(self, filepath):
+    def get_pretrained(cls, filepath):
         """
         Get a pretrained tokenizer from this tokenizer
 
