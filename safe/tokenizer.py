@@ -655,10 +655,10 @@ class GroupSELFIESTokenizer():
     ):
         self.grammar_filepath = grammar_filepath
         self.tokenizer = self._initialize_untrained_tokenizer()
-        self.trainer = WordLevelTrainer(special_tokens=SPECIAL_TOKENS, **self.token_model_args)
         self.trainer_args = trainer_args or {}
         self.decoder_args = decoder_args or {}
         self.token_model_args = token_model_args or {}
+        self.trainer = WordLevelTrainer(special_tokens=SPECIAL_TOKENS, **self.token_model_args)
 
     def _initialize_untrained_tokenizer(self):
         tokenizer = Tokenizer(WordLevel(unk_token=UNK_TOKEN))

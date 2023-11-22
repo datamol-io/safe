@@ -12,9 +12,12 @@ import evaluate
 import datasets
 from dataclasses import dataclass, field
 from loguru import logger
-from transformers import AutoConfig
-from transformers import AutoTokenizer
-from transformers import set_seed
+from transformers import (
+    AutoConfig,
+    AutoTokenizer,
+    PreTrainedTokenizerFast,
+    set_seed,
+)
 from transformers.utils.logging import log_levels as LOG_LEVELS
 from transformers.trainer_utils import get_last_checkpoint
 from transformers import TrainingArguments
@@ -378,7 +381,10 @@ def train(model_args, data_args, training_args):
         # For convenience, we also re-save the tokenizer to the same directory,
         # so that you can share your model easily on huggingface.co/models =)
         if trainer.is_world_process_zero():
-            tokenizer.save(os.path.join(training_args.output_dir, "tokenizer.json"))
+            if isinstance(tokenizer, PreTrainedTokenizerFast):
+                tokenizer.save_pretrained(os.path.join(training_args.output_dir, "tokenizer"))
+            else:
+                tokenizer.save(os.path.join(training_args.output_dir, "tokenizer.json"))
 
     # Evaluation
     if training_args.do_eval:
