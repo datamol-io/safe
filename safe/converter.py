@@ -10,9 +10,11 @@ import numpy as np
 
 from contextlib import suppress
 from collections import Counter
+from pathlib import Path
 
 from rdkit import Chem
 from rdkit.Chem import BRICS
+from group_selfies import GroupGrammar
 from ._exception import SAFEDecodeError
 from ._exception import SAFEEncodeError
 from ._exception import SAFEFragmentationError
@@ -404,4 +406,43 @@ def decode(
             if ignore_errors:
                 return None
             raise SAFEDecodeError(f"Failed to decode {safe_str}") from e
+        return decoded
+
+
+class GroupSELFIESConverter:
+    
+    _DEFAULT_GROUP_SELFIES_GRAMMAR_PATH = Path(__file__).resolve().parent / 'assets' / 'useful30.txt'
+    
+    def __init__(self, 
+                 grammar_filepath: Optional[str] = None
+    ):
+        if grammar_filepath is None:
+            self.grammar = GroupGrammar.essential_set() | GroupGrammar.from_file(self._DEFAULT_GROUP_SELFIES_GRAMMAR_PATH) 
+        else:
+            self.grammar = GroupGrammar.essential_set() | GroupGrammar.from_file(grammar_filepath)
+
+    def encoder(self, 
+                inp: str
+    ):
+        """Convert input SMILES string into GroupSELFIES string"""
+        try:
+            m = Chem.MolFromSmiles(inp)
+            encoded = self.grammar.full_encoder(m)
+        except Exception as e:
+            return None
+    
+        return encoded
+
+    def decoder(self, 
+                inp: str, 
+                as_mol: bool = False
+    ):
+        """Convert input GroupSELFIES string into SMILES string or molecule"""
+        try:
+            decoded = self.grammar.decoder(inp)
+            if not as_mol:
+                decoded = Chem.MolToSmiles(decoded)
+        except Exception as e:
+            return None
+    
         return decoded
