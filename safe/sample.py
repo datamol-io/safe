@@ -96,7 +96,7 @@ class SAFEDesign:
         n_samples_per_trial: int = 10,
         n_trials: Optional[int] = 1,
         sanitize: bool = False,
-        do_not_fragment_further: Optional[bool] = False,
+        do_not_fragment_further: Optional[bool] = True,
         random_seed: Optional[int] = None,
         model_only: Optional[bool] = False,
         **kwargs,
@@ -142,7 +142,7 @@ class SAFEDesign:
         n_samples_per_trial: int = 10,
         n_trials: Optional[int] = 1,
         sanitize: bool = False,
-        do_not_fragment_further: Optional[bool] = False,
+        do_not_fragment_further: Optional[bool] = True,
         random_seed: Optional[int] = None,
         **kwargs,
     ):
