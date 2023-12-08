@@ -53,13 +53,15 @@ def to_image(
             sf.decode(x, as_mol=False, remove_dummies=False, ignore_errors=False)
             for x in safe_str.split(".")
         ]
-    else:
+    elif fragments and len(fragments) > 0:
         parsed_fragments = []
         for fg in fragments:
             if isinstance(fg, str) and dm.to_mol(fg) is None:
                 fg = sf.decode(fg, as_mol=False, remove_dummies=False, ignore_errors=False)
-        parsed_fragments.append(fg)
+            parsed_fragments.append(fg)
         fragments = parsed_fragments
+    else:
+        fragments = []
     mol = dm.to_mol(safe_str, remove_hs=False)
     cm = plt.get_cmap("gist_rainbow")
     current_colors = [cm(1.0 * i / len(fragments)) for i in range(len(fragments))]
