@@ -16,6 +16,7 @@ nav:
       - Getting Started: tutorials/getting-started.ipynb
       - Molecular design: tutorials/design-with-safe.ipynb
       - How it works: tutorials/how-it-works.ipynb
+      - Extracting representation (molfeat): tutorials/extracting-representation-molfeat.ipynb
   - API:
       - SAFE: api/safe.md
       - Visualization: api/safe.viz.md
