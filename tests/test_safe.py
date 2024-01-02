@@ -48,3 +48,29 @@ def test_safe_decoder():
     decoded_fragments = [safe.decode(x, fix=True) for x in fragments]
     assert [dm.to_mol(x) for x in fragments] == [None] * len(fragments)
     assert all(x is not None for x in decoded_fragments)
+
+
+def test_rdkit_smiles_parser_issues():
+    # see https://github.com/datamol-io/safe/issues/22
+    input_sm = r"C(=C/c1ccccc1)\CCc1ccccc1"
+    slicer = "brics"
+    safe_obj = safe.SAFEConverter(slicer=slicer, require_hs=False)
+    with dm.without_rdkit_log():
+        failing_encoded = safe_obj.encoder(
+            input_sm,
+            canonical=True,
+            randomize=False,
+            rdkit_safe=False,
+        )
+        working_encoded = safe_obj.encoder(
+            input_sm,
+            canonical=True,
+            randomize=False,
+            rdkit_safe=True,
+        )
+    working_decoded = safe.decode(working_encoded)
+    working_no_stero = dm.remove_stereochemistry(dm.to_mol(input_sm))
+    input_mol = dm.remove_stereochemistry(dm.to_mol(working_decoded))
+    assert safe.decode(failing_encoded) is None
+    assert working_decoded is not None
+    assert dm.same_mol(working_no_stero, input_mol)

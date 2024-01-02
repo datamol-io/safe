@@ -63,6 +63,7 @@ class SAFEConverter:
         self,
         slicer: Optional[Union[str, List[str], Callable]] = "brics",
         require_hs: Optional[bool] = None,
+        use_original_opener_for_attach: bool = True,
     ):
         """Constructor for the SAFE converter
 
@@ -72,6 +73,8 @@ class SAFEConverter:
                 or a custom callable that returns the bond ids that can be sliced.
             require_hs: whether the slicing algorithm require the molecule to have hydrogen explictly added.
                 `attach` slicer requires adding hydrogens.
+            use_original_opener_for_attach: whether to use the original branch opener digit when adding back
+                mapping number to attachment points, or use simple enumeration.
 
         """
         self.slicer = slicer
@@ -82,6 +85,7 @@ class SAFEConverter:
         if isinstance(self.slicer, (list, tuple)):
             self.slicer = [dm.from_smarts(x) for x in self.slicer]
         self.require_hs = require_hs or (slicer == "attach")
+        self.use_original_opener_for_attach = use_original_opener_for_attach
 
     @staticmethod
     def randomize(mol: dm.Mol, rng: Optional[int] = None):
@@ -124,6 +128,7 @@ class SAFEConverter:
 
         Args:
             inp: input SAFE string
+
         """
         missing_tokens = [inp]
         branch_numbers = self._find_branch_number(inp)
@@ -133,8 +138,11 @@ class SAFEConverter:
         for i, (bnum, bcount) in enumerate(branch_numbers.items()):
             if bcount % 2 != 0:
                 bnum_str = str(bnum) if bnum < 10 else f"%{bnum}"
-                missing_tokens.append(f"[*:{i+1}]{bnum_str}")
-
+                _tk = f"[*:{i+1}]{bnum_str}"
+                if self.use_original_opener_for_attach:
+                    bnum_digit = bnum_str.strip("%")  # strip out the % sign
+                    _tk = f"[*:{bnum_digit}]{bnum_str}"
+                missing_tokens.append(_tk)
         return ".".join(missing_tokens)
 
     def decoder(
@@ -221,6 +229,7 @@ class SAFEConverter:
         seed: Optional[int] = None,
         constraints: Optional[List[dm.Mol]] = None,
         allow_empty: bool = False,
+        rdkit_safe: bool = True,
     ):
         """Convert input smiles to SAFE representation
 
@@ -235,6 +244,7 @@ class SAFEConverter:
             constraints: List of molecules or pattern to preserve during the SAFE construction. Any bond slicing would
                 happen outside of a substructure matching one of the patterns.
             allow_empty: whether to allow the slicing algorithm to return empty bonds
+            rdkit_safe: whether to apply rdkit-safe digit standardization to the output SAFE string.
         """
         rng = None
         if randomize:
@@ -327,9 +337,15 @@ class SAFEConverter:
             attach_regexp = re.compile(r"(" + re.escape(attach) + r")")
             scaffold_str = attach_regexp.sub(val, scaffold_str)
             starting_num += 1
-        # now we need to remove all the parenthesis around difig only number
+        # now we need to remove all the parenthesis around digit only number
         wrong_attach = re.compile(r"\(([\%\d]*)\)")
-        return wrong_attach.sub(r"\g<1>", scaffold_str)
+        scaffold_str = wrong_attach.sub(r"\g<1>", scaffold_str)
+        # furthermore, we autoapply rdkit-compatible digit standardization.
+        if rdkit_safe:
+            pattern = r"\(([=-@#]?)(%?\d{1,2})\)"
+            replacement = r"\g<1>\g<2>"
+            scaffold_str = re.sub(pattern, replacement, scaffold_str)
+        return scaffold_str
 
 
 def encode(
