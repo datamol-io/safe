@@ -13,14 +13,14 @@
         <link rel="canonical" href="https://github.com/datamol-io/safe/stable/api/safe.html">
       
       
-        <link rel="prev" href="../tutorials/how-it-works.html">
+        <link rel="prev" href="../tutorials/extracting-representation-molfeat.html">
       
       
         <link rel="next" href="safe.viz.html">
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.1">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.3">
     
     
       
@@ -28,7 +28,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.45e1311d.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.50c56a3b.min.css">
       
       
 
@@ -331,6 +331,27 @@
   
   <span class="md-ellipsis">
     How SAFE encoding works?
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tutorials/extracting-representation-molfeat.html" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    so really we just need our custom converter
   </span>
   
 
@@ -1945,7 +1966,23 @@ corresponding to the bonds to break.</p>
 <span class="normal">329</span>
 <span class="normal">330</span>
 <span class="normal">331</span>
-<span class="normal">332</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">SAFEConverter</span><span class="p">:</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">SAFEConverter</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Molecule line notation conversion from SMILES to SAFE</span>
 
 <span class="sd">    A SAFE representation is a string based representation of a molecule decomposition into fragment components,</span>
@@ -1989,6 +2026,7 @@ corresponding to the bonds to break.</p>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">slicer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Callable</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;brics&quot;</span><span class="p">,</span>
         <span class="n">require_hs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">use_original_opener_for_attach</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor for the SAFE converter</span>
 
@@ -1998,6 +2036,8 @@ corresponding to the bonds to break.</p>
 <span class="sd">                or a custom callable that returns the bond ids that can be sliced.</span>
 <span class="sd">            require_hs: whether the slicing algorithm require the molecule to have hydrogen explictly added.</span>
 <span class="sd">                `attach` slicer requires adding hydrogens.</span>
+<span class="sd">            use_original_opener_for_attach: whether to use the original branch opener digit when adding back</span>
+<span class="sd">                mapping number to attachment points, or use simple enumeration.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slicer</span> <span class="o">=</span> <span class="n">slicer</span>
@@ -2008,6 +2048,7 @@ corresponding to the bonds to break.</p>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slicer</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">slicer</span> <span class="o">=</span> <span class="p">[</span><span class="n">dm</span><span class="o">.</span><span class="n">from_smarts</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">slicer</span><span class="p">]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">require_hs</span> <span class="o">=</span> <span class="n">require_hs</span> <span class="ow">or</span> <span class="p">(</span><span class="n">slicer</span> <span class="o">==</span> <span class="s2">&quot;attach&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">use_original_opener_for_attach</span> <span class="o">=</span> <span class="n">use_original_opener_for_attach</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">randomize</span><span class="p">(</span><span class="n">mol</span><span class="p">:</span> <span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">,</span> <span class="n">rng</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
@@ -2050,6 +2091,7 @@ corresponding to the bonds to break.</p>
 
 <span class="sd">        Args:</span>
 <span class="sd">            inp: input SAFE string</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">missing_tokens</span> <span class="o">=</span> <span class="p">[</span><span class="n">inp</span><span class="p">]</span>
         <span class="n">branch_numbers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_branch_number</span><span class="p">(</span><span class="n">inp</span><span class="p">)</span>
@@ -2059,8 +2101,11 @@ corresponding to the bonds to break.</p>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">bnum</span><span class="p">,</span> <span class="n">bcount</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">branch_numbers</span><span class="o">.</span><span class="n">items</span><span class="p">()):</span>
             <span class="k">if</span> <span class="n">bcount</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
                 <span class="n">bnum_str</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">bnum</span><span class="p">)</span> <span class="k">if</span> <span class="n">bnum</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;%</span><span class="si">{</span><span class="n">bnum</span><span class="si">}</span><span class="s2">&quot;</span>
-                <span class="n">missing_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[*:</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">]</span><span class="si">{</span><span class="n">bnum_str</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
-
+                <span class="n">_tk</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[*:</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">]</span><span class="si">{</span><span class="n">bnum_str</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">use_original_opener_for_attach</span><span class="p">:</span>
+                    <span class="n">bnum_digit</span> <span class="o">=</span> <span class="n">bnum_str</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s2">&quot;%&quot;</span><span class="p">)</span>  <span class="c1"># strip out the % sign</span>
+                    <span class="n">_tk</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;[*:</span><span class="si">{</span><span class="n">bnum_digit</span><span class="si">}</span><span class="s2">]</span><span class="si">{</span><span class="n">bnum_str</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="n">missing_tokens</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">_tk</span><span class="p">)</span>
         <span class="k">return</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">missing_tokens</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">decoder</span><span class="p">(</span>
@@ -2147,6 +2192,7 @@ corresponding to the bonds to break.</p>
         <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">constraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">allow_empty</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">rdkit_safe</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert input smiles to SAFE representation</span>
 
@@ -2161,6 +2207,7 @@ corresponding to the bonds to break.</p>
 <span class="sd">            constraints: List of molecules or pattern to preserve during the SAFE construction. Any bond slicing would</span>
 <span class="sd">                happen outside of a substructure matching one of the patterns.</span>
 <span class="sd">            allow_empty: whether to allow the slicing algorithm to return empty bonds</span>
+<span class="sd">            rdkit_safe: whether to apply rdkit-safe digit standardization to the output SAFE string.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">rng</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="n">randomize</span><span class="p">:</span>
@@ -2253,9 +2300,15 @@ corresponding to the bonds to break.</p>
             <span class="n">attach_regexp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">attach</span><span class="p">)</span> <span class="o">+</span> <span class="sa">r</span><span class="s2">&quot;)&quot;</span><span class="p">)</span>
             <span class="n">scaffold_str</span> <span class="o">=</span> <span class="n">attach_regexp</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
             <span class="n">starting_num</span> <span class="o">+=</span> <span class="mi">1</span>
-        <span class="c1"># now we need to remove all the parenthesis around difig only number</span>
+        <span class="c1"># now we need to remove all the parenthesis around digit only number</span>
         <span class="n">wrong_attach</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\(([\%\d]*)\)&quot;</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">wrong_attach</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\g&lt;1&gt;&quot;</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
+        <span class="n">scaffold_str</span> <span class="o">=</span> <span class="n">wrong_attach</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\g&lt;1&gt;&quot;</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
+        <span class="c1"># furthermore, we autoapply rdkit-compatible digit standardization.</span>
+        <span class="k">if</span> <span class="n">rdkit_safe</span><span class="p">:</span>
+            <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\(([=-@#]?)(%?\d{1,2})\)&quot;</span>
+            <span class="n">replacement</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\g&lt;1&gt;\g&lt;2&gt;&quot;</span>
+            <span class="n">scaffold_str</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">replacement</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">scaffold_str</span>
 </code></pre></div></td></tr></table></div>
             </details>
 
@@ -2278,7 +2331,7 @@ corresponding to the bonds to break.</p>
 
 
 <h3 id="safe.converter.SAFEConverter.__init__" class="doc doc-heading">
-          <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">slicer</span><span class="o">=</span><span class="s1">&#39;brics&#39;</span><span class="p">,</span> <span class="n">require_hs</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+          <code class="highlight language-python"><span class="fm">__init__</span><span class="p">(</span><span class="n">slicer</span><span class="o">=</span><span class="s1">&#39;brics&#39;</span><span class="p">,</span> <span class="n">require_hs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">use_original_opener_for_attach</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
 
 <a href="#safe.converter.SAFEConverter.__init__" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -2331,6 +2384,21 @@ or a custom callable that returns the bond ids that can be sliced.</p>
                 <code>None</code>
           </td>
         </tr>
+        <tr>
+          <td><code>use_original_opener_for_attach</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>whether to use the original branch opener digit when adding back
+mapping number to attachment points, or use simple enumeration.</p>
+            </div>
+          </td>
+          <td>
+                <code>True</code>
+          </td>
+        </tr>
     </tbody>
   </table>
 
@@ -2358,10 +2426,15 @@ or a custom callable that returns the bond ids that can be sliced.</p>
 <span class="normal">81</span>
 <span class="normal">82</span>
 <span class="normal">83</span>
-<span class="normal">84</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">slicer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">Callable</span><span class="p">]]</span> <span class="o">=</span> <span class="s2">&quot;brics&quot;</span><span class="p">,</span>
     <span class="n">require_hs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">use_original_opener_for_attach</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Constructor for the SAFE converter</span>
 
@@ -2371,6 +2444,8 @@ or a custom callable that returns the bond ids that can be sliced.</p>
 <span class="sd">            or a custom callable that returns the bond ids that can be sliced.</span>
 <span class="sd">        require_hs: whether the slicing algorithm require the molecule to have hydrogen explictly added.</span>
 <span class="sd">            `attach` slicer requires adding hydrogens.</span>
+<span class="sd">        use_original_opener_for_attach: whether to use the original branch opener digit when adding back</span>
+<span class="sd">            mapping number to attachment points, or use simple enumeration.</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">slicer</span> <span class="o">=</span> <span class="n">slicer</span>
@@ -2381,6 +2456,7 @@ or a custom callable that returns the bond ids that can be sliced.</p>
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">slicer</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">slicer</span> <span class="o">=</span> <span class="p">[</span><span class="n">dm</span><span class="o">.</span><span class="n">from_smarts</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">slicer</span><span class="p">]</span>
     <span class="bp">self</span><span class="o">.</span><span class="n">require_hs</span> <span class="o">=</span> <span class="n">require_hs</span> <span class="ow">or</span> <span class="p">(</span><span class="n">slicer</span> <span class="o">==</span> <span class="s2">&quot;attach&quot;</span><span class="p">)</span>
+    <span class="bp">self</span><span class="o">.</span><span class="n">use_original_opener_for_attach</span> <span class="o">=</span> <span class="n">use_original_opener_for_attach</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -2505,15 +2581,7 @@ or a custom callable that returns the bond ids that can be sliced.</p>
 
           <details class="quote">
             <summary>Source code in <code>safe/converter.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span>
-<span class="normal">148</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">148</span>
 <span class="normal">149</span>
 <span class="normal">150</span>
 <span class="normal">151</span>
@@ -2543,7 +2611,15 @@ or a custom callable that returns the bond ids that can be sliced.</p>
 <span class="normal">175</span>
 <span class="normal">176</span>
 <span class="normal">177</span>
-<span class="normal">178</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">decoder</span><span class="p">(</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span>
+<span class="normal">186</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">decoder</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">inp</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">as_mol</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -2595,7 +2671,7 @@ or a custom callable that returns the bond ids that can be sliced.</p>
 
 
 <h3 id="safe.converter.SAFEConverter.encoder" class="doc doc-heading">
-          <code class="highlight language-python"><span class="n">encoder</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">canonical</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">constraints</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">allow_empty</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></code>
+          <code class="highlight language-python"><span class="n">encoder</span><span class="p">(</span><span class="n">inp</span><span class="p">,</span> <span class="n">canonical</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">randomize</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">constraints</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">allow_empty</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">rdkit_safe</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></code>
 
 <a href="#safe.converter.SAFEConverter.encoder" class="headerlink" title="Permanent link">&para;</a></h3>
 
@@ -2705,20 +2781,26 @@ happen outside of a substructure matching one of the patterns.</p>
                 <code>False</code>
           </td>
         </tr>
+        <tr>
+          <td><code>rdkit_safe</code></td>
+          <td>
+                <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+          </td>
+          <td>
+            <div class="doc-md-description">
+              <p>whether to apply rdkit-safe digit standardization to the output SAFE string.</p>
+            </div>
+          </td>
+          <td>
+                <code>True</code>
+          </td>
+        </tr>
     </tbody>
   </table>
 
           <details class="quote">
             <summary>Source code in <code>safe/converter.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">216</span>
-<span class="normal">217</span>
-<span class="normal">218</span>
-<span class="normal">219</span>
-<span class="normal">220</span>
-<span class="normal">221</span>
-<span class="normal">222</span>
-<span class="normal">223</span>
-<span class="normal">224</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">224</span>
 <span class="normal">225</span>
 <span class="normal">226</span>
 <span class="normal">227</span>
@@ -2826,7 +2908,23 @@ happen outside of a substructure matching one of the patterns.</p>
 <span class="normal">329</span>
 <span class="normal">330</span>
 <span class="normal">331</span>
-<span class="normal">332</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">encoder</span><span class="p">(</span>
+<span class="normal">332</span>
+<span class="normal">333</span>
+<span class="normal">334</span>
+<span class="normal">335</span>
+<span class="normal">336</span>
+<span class="normal">337</span>
+<span class="normal">338</span>
+<span class="normal">339</span>
+<span class="normal">340</span>
+<span class="normal">341</span>
+<span class="normal">342</span>
+<span class="normal">343</span>
+<span class="normal">344</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">encoder</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">inp</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">],</span>
     <span class="n">canonical</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -2834,6 +2932,7 @@ happen outside of a substructure matching one of the patterns.</p>
     <span class="n">seed</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">constraints</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">allow_empty</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="n">rdkit_safe</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
 <span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Convert input smiles to SAFE representation</span>
 
@@ -2848,6 +2947,7 @@ happen outside of a substructure matching one of the patterns.</p>
 <span class="sd">        constraints: List of molecules or pattern to preserve during the SAFE construction. Any bond slicing would</span>
 <span class="sd">            happen outside of a substructure matching one of the patterns.</span>
 <span class="sd">        allow_empty: whether to allow the slicing algorithm to return empty bonds</span>
+<span class="sd">        rdkit_safe: whether to apply rdkit-safe digit standardization to the output SAFE string.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">rng</span> <span class="o">=</span> <span class="kc">None</span>
     <span class="k">if</span> <span class="n">randomize</span><span class="p">:</span>
@@ -2940,9 +3040,15 @@ happen outside of a substructure matching one of the patterns.</p>
         <span class="n">attach_regexp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">attach</span><span class="p">)</span> <span class="o">+</span> <span class="sa">r</span><span class="s2">&quot;)&quot;</span><span class="p">)</span>
         <span class="n">scaffold_str</span> <span class="o">=</span> <span class="n">attach_regexp</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
         <span class="n">starting_num</span> <span class="o">+=</span> <span class="mi">1</span>
-    <span class="c1"># now we need to remove all the parenthesis around difig only number</span>
+    <span class="c1"># now we need to remove all the parenthesis around digit only number</span>
     <span class="n">wrong_attach</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\(([\%\d]*)\)&quot;</span><span class="p">)</span>
-    <span class="k">return</span> <span class="n">wrong_attach</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\g&lt;1&gt;&quot;</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
+    <span class="n">scaffold_str</span> <span class="o">=</span> <span class="n">wrong_attach</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\g&lt;1&gt;&quot;</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
+    <span class="c1"># furthermore, we autoapply rdkit-compatible digit standardization.</span>
+    <span class="k">if</span> <span class="n">rdkit_safe</span><span class="p">:</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\(([=-@#]?)(%?\d{1,2})\)&quot;</span>
+        <span class="n">replacement</span> <span class="o">=</span> <span class="sa">r</span><span class="s2">&quot;\g&lt;1&gt;\g&lt;2&gt;&quot;</span>
+        <span class="n">scaffold_str</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">pattern</span><span class="p">,</span> <span class="n">replacement</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">scaffold_str</span>
 </code></pre></div></td></tr></table></div>
           </details>
   </div>
@@ -3015,11 +3121,7 @@ happen outside of a substructure matching one of the patterns.</p>
 
           <details class="quote">
             <summary>Source code in <code>safe/converter.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 86</span>
-<span class="normal"> 87</span>
-<span class="normal"> 88</span>
-<span class="normal"> 89</span>
-<span class="normal"> 90</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 90</span>
 <span class="normal"> 91</span>
 <span class="normal"> 92</span>
 <span class="normal"> 93</span>
@@ -3029,7 +3131,11 @@ happen outside of a substructure matching one of the patterns.</p>
 <span class="normal"> 97</span>
 <span class="normal"> 98</span>
 <span class="normal"> 99</span>
-<span class="normal">100</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
+<span class="normal">100</span>
+<span class="normal">101</span>
+<span class="normal">102</span>
+<span class="normal">103</span>
+<span class="normal">104</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@staticmethod</span>
 <span class="k">def</span> <span class="nf">randomize</span><span class="p">(</span><span class="n">mol</span><span class="p">:</span> <span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">,</span> <span class="n">rng</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Randomize the position of the atoms in a mol.</span>
 
@@ -3191,23 +3297,7 @@ happen outside of a substructure matching one of the patterns.</p>
 
           <details class="quote">
             <summary>Source code in <code>safe/converter.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">335</span>
-<span class="normal">336</span>
-<span class="normal">337</span>
-<span class="normal">338</span>
-<span class="normal">339</span>
-<span class="normal">340</span>
-<span class="normal">341</span>
-<span class="normal">342</span>
-<span class="normal">343</span>
-<span class="normal">344</span>
-<span class="normal">345</span>
-<span class="normal">346</span>
-<span class="normal">347</span>
-<span class="normal">348</span>
-<span class="normal">349</span>
-<span class="normal">350</span>
-<span class="normal">351</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">351</span>
 <span class="normal">352</span>
 <span class="normal">353</span>
 <span class="normal">354</span>
@@ -3224,7 +3314,23 @@ happen outside of a substructure matching one of the patterns.</p>
 <span class="normal">365</span>
 <span class="normal">366</span>
 <span class="normal">367</span>
-<span class="normal">368</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">encode</span><span class="p">(</span>
+<span class="normal">368</span>
+<span class="normal">369</span>
+<span class="normal">370</span>
+<span class="normal">371</span>
+<span class="normal">372</span>
+<span class="normal">373</span>
+<span class="normal">374</span>
+<span class="normal">375</span>
+<span class="normal">376</span>
+<span class="normal">377</span>
+<span class="normal">378</span>
+<span class="normal">379</span>
+<span class="normal">380</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">encode</span><span class="p">(</span>
     <span class="n">inp</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">],</span>
     <span class="n">canonical</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">randomize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -3290,23 +3396,7 @@ Args:
 
           <details class="quote">
             <summary>Source code in <code>safe/converter.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">371</span>
-<span class="normal">372</span>
-<span class="normal">373</span>
-<span class="normal">374</span>
-<span class="normal">375</span>
-<span class="normal">376</span>
-<span class="normal">377</span>
-<span class="normal">378</span>
-<span class="normal">379</span>
-<span class="normal">380</span>
-<span class="normal">381</span>
-<span class="normal">382</span>
-<span class="normal">383</span>
-<span class="normal">384</span>
-<span class="normal">385</span>
-<span class="normal">386</span>
-<span class="normal">387</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">387</span>
 <span class="normal">388</span>
 <span class="normal">389</span>
 <span class="normal">390</span>
@@ -3326,7 +3416,23 @@ Args:
 <span class="normal">404</span>
 <span class="normal">405</span>
 <span class="normal">406</span>
-<span class="normal">407</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">decode</span><span class="p">(</span>
+<span class="normal">407</span>
+<span class="normal">408</span>
+<span class="normal">409</span>
+<span class="normal">410</span>
+<span class="normal">411</span>
+<span class="normal">412</span>
+<span class="normal">413</span>
+<span class="normal">414</span>
+<span class="normal">415</span>
+<span class="normal">416</span>
+<span class="normal">417</span>
+<span class="normal">418</span>
+<span class="normal">419</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">decode</span><span class="p">(</span>
     <span class="n">safe_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">as_mol</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">canonical</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
