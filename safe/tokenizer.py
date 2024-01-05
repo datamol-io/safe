@@ -1,40 +1,28 @@
-from typing import Optional
-from typing import List
-from typing import Any
-from typing import Iterator
-from typing import Union
-from typing import Dict
-
-import re
-import os
 import contextlib
-import fsspec
 import copy
-import torch
-import numpy as np
 import json
+import os
+import re
 import warnings
-import packaging.version
+from typing import Any, Dict, Iterator, List, Optional, Union
 
+import fsspec
+import numpy as np
+import packaging.version
+import torch
 from loguru import logger
-from tokenizers import decoders
-from tokenizers import Tokenizer
+from tokenizers import Tokenizer, decoders
 from tokenizers.models import BPE, WordLevel
-from tokenizers.trainers import BpeTrainer, WordLevelTrainer
-from tokenizers.pre_tokenizers import Whitespace, PreTokenizer
+from tokenizers.pre_tokenizers import PreTokenizer, Whitespace
 from tokenizers.processors import TemplateProcessing
+from tokenizers.trainers import BpeTrainer, WordLevelTrainer
 from transformers import PreTrainedTokenizerFast
 from transformers import __version__ as transformers_version
-from transformers.utils import PushToHubMixin
-from transformers.utils import is_offline_mode
-from transformers.utils import is_remote_url
-from transformers.utils import cached_file
-from transformers.utils import download_url
-from transformers.utils import extract_commit_hash
-from transformers.utils import working_or_temp_dir
+from transformers.utils import (PushToHubMixin, cached_file, download_url,
+                                extract_commit_hash, is_offline_mode,
+                                is_remote_url, working_or_temp_dir)
 
 from .utils import attr_as
-
 
 SPECIAL_TOKENS = ["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
 UNK_TOKEN = "[UNK]"

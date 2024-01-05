@@ -1,21 +1,16 @@
-from typing import Union
-from typing import Optional
-from typing import List
-from typing import Callable
-
-import re
-import datamol as dm
 import itertools
-import numpy as np
-
-from contextlib import suppress
+import re
 from collections import Counter
+from contextlib import suppress
+from typing import Callable, List, Optional, Union
 
+import datamol as dm
+import numpy as np
 from rdkit import Chem
 from rdkit.Chem import BRICS
-from ._exception import SAFEDecodeError
-from ._exception import SAFEEncodeError
-from ._exception import SAFEFragmentationError
+
+from ._exception import (SAFEDecodeError, SAFEEncodeError,
+                         SAFEFragmentationError)
 from .utils import standardize_attach
 
 
@@ -110,6 +105,7 @@ class SAFEConverter:
         Args:
             inp: input smiles
         """
+        inp = re.sub("[\[].*?[\]]", "", inp) #noqa
 
         matching_groups = re.findall(r"((?<=%)\d{2})|((?<!%)\d+)", inp)
         # first match is for multiple connection as multiple digits

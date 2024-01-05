@@ -1,30 +1,23 @@
-from typing import Optional
-from typing import Any
-from typing import Union
-from typing import List
-from typing import Tuple
-
-from collections import deque
-from contextlib import contextmanager, suppress
-from functools import partial
-from itertools import combinations
-from itertools import compress
-from loguru import logger
-from networkx.utils import py_random_state
-
-from rdkit import Chem
-from rdkit.Chem import EditableMol, Atom
-from rdkit.Chem.rdmolops import ReplaceCore
-from rdkit.Chem.rdmolops import AdjustQueryParameters
-from rdkit.Chem.rdmolops import AdjustQueryProperties
-from rdkit.Chem.rdChemReactions import ReactionFromSmarts
-
 import itertools
 import random
 import re
-import numpy as np
-import networkx as nx
+from collections import deque
+from contextlib import contextmanager, suppress
+from functools import partial
+from itertools import combinations, compress
+from typing import Any, List, Optional, Tuple, Union
+
 import datamol as dm
+import networkx as nx
+import numpy as np
+from loguru import logger
+from networkx.utils import py_random_state
+from rdkit import Chem
+from rdkit.Chem import Atom, EditableMol
+from rdkit.Chem.rdChemReactions import ReactionFromSmarts
+from rdkit.Chem.rdmolops import (AdjustQueryParameters, AdjustQueryProperties,
+                                 ReplaceCore)
+
 import safe as sf
 
 __implicit_carbon_query = dm.from_smarts("[#6;h]")
