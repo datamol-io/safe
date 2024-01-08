@@ -83,6 +83,8 @@ def test_rdkit_smiles_parser_issues():
         "O=C(CN1CC[NH2+]CC1)N1CCCCC1",
         "[NH3+]Cc1ccccc1",
         "c1cc2c(cc1[C@@H]1CCC[NH2+]1)OCCO2",
+        "[13C]1CCCCC1C[238U]C[NH3+]",
+        "COC[CH2:1][CH2:2]O[CH:2]C[OH:3]",
     ],
 )
 def test_bracket_smiles_issues(input_sm):
@@ -98,7 +100,7 @@ def test_bracket_smiles_issues(input_sm):
             f = safe_obj.decoder(
                 fragment,
                 as_mol=False,
-                canonical=False,
+                canonical=True,
                 fix=True,
                 remove_dummies=True,
                 remove_added_hs=True,
