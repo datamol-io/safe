@@ -15,8 +15,7 @@ from networkx.utils import py_random_state
 from rdkit import Chem
 from rdkit.Chem import Atom, EditableMol
 from rdkit.Chem.rdChemReactions import ReactionFromSmarts
-from rdkit.Chem.rdmolops import (AdjustQueryParameters, AdjustQueryProperties,
-                                 ReplaceCore)
+from rdkit.Chem.rdmolops import AdjustQueryParameters, AdjustQueryProperties, ReplaceCore
 
 import safe as sf
 
