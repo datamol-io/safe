@@ -1,6 +1,6 @@
+from safe.sample import SAFEDesign
 from safe.tokenizer import SAFETokenizer
 from safe.trainer.model import SAFEDoubleHeadsModel
-from safe.sample import SAFEDesign
 
 
 def test_load_default_safe_model():

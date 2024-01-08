@@ -1,26 +1,22 @@
-from typing import Union
-from typing import List
-from typing import Optional
-
-
-from contextlib import suppress
-from collections.abc import Mapping
-from collections import Counter
-from transformers.generation import PhrasalConstraint
-from transformers.generation import DisjunctiveConstraint
-from transformers import GenerationConfig
-from safe.trainer.model import SAFEDoubleHeadsModel
-from safe.tokenizer import SAFETokenizer
-from loguru import logger
-from tqdm.auto import tqdm
-
 import itertools
 import os
-import re
-import torch
 import random
+import re
+from collections import Counter
+from collections.abc import Mapping
+from contextlib import suppress
+from typing import List, Optional, Union
+
 import datamol as dm
+import torch
+from loguru import logger
+from tqdm.auto import tqdm
+from transformers import GenerationConfig
+from transformers.generation import DisjunctiveConstraint, PhrasalConstraint
+
 import safe as sf
+from safe.tokenizer import SAFETokenizer
+from safe.trainer.model import SAFEDoubleHeadsModel
 
 
 class SAFEDesign:

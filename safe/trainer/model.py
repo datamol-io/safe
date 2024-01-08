@@ -1,21 +1,17 @@
-from typing import Optional
-from typing import Union
-from typing import Tuple
-from typing import Callable
-from typing import Any
+from typing import Any, Callable, Optional, Tuple, Union
 
 import torch
 from torch import nn
-from torch.nn import CrossEntropyLoss
-from torch.nn import MSELoss
-from transformers import GPT2DoubleHeadsModel
+from torch.nn import CrossEntropyLoss, MSELoss
+from transformers import GPT2DoubleHeadsModel, PretrainedConfig
 from transformers.activations import get_activation
-from transformers.models.gpt2.modeling_gpt2 import GPT2DoubleHeadsModelOutput
-from transformers.models.gpt2.modeling_gpt2 import add_start_docstrings_to_model_forward
-from transformers.models.gpt2.modeling_gpt2 import replace_return_docstrings
-from transformers.models.gpt2.modeling_gpt2 import GPT2_INPUTS_DOCSTRING
-from transformers.models.gpt2.modeling_gpt2 import _CONFIG_FOR_DOC
-from transformers import PretrainedConfig
+from transformers.models.gpt2.modeling_gpt2 import (
+    _CONFIG_FOR_DOC,
+    GPT2_INPUTS_DOCSTRING,
+    GPT2DoubleHeadsModelOutput,
+    add_start_docstrings_to_model_forward,
+    replace_return_docstrings,
+)
 
 
 class PropertyHead(torch.nn.Module):

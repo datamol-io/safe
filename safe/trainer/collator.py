@@ -1,18 +1,13 @@
-from typing import Union
-from typing import Optional
-from typing import List
-from typing import Dict
-from typing import Any
-
 import copy
 import functools
-import torch
 from collections.abc import Mapping
+from typing import Any, Dict, List, Optional, Union
 
-from transformers.data.data_collator import _torch_collate_batch
-from safe.tokenizer import SAFETokenizer
-
+import torch
 from tokenizers import Tokenizer
+from transformers.data.data_collator import _torch_collate_batch
+
+from safe.tokenizer import SAFETokenizer
 
 
 class SAFECollator:

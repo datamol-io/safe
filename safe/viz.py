@@ -1,11 +1,9 @@
-from typing import Optional
-from typing import Any
-from typing import Tuple
-from typing import Union
-
 import itertools
-import matplotlib.pyplot as plt
+from typing import Any, Optional, Tuple, Union
+
 import datamol as dm
+import matplotlib.pyplot as plt
+
 import safe as sf
 
 

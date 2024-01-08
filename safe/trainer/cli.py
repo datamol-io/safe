@@ -1,29 +1,25 @@
-from typing import Optional
-from typing import Literal
-
 import math
 import os
 import sys
 import uuid
-import safe
+from dataclasses import dataclass, field
+from typing import Literal, Optional
+
+import datasets
+import evaluate
 import torch
 import transformers
-import evaluate
-import datasets
-from dataclasses import dataclass, field
 from loguru import logger
-from transformers import AutoConfig
-from transformers import AutoTokenizer
-from transformers import set_seed
-from transformers.utils.logging import log_levels as LOG_LEVELS
+from transformers import AutoConfig, AutoTokenizer, TrainingArguments, set_seed
 from transformers.trainer_utils import get_last_checkpoint
-from transformers import TrainingArguments
-from safe.trainer.model import SAFEDoubleHeadsModel
-from safe.tokenizer import SAFETokenizer
-from safe.trainer.data_utils import get_dataset
-from safe.trainer.collator import SAFECollator
-from safe.trainer.trainer_utils import SAFETrainer
+from transformers.utils.logging import log_levels as LOG_LEVELS
 
+import safe
+from safe.tokenizer import SAFETokenizer
+from safe.trainer.collator import SAFECollator
+from safe.trainer.data_utils import get_dataset
+from safe.trainer.model import SAFEDoubleHeadsModel
+from safe.trainer.trainer_utils import SAFETrainer
 
 CURRENT_DIR = os.path.join(safe.__path__[0], "trainer")
 
