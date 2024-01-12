@@ -9,7 +9,8 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem import BRICS
 
-from ._exception import SAFEDecodeError, SAFEEncodeError, SAFEFragmentationError
+from ._exception import (SAFEDecodeError, SAFEEncodeError,
+                         SAFEFragmentationError)
 from .utils import standardize_attach
 
 
@@ -104,8 +105,7 @@ class SAFEConverter:
         Args:
             inp: input smiles
         """
-        # Atom mapping case: avoid to capture brackets with :\d
-        inp = re.sub("\[[^:\]]*?\]", "", inp)  # noqa
+        inp = re.sub("[\[].*?[\]]", "", inp)  # noqa
         matching_groups = re.findall(r"((?<=%)\d{2})|((?<!%)\d+)(?![^\[]*\])", inp)
         # first match is for multiple connection as multiple digits
         # second match is for single connections requiring 2 digits
@@ -325,6 +325,7 @@ class SAFEConverter:
         scaffold_str = ".".join(frags_str)
         # don't capture atom mapping in the scaffold
         attach_pos = set(re.findall(r"(\[\d+\*\]|!\[[^:]*:\d+\])", scaffold_str))
+
         if canonical:
             attach_pos = sorted(attach_pos)
         starting_num = 1 if len(branch_numbers) == 0 else max(branch_numbers) + 1

@@ -18,15 +18,9 @@ from tokenizers.processors import TemplateProcessing
 from tokenizers.trainers import BpeTrainer, WordLevelTrainer
 from transformers import PreTrainedTokenizerFast
 from transformers import __version__ as transformers_version
-from transformers.utils import (
-    PushToHubMixin,
-    cached_file,
-    download_url,
-    extract_commit_hash,
-    is_offline_mode,
-    is_remote_url,
-    working_or_temp_dir,
-)
+from transformers.utils import (PushToHubMixin, cached_file, download_url,
+                                extract_commit_hash, is_offline_mode,
+                                is_remote_url, working_or_temp_dir)
 
 from .utils import attr_as
 
