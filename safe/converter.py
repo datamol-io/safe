@@ -9,8 +9,7 @@ import numpy as np
 from rdkit import Chem
 from rdkit.Chem import BRICS
 
-from ._exception import (SAFEDecodeError, SAFEEncodeError,
-                         SAFEFragmentationError)
+from ._exception import SAFEDecodeError, SAFEEncodeError, SAFEFragmentationError
 from .utils import standardize_attach
 
 

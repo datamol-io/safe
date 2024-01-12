@@ -6,8 +6,12 @@ from torch.nn import CrossEntropyLoss, MSELoss
 from transformers import GPT2DoubleHeadsModel, PretrainedConfig
 from transformers.activations import get_activation
 from transformers.models.gpt2.modeling_gpt2 import (
-    _CONFIG_FOR_DOC, GPT2_INPUTS_DOCSTRING, GPT2DoubleHeadsModelOutput,
-    add_start_docstrings_to_model_forward, replace_return_docstrings)
+    _CONFIG_FOR_DOC,
+    GPT2_INPUTS_DOCSTRING,
+    GPT2DoubleHeadsModelOutput,
+    add_start_docstrings_to_model_forward,
+    replace_return_docstrings,
+)
 
 
 class PropertyHead(torch.nn.Module):

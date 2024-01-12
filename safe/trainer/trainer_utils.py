@@ -1,7 +1,6 @@
 from transformers import Trainer
 from transformers.modeling_utils import unwrap_model
-from transformers.models.auto.modeling_auto import \
-    MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
+from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
 
 
 class SAFETrainer(Trainer):
