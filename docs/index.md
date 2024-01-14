@@ -60,6 +60,12 @@ The construction of a SAFE strings requires defining a molecular fragmentation a
     <img src="assets/safe-construction.svg" width="100%">
 </div>
 
+
+## News 🚀
+
+#### 💥 2024/01/15 💥
+1. [@IanAWatson](https://github.com/IanAWatson) has a C++ implementation of SAFE in [LillyMol](https://github.com/IanAWatson/LillyMol/tree/bazel_version_float) that is quite fast and use a custom fragmentation algorithm. Follow the installation instruction on the repo and checkout the docs of the CLI here: [docs/Molecule_Tools/SAFE.md](https://github.com/IanAWatson/LillyMol/blob/bazel_version_float/docs/Molecule_Tools/SAFE.md)
+
 ### Installation
 
 You can install `safe` using pip:
