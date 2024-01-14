@@ -1,16 +1,11 @@
-from typing import Optional
-from typing import Callable
-from typing import Any
-from typing import Union
-from typing import Dict
-
-from collections.abc import Mapping
-from tqdm.auto import tqdm
-from functools import partial
-
 import itertools
-import upath
+from collections.abc import Mapping
+from functools import partial
+from typing import Any, Callable, Dict, Optional, Union
+
 import datasets
+import upath
+from tqdm.auto import tqdm
 
 from safe.tokenizer import SAFETokenizer
 

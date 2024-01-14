@@ -1,21 +1,15 @@
-from typing import Union
-from typing import Optional
-from typing import List
-from typing import Callable
-
-import re
-import datamol as dm
 import itertools
-import numpy as np
-
-from contextlib import suppress
+import re
 from collections import Counter
+from contextlib import suppress
+from typing import Callable, List, Optional, Union
 
+import datamol as dm
+import numpy as np
 from rdkit import Chem
 from rdkit.Chem import BRICS
-from ._exception import SAFEDecodeError
-from ._exception import SAFEEncodeError
-from ._exception import SAFEFragmentationError
+
+from ._exception import SAFEDecodeError, SAFEEncodeError, SAFEFragmentationError
 from .utils import standardize_attach
 
 
@@ -110,8 +104,8 @@ class SAFEConverter:
         Args:
             inp: input smiles
         """
-
-        matching_groups = re.findall(r"((?<=%)\d{2})|((?<!%)\d+)", inp)
+        inp = re.sub("[\[].*?[\]]", "", inp)  # noqa
+        matching_groups = re.findall(r"((?<=%)\d{2})|((?<!%)\d+)(?![^\[]*\])", inp)
         # first match is for multiple connection as multiple digits
         # second match is for single connections requiring 2 digits
         # SMILES does not support triple digits
@@ -262,6 +256,7 @@ class SAFEConverter:
         # TODO(maclandrol): RDKit supports some extended form of ring closure, up to 5 digits
         # https://www.rdkit.org/docs/RDKit_Book.html#ring-closures and I should try to include them
         branch_numbers = self._find_branch_number(inp)
+
         mol = dm.to_mol(inp, remove_hs=False)
 
         bond_map_id = 1
@@ -327,7 +322,9 @@ class SAFEConverter:
             )
 
         scaffold_str = ".".join(frags_str)
-        attach_pos = set(re.findall(r"(\[\d+\*\]|\[[^:]*:\d+\])", scaffold_str))
+        # don't capture atom mapping in the scaffold
+        attach_pos = set(re.findall(r"(\[\d+\*\]|!\[[^:]*:\d+\])", scaffold_str))
+
         if canonical:
             attach_pos = sorted(attach_pos)
         starting_num = 1 if len(branch_numbers) == 0 else max(branch_numbers) + 1
