@@ -30,6 +30,9 @@ theme:
   features:
     - navigation.expand
 
+extra_javascript:
+  - assets/js/google-analytics.js
+  
 markdown_extensions:
   - admonition
   - markdown_include.include
