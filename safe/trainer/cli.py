@@ -1,4 +1,5 @@
 import math
+import gc
 import os
 import sys
 import uuid
@@ -404,7 +405,7 @@ def main():
     parser = transformers.HfArgumentParser((ModelArguments, DataArguments, TrainingArguments))
     model_args, data_args, training_args = parser.parse_args_into_dataclasses()
     train(model_args, data_args, training_args)
-
+    _ = gc.collect()
 
 if __name__ == "__main__":
     main()
