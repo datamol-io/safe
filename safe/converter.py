@@ -333,8 +333,12 @@ class SAFEConverter:
             # we cannot have anything of the form "\([@=-#-$/\]*\d+\)"
             attach_regexp = re.compile(r"(" + re.escape(attach) + r")")
             # check if we have at least 2 matches, if not, we have a dummy
-            n_matches= len(attach_regexp.findall(scaffold_str))
-            scaffold_str = attach_regexp.sub(val, scaffold_str) if n_matches > 1 else scaffold_str.replace(attach, "*")
+            n_matches = len(attach_regexp.findall(scaffold_str))
+            scaffold_str = (
+                attach_regexp.sub(val, scaffold_str)
+                if n_matches > 1
+                else scaffold_str.replace(attach, "*")
+            )
             starting_num += 1
         # now we need to remove all the parenthesis around digit only number
         wrong_attach = re.compile(r"\(([\%\d]*)\)")

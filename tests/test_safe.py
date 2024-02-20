@@ -85,6 +85,7 @@ def test_rdkit_smiles_parser_issues():
         "c1cc2c(cc1[C@@H]1CCC[NH2+]1)OCCO2",
         "[13C]1CCCCC1C[238U]C[NH3+]",
         "COC[CH2:1][CH2:2]O[CH:2]C[OH:3]",
+        "C1*CCC1COO",
     ],
 )
 def test_bracket_smiles_issues(input_sm):
