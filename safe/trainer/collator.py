@@ -67,15 +67,14 @@ class SAFECollator:
         tokenizer = self.get_tokenizer()
 
         # examples = samples
-        examples = copy.deepcopy(samples)
-        inputs = [example.pop(self.input_key, None) for example in examples]
+        inputs = [sample.get(self.input_key, None) for sample in samples]
         mc_labels = (
-            torch.tensor([example.pop(self.property_key, None) for example in examples]).float()
-            if self.property_key in examples[0]
+            torch.tensor([sample.get(self.property_key, None) for sample in samples]).float()
+            if self.property_key in samples[0]
             else None
         )
 
-        if "input_ids" not in examples[0] and inputs is not None:
+        if "input_ids" not in samples[0] and inputs is not None:
             batch = tokenizer(
                 inputs,
                 return_tensors="pt",
@@ -86,7 +85,7 @@ class SAFECollator:
             )
         else:
             batch = tokenizer.pad(
-                examples,
+                samples,
                 return_tensors="pt",
                 padding=True,
                 pad_to_multiple_of=self.pad_to_multiple_of,
