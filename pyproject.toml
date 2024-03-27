@@ -81,24 +81,22 @@ minversion = "6.0"
 addopts = "--verbose --color yes"
 testpaths = ["tests"]
 
-[tool.ruff.pycodestyle]
-max-doc-length = 150
 
 [tool.ruff]
 line-length = 120
 # Enable Pyflakes `E` and `F` codes by default.
-select = [
+lint.select = [
     "E",
     "W", # see: https://pypi.org/project/pycodestyle
     "F", # see: https://pypi.org/project/pyflakes
 ]
-extend-select = [
+lint.extend-select = [
     "C4",  # see: https://pypi.org/project/flake8-comprehensions
     "SIM", # see: https://pypi.org/project/flake8-simplify
     "RET", # see: https://pypi.org/project/flake8-return
     "PT",  # see: https://pypi.org/project/flake8-pytest-style
 ]
-ignore = [
+lint.ignore = [
     "E731", # Do not assign a lambda expression, use a def
     "S108",
     "F401",
@@ -108,4 +106,4 @@ ignore = [
 ]
 # Exclude a variety of commonly ignored directories.
 exclude = [".git", "docs", "_notebooks"]
-ignore-init-module-imports = true
+lint.ignore-init-module-imports = true

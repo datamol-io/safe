@@ -342,9 +342,9 @@ def train(model_args, data_args, training_args):
         prop_loss_coeff=model_args.prop_loss_coeff,
         compute_metrics=compute_metrics if training_args.do_eval else None,
         data_collator=data_collator,
-        preprocess_logits_for_metrics=preprocess_logits_for_metrics
-        if training_args.do_eval
-        else None,
+        preprocess_logits_for_metrics=(
+            preprocess_logits_for_metrics if training_args.do_eval else None
+        ),
     )
 
     if training_args.do_train:
