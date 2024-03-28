@@ -133,6 +133,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
         output_hidden_states: Optional[bool] = None,
         return_dict: Optional[bool] = None,
         inputs: Optional[Any] = None,  # do not remove because of trainer
+        encoder_hidden_states: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> Union[Tuple, GPT2DoubleHeadsModelOutput]:
         r"""
@@ -164,6 +165,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+            encoder_hidden_states=encoder_hidden_states,
         )
 
         hidden_states = transformer_outputs[0]

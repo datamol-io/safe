@@ -42,10 +42,10 @@ class SAFEDesign:
             safe_encoder: custom safe encoder to use
             verbose: whether to print out logging information during generation
         """
-        if isinstance(model, os.PathLike):
+        if isinstance(model, (str, os.PathLike)):
             model = SAFEDoubleHeadsModel.from_pretrained(model)
 
-        if isinstance(tokenizer, os.PathLike):
+        if isinstance(tokenizer, (str, os.PathLike)):
             tokenizer = SAFETokenizer.load(tokenizer)
 
         model.eval()
