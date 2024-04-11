@@ -288,6 +288,7 @@ class SAFEConverter:
                 continue
             obond = mol.GetBondBetweenAtoms(i_a, i_b)
             bonds.append(obond.GetIdx())
+
         if len(bonds) > 0:
             mol = Chem.FragmentOnBonds(
                 mol,
@@ -297,7 +298,6 @@ class SAFEConverter:
         # here we need to be clever and disable rooted atom as the atom with mapping
 
         frags = list(Chem.GetMolFrags(mol, asMols=True))
-
         if randomize:
             frags = rng.permutation(frags).tolist()
         elif canonical:
@@ -322,18 +322,23 @@ class SAFEConverter:
             )
 
         scaffold_str = ".".join(frags_str)
+        # EN: fix for https://github.com/datamol-io/safe/issues/37
+        # we were using the wrong branch number count which did not take into account
+        # possible change in digit utilization after bond slicing
+        scf_branch_num = self._find_branch_number(scaffold_str) + branch_numbers
+
         # don't capture atom mapping in the scaffold
         attach_pos = set(re.findall(r"(\[\d+\*\]|!\[[^:]*:\d+\])", scaffold_str))
-
         if canonical:
             attach_pos = sorted(attach_pos)
-        starting_num = 1 if len(branch_numbers) == 0 else max(branch_numbers) + 1
+        starting_num = 1 if len(scf_branch_num) == 0 else max(scf_branch_num) + 1
         for attach in attach_pos:
             val = str(starting_num) if starting_num < 10 else f"%{starting_num}"
             # we cannot have anything of the form "\([@=-#-$/\]*\d+\)"
             attach_regexp = re.compile(r"(" + re.escape(attach) + r")")
             scaffold_str = attach_regexp.sub(val, scaffold_str)
             starting_num += 1
+
         # now we need to remove all the parenthesis around digit only number
         wrong_attach = re.compile(r"\(([\%\d]*)\)")
         scaffold_str = wrong_attach.sub(r"\g<1>", scaffold_str)

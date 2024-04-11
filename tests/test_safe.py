@@ -110,3 +110,14 @@ def test_bracket_smiles_issues(input_sm):
     assert safe.decode(safe_str) is not None
     assert dm.same_mol(dm.to_mol(safe_str), input_mol)
     assert None not in fragments
+
+
+def test_fused_ring_issue():
+    FUSED_RING_LIST = [
+        "[H][C@@]12CC[C@@]3(CCC(=O)O3)[C@@]1(C)CC[C@@]1([H])[C@@]2([H])[C@@]([H])(CC2=CC(=O)CC[C@]12C)SC(C)=O",
+        "[H][C@@]12C[C@H](C)[C@](OC(=O)CC)(C(=O)COC(=O)CC)[C@@]1(C)C[C@H](O)[C@@]1(Cl)[C@@]2([H])CCC2=CC(=O)C=C[C@]12C",
+        "[H][C@@]12CC[C@@](O)(C#C)[C@@]1(CC)CC[C@]1([H])[C@@]3([H])CCC(=O)C=C3CC[C@@]21[H]",
+    ]
+    for fused_ring in FUSED_RING_LIST:
+        output_string = safe.decode(safe.encode(fused_ring))
+        assert dm.same_mol(fused_ring, output_string)
