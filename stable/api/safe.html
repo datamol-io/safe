@@ -20,7 +20,7 @@
       
       
       <link rel="icon" href="../assets/images/favicon.png">
-      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.3">
+      <meta name="generator" content="mkdocs-1.5.3, mkdocs-material-9.5.17">
     
     
       
@@ -28,7 +28,7 @@
       
     
     
-      <link rel="stylesheet" href="../assets/stylesheets/main.50c56a3b.min.css">
+      <link rel="stylesheet" href="../assets/stylesheets/main.bcfcd587.min.css">
       
       
 
@@ -248,10 +248,8 @@
     
     
     
-    
     <li class="md-nav__item md-nav__item--nested">
       
-        
         
         
           
@@ -380,10 +378,8 @@
     
     
     
-    
     <li class="md-nav__item md-nav__item--active md-nav__item--nested">
       
-        
         
         
         <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
@@ -1984,7 +1980,12 @@ corresponding to the bonds to break.</p>
 <span class="normal">342</span>
 <span class="normal">343</span>
 <span class="normal">344</span>
-<span class="normal">345</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">SAFEConverter</span><span class="p">:</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">SAFEConverter</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Molecule line notation conversion from SMILES to SAFE</span>
 
 <span class="sd">    A SAFE representation is a string based representation of a molecule decomposition into fragment components,</span>
@@ -2259,6 +2260,7 @@ corresponding to the bonds to break.</p>
                 <span class="k">continue</span>
             <span class="n">obond</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">GetBondBetweenAtoms</span><span class="p">(</span><span class="n">i_a</span><span class="p">,</span> <span class="n">i_b</span><span class="p">)</span>
             <span class="n">bonds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obond</span><span class="o">.</span><span class="n">GetIdx</span><span class="p">())</span>
+
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">bonds</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
             <span class="n">mol</span> <span class="o">=</span> <span class="n">Chem</span><span class="o">.</span><span class="n">FragmentOnBonds</span><span class="p">(</span>
                 <span class="n">mol</span><span class="p">,</span>
@@ -2268,7 +2270,6 @@ corresponding to the bonds to break.</p>
         <span class="c1"># here we need to be clever and disable rooted atom as the atom with mapping</span>
 
         <span class="n">frags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Chem</span><span class="o">.</span><span class="n">GetMolFrags</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">asMols</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-
         <span class="k">if</span> <span class="n">randomize</span><span class="p">:</span>
             <span class="n">frags</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">frags</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
         <span class="k">elif</span> <span class="n">canonical</span><span class="p">:</span>
@@ -2293,18 +2294,23 @@ corresponding to the bonds to break.</p>
             <span class="p">)</span>
 
         <span class="n">scaffold_str</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">frags_str</span><span class="p">)</span>
+        <span class="c1"># EN: fix for https://github.com/datamol-io/safe/issues/37</span>
+        <span class="c1"># we were using the wrong branch number count which did not take into account</span>
+        <span class="c1"># possible change in digit utilization after bond slicing</span>
+        <span class="n">scf_branch_num</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_branch_number</span><span class="p">(</span><span class="n">scaffold_str</span><span class="p">)</span> <span class="o">+</span> <span class="n">branch_numbers</span>
+
         <span class="c1"># don&#39;t capture atom mapping in the scaffold</span>
         <span class="n">attach_pos</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\[\d+\*\]|!\[[^:]*:\d+\])&quot;</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">))</span>
-
         <span class="k">if</span> <span class="n">canonical</span><span class="p">:</span>
             <span class="n">attach_pos</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">attach_pos</span><span class="p">)</span>
-        <span class="n">starting_num</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">branch_numbers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">max</span><span class="p">(</span><span class="n">branch_numbers</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">starting_num</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">scf_branch_num</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">max</span><span class="p">(</span><span class="n">scf_branch_num</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
         <span class="k">for</span> <span class="n">attach</span> <span class="ow">in</span> <span class="n">attach_pos</span><span class="p">:</span>
             <span class="n">val</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">starting_num</span><span class="p">)</span> <span class="k">if</span> <span class="n">starting_num</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;%</span><span class="si">{</span><span class="n">starting_num</span><span class="si">}</span><span class="s2">&quot;</span>
             <span class="c1"># we cannot have anything of the form &quot;\([@=-#-$/\]*\d+\)&quot;</span>
             <span class="n">attach_regexp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">attach</span><span class="p">)</span> <span class="o">+</span> <span class="sa">r</span><span class="s2">&quot;)&quot;</span><span class="p">)</span>
             <span class="n">scaffold_str</span> <span class="o">=</span> <span class="n">attach_regexp</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
             <span class="n">starting_num</span> <span class="o">+=</span> <span class="mi">1</span>
+
         <span class="c1"># now we need to remove all the parenthesis around digit only number</span>
         <span class="n">wrong_attach</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\(([\%\d]*)\)&quot;</span><span class="p">)</span>
         <span class="n">scaffold_str</span> <span class="o">=</span> <span class="n">wrong_attach</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\g&lt;1&gt;&quot;</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
@@ -2929,7 +2935,12 @@ happen outside of a substructure matching one of the patterns.</p>
 <span class="normal">342</span>
 <span class="normal">343</span>
 <span class="normal">344</span>
-<span class="normal">345</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">encoder</span><span class="p">(</span>
+<span class="normal">345</span>
+<span class="normal">346</span>
+<span class="normal">347</span>
+<span class="normal">348</span>
+<span class="normal">349</span>
+<span class="normal">350</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">encoder</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">inp</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">],</span>
     <span class="n">canonical</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
@@ -3002,6 +3013,7 @@ happen outside of a substructure matching one of the patterns.</p>
             <span class="k">continue</span>
         <span class="n">obond</span> <span class="o">=</span> <span class="n">mol</span><span class="o">.</span><span class="n">GetBondBetweenAtoms</span><span class="p">(</span><span class="n">i_a</span><span class="p">,</span> <span class="n">i_b</span><span class="p">)</span>
         <span class="n">bonds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">obond</span><span class="o">.</span><span class="n">GetIdx</span><span class="p">())</span>
+
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">bonds</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
         <span class="n">mol</span> <span class="o">=</span> <span class="n">Chem</span><span class="o">.</span><span class="n">FragmentOnBonds</span><span class="p">(</span>
             <span class="n">mol</span><span class="p">,</span>
@@ -3011,7 +3023,6 @@ happen outside of a substructure matching one of the patterns.</p>
     <span class="c1"># here we need to be clever and disable rooted atom as the atom with mapping</span>
 
     <span class="n">frags</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">Chem</span><span class="o">.</span><span class="n">GetMolFrags</span><span class="p">(</span><span class="n">mol</span><span class="p">,</span> <span class="n">asMols</span><span class="o">=</span><span class="kc">True</span><span class="p">))</span>
-
     <span class="k">if</span> <span class="n">randomize</span><span class="p">:</span>
         <span class="n">frags</span> <span class="o">=</span> <span class="n">rng</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">frags</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
     <span class="k">elif</span> <span class="n">canonical</span><span class="p">:</span>
@@ -3036,18 +3047,23 @@ happen outside of a substructure matching one of the patterns.</p>
         <span class="p">)</span>
 
     <span class="n">scaffold_str</span> <span class="o">=</span> <span class="s2">&quot;.&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">frags_str</span><span class="p">)</span>
+    <span class="c1"># EN: fix for https://github.com/datamol-io/safe/issues/37</span>
+    <span class="c1"># we were using the wrong branch number count which did not take into account</span>
+    <span class="c1"># possible change in digit utilization after bond slicing</span>
+    <span class="n">scf_branch_num</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_branch_number</span><span class="p">(</span><span class="n">scaffold_str</span><span class="p">)</span> <span class="o">+</span> <span class="n">branch_numbers</span>
+
     <span class="c1"># don&#39;t capture atom mapping in the scaffold</span>
     <span class="n">attach_pos</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\[\d+\*\]|!\[[^:]*:\d+\])&quot;</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">))</span>
-
     <span class="k">if</span> <span class="n">canonical</span><span class="p">:</span>
         <span class="n">attach_pos</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">attach_pos</span><span class="p">)</span>
-    <span class="n">starting_num</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">branch_numbers</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">max</span><span class="p">(</span><span class="n">branch_numbers</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="n">starting_num</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">scf_branch_num</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">max</span><span class="p">(</span><span class="n">scf_branch_num</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
     <span class="k">for</span> <span class="n">attach</span> <span class="ow">in</span> <span class="n">attach_pos</span><span class="p">:</span>
         <span class="n">val</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">starting_num</span><span class="p">)</span> <span class="k">if</span> <span class="n">starting_num</span> <span class="o">&lt;</span> <span class="mi">10</span> <span class="k">else</span> <span class="sa">f</span><span class="s2">&quot;%</span><span class="si">{</span><span class="n">starting_num</span><span class="si">}</span><span class="s2">&quot;</span>
         <span class="c1"># we cannot have anything of the form &quot;\([@=-#-$/\]*\d+\)&quot;</span>
         <span class="n">attach_regexp</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(&quot;</span> <span class="o">+</span> <span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">attach</span><span class="p">)</span> <span class="o">+</span> <span class="sa">r</span><span class="s2">&quot;)&quot;</span><span class="p">)</span>
         <span class="n">scaffold_str</span> <span class="o">=</span> <span class="n">attach_regexp</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="n">val</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
         <span class="n">starting_num</span> <span class="o">+=</span> <span class="mi">1</span>
+
     <span class="c1"># now we need to remove all the parenthesis around digit only number</span>
     <span class="n">wrong_attach</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\(([\%\d]*)\)&quot;</span><span class="p">)</span>
     <span class="n">scaffold_str</span> <span class="o">=</span> <span class="n">wrong_attach</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;\g&lt;1&gt;&quot;</span><span class="p">,</span> <span class="n">scaffold_str</span><span class="p">)</span>
@@ -3304,12 +3320,7 @@ happen outside of a substructure matching one of the patterns.</p>
 
           <details class="quote">
             <summary>Source code in <code>safe/converter.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">348</span>
-<span class="normal">349</span>
-<span class="normal">350</span>
-<span class="normal">351</span>
-<span class="normal">352</span>
-<span class="normal">353</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">353</span>
 <span class="normal">354</span>
 <span class="normal">355</span>
 <span class="normal">356</span>
@@ -3337,7 +3348,12 @@ happen outside of a substructure matching one of the patterns.</p>
 <span class="normal">378</span>
 <span class="normal">379</span>
 <span class="normal">380</span>
-<span class="normal">381</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">encode</span><span class="p">(</span>
+<span class="normal">381</span>
+<span class="normal">382</span>
+<span class="normal">383</span>
+<span class="normal">384</span>
+<span class="normal">385</span>
+<span class="normal">386</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">encode</span><span class="p">(</span>
     <span class="n">inp</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">],</span>
     <span class="n">canonical</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
     <span class="n">randomize</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -3402,12 +3418,7 @@ Args:
 
           <details class="quote">
             <summary>Source code in <code>safe/converter.py</code></summary>
-            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">384</span>
-<span class="normal">385</span>
-<span class="normal">386</span>
-<span class="normal">387</span>
-<span class="normal">388</span>
-<span class="normal">389</span>
+            <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">389</span>
 <span class="normal">390</span>
 <span class="normal">391</span>
 <span class="normal">392</span>
@@ -3438,7 +3449,12 @@ Args:
 <span class="normal">417</span>
 <span class="normal">418</span>
 <span class="normal">419</span>
-<span class="normal">420</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">decode</span><span class="p">(</span>
+<span class="normal">420</span>
+<span class="normal">421</span>
+<span class="normal">422</span>
+<span class="normal">423</span>
+<span class="normal">424</span>
+<span class="normal">425</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">decode</span><span class="p">(</span>
     <span class="n">safe_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="n">as_mol</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
     <span class="n">canonical</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -9394,10 +9410,12 @@ However, only one cut per atom is allowed</p>
     </div>
     
     
-    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.expand"], "search": "../assets/javascripts/workers/search.f886a092.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    <script id="__config" type="application/json">{"base": "..", "features": ["navigation.expand"], "search": "../assets/javascripts/workers/search.b8dbb3d2.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
     
     
-      <script src="../assets/javascripts/bundle.d7c377c4.min.js"></script>
+      <script src="../assets/javascripts/bundle.1e8ae164.min.js"></script>
+      
+        <script src="../assets/js/google-analytics.js"></script>
       
     
   </body>
