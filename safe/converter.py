@@ -8,6 +8,7 @@ import datamol as dm
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import BRICS
+from loguru import logger
 
 from ._exception import SAFEDecodeError, SAFEEncodeError, SAFEFragmentationError
 from .utils import standardize_attach
@@ -34,23 +35,25 @@ class SAFEConverter:
 
     """
 
-    SUPPORTED_SLICERS = ["hr", "recap", "mmpa", "attach", "brics"]
+    SUPPORTED_SLICERS = ["hr", "rotatable", "recap", "mmpa", "attach", "brics"]
     __SLICE_SMARTS = {
         "hr": ["[*]!@-[*]"],  # any non ring single bond
         "recap": [
-            "[C;$(C=O)]!@-N",  # amides and urea
-            "[C;$(C=O)]!@-O",  # esters
-            "C!@-[N;!$(NC=O)]",  # amines
-            "C!@-[O;!$(NC=O)]",  # ether
-            "[CX3]!@=[CX3]",  # olefin
-            "[N+X4]!@-C",  # quaternary nitrogen
-            "n!@-C",  # aromatic N - aliphatic C
-            "[$([NR][CR]=O)]!@-C",  # lactam nitrogen - aliphatic carbon
-            "c!@-c",  # aromatic C - aromatic C
-            "N!@-[$(S(=O)=O)]",  # sulphonamides
+            "[$([C;!$(C([#7])[#7])](=!@[O]))]!@[$([#7;+0;!D1])]",
+            "[$(C=!@O)]!@[$([O;+0])]",
+            "[$([N;!D1;+0;!$(N-C=[#7,#8,#15,#16])](-!@[*]))]-!@[$([*])]",
+            "[$(C(=!@O)([#7;+0;D2,D3])!@[#7;+0;D2,D3])]!@[$([#7;+0;D2,D3])]",
+            "[$([O;+0](-!@[#6!$(C=O)])-!@[#6!$(C=O)])]-!@[$([#6!$(C=O)])]",
+            "C=!@C",
+            "[N;+1;D4]!@[#6]",
+            "[$([n;+0])]-!@C",
+            "[$([O]=[C]-@[N;+0])]-!@[$([C])]",
+            "c-!@c",
+            "[$([#7;+0;D2,D3])]-!@[$([S](=[O])=[O])]",
         ],
         "mmpa": ["[#6+0;!$(*=,#[!#6])]!@!=!#[*]"],  # classical mmpa slicing smarts
         "attach": ["[*]!@[*]"],  # any potential attachment point, including hydrogens when explicit
+        "rotatable": ["[!$(*#*)&!D1]-&!@[!$(*#*)&!D1]"],
     }
 
     def __init__(
@@ -58,6 +61,7 @@ class SAFEConverter:
         slicer: Optional[Union[str, List[str], Callable]] = "brics",
         require_hs: Optional[bool] = None,
         use_original_opener_for_attach: bool = True,
+        ignore_stereo: bool = False,
     ):
         """Constructor for the SAFE converter
 
@@ -69,6 +73,7 @@ class SAFEConverter:
                 `attach` slicer requires adding hydrogens.
             use_original_opener_for_attach: whether to use the original branch opener digit when adding back
                 mapping number to attachment points, or use simple enumeration.
+            ignore_stereo: RDKIT does not support some particular SAFE subset when stereochemistry is defined.
 
         """
         self.slicer = slicer
@@ -78,8 +83,11 @@ class SAFEConverter:
             self.slicer = [self.slicer]
         if isinstance(self.slicer, (list, tuple)):
             self.slicer = [dm.from_smarts(x) for x in self.slicer]
+            if any(x is None for x in self.slicer):
+                raise ValueError(f"Slicer: {slicer} cannot be valid")
         self.require_hs = require_hs or (slicer == "attach")
         self.use_original_opener_for_attach = use_original_opener_for_attach
+        self.ignore_stereo = ignore_stereo
 
     @staticmethod
     def randomize(mol: dm.Mol, rng: Optional[int] = None):
@@ -258,6 +266,11 @@ class SAFEConverter:
         branch_numbers = self._find_branch_number(inp)
 
         mol = dm.to_mol(inp, remove_hs=False)
+        potential_stereos = Chem.FindPotentialStereo(mol)
+        has_stereo_bonds = any(x.type == Chem.StereoType.Bond_Double for x in potential_stereos)
+        if self.ignore_stereo:
+            mol = dm.remove_stereochemistry(mol)
+            print(mol)
 
         bond_map_id = 1
         for atom in mol.GetAtoms():
@@ -339,9 +352,13 @@ class SAFEConverter:
         scaffold_str = wrong_attach.sub(r"\g<1>", scaffold_str)
         # furthermore, we autoapply rdkit-compatible digit standardization.
         if rdkit_safe:
-            pattern = r"\(([=-@#]?)(%?\d{1,2})\)"
+            pattern = r"\(([=-@#\/\\]{0,2})(%?\d{1,2})\)"
             replacement = r"\g<1>\g<2>"
             scaffold_str = re.sub(pattern, replacement, scaffold_str)
+        if not self.ignore_stereo and has_stereo_bonds and not dm.same_mol(scaffold_str, inp):
+            logger.warning(
+                "Ignoring stereo is disabled, but molecule has stereochemistry interferring with SAFE representation"
+            )
         return scaffold_str
 
 
@@ -353,6 +370,7 @@ def encode(
     slicer: Optional[Union[List[str], str, Callable]] = None,
     require_hs: Optional[bool] = None,
     constraints: Optional[List[dm.Mol]] = None,
+    ignore_stereo: Optional[bool] = False,
 ):
     """
     Convert input smiles to SAFE representation
@@ -365,14 +383,19 @@ def encode(
         slicer: slicer algorithm to use for encoding. Defaults to "brics".
         require_hs: whether the slicing algorithm require the molecule to have hydrogen explictly added.
         constraints: List of molecules or pattern to preserve during the SAFE construction.
+        ignore_stereo: RDKIT does not support some particular SAFE subset when stereochemistry is defined.
     """
     if slicer is None:
         slicer = "brics"
     with dm.without_rdkit_log():
-        safe_obj = SAFEConverter(slicer=slicer, require_hs=require_hs)
+        safe_obj = SAFEConverter(slicer=slicer, require_hs=require_hs, ignore_stereo=ignore_stereo)
         try:
             encoded = safe_obj.encoder(
-                inp, canonical=canonical, randomize=randomize, constraints=constraints, seed=seed
+                inp,
+                canonical=canonical,
+                randomize=randomize,
+                constraints=constraints,
+                seed=seed,
             )
         except SAFEFragmentationError as e:
             raise e
