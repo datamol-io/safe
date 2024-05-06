@@ -121,3 +121,28 @@ def test_fused_ring_issue():
     for fused_ring in FUSED_RING_LIST:
         output_string = safe.decode(safe.encode(fused_ring))
         assert dm.same_mol(fused_ring, output_string)
+
+
+def test_stereochemistry_issue():
+    STEREO_MOL_LIST = [
+        "CC(=C\\c1ccccc1)/N=C/C(=O)O",
+        "CC(=C/c1ccccc1)/N=C/C(=O)O",
+        "CC(=C\\c1ccccc1)/N=C\\C(=O)O",
+        "CC(=C/c1ccccc1)/N=C\\C(=O)O",
+        "CC(=Cc1ccccc1)N=CC(=O)O",
+        "Cc1ccc(-n2c(C)cc(/C=N/Nc3ccc([N+](=O)[O-])cn3)c2C)c(C)c1",
+        "Cc1ccc(-n2c(C)cc(/C=N\\Nc3ccc([N+](=O)[O-])cn3)c2C)c(C)c1",
+    ]
+    for mol in STEREO_MOL_LIST:
+        output_string = safe.encode(mol, ignore_stereo=False, slicer="rotatable")
+        assert dm.same_mol(mol, output_string)
+
+    # now let's test failure case where we fail because we split on a double bond
+    output = safe.encode(STEREO_MOL_LIST[0], ignore_stereo=False, slicer="brics")
+    assert dm.same_mol(STEREO_MOL_LIST[0], output) is False
+    same_stereo = [dm.remove_stereochemistry(dm.to_mol(x)) for x in [output, STEREO_MOL_LIST[0]]]
+    assert dm.same_mol(same_stereo[0], same_stereo[1])
+
+    # check if we ignore the stereo
+    output = safe.encode(STEREO_MOL_LIST[0], ignore_stereo=True, slicer="brics")
+    assert dm.same_mol(dm.remove_stereochemistry(dm.to_mol(STEREO_MOL_LIST[0])), output)

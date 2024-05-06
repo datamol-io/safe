@@ -270,7 +270,6 @@ class SAFEConverter:
         has_stereo_bonds = any(x.type == Chem.StereoType.Bond_Double for x in potential_stereos)
         if self.ignore_stereo:
             mol = dm.remove_stereochemistry(mol)
-            print(mol)
 
         bond_map_id = 1
         for atom in mol.GetAtoms():
