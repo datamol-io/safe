@@ -2,57 +2,57 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://github.com/datamol-io/safe/stable/index.html</loc>
-         <lastmod>2024-04-11</lastmod>
+         <lastmod>2024-05-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/datamol-io/safe/stable/cli.html</loc>
-         <lastmod>2024-04-11</lastmod>
+         <lastmod>2024-05-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/datamol-io/safe/stable/data_license.html</loc>
-         <lastmod>2024-04-11</lastmod>
+         <lastmod>2024-05-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/datamol-io/safe/stable/license.html</loc>
-         <lastmod>2024-04-11</lastmod>
+         <lastmod>2024-05-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/datamol-io/safe/stable/api/safe.html</loc>
-         <lastmod>2024-04-11</lastmod>
+         <lastmod>2024-05-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/datamol-io/safe/stable/api/safe.models.html</loc>
-         <lastmod>2024-04-11</lastmod>
+         <lastmod>2024-05-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/datamol-io/safe/stable/api/safe.viz.html</loc>
-         <lastmod>2024-04-11</lastmod>
+         <lastmod>2024-05-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/datamol-io/safe/stable/tutorials/design-with-safe.html</loc>
-         <lastmod>2024-04-11</lastmod>
+         <lastmod>2024-05-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/datamol-io/safe/stable/tutorials/extracting-representation-molfeat.html</loc>
-         <lastmod>2024-04-11</lastmod>
+         <lastmod>2024-05-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/datamol-io/safe/stable/tutorials/getting-started.html</loc>
-         <lastmod>2024-04-11</lastmod>
+         <lastmod>2024-05-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
     <url>
          <loc>https://github.com/datamol-io/safe/stable/tutorials/how-it-works.html</loc>
-         <lastmod>2024-04-11</lastmod>
+         <lastmod>2024-05-10</lastmod>
          <changefreq>daily</changefreq>
     </url>
 </urlset>
