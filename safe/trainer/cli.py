@@ -313,13 +313,11 @@ def train(model_args, data_args, training_args):
         training_args.label_names = ["labels", "mc_labels"]
 
     # update dispatch_batches in accelerator
-    accelerator_config = model_args.pop("accelerator_config", {})
-    accelerator_config["dispatch_batches"] = data_args.streaming is not True
+    training_args.accelerator_config.dispatch_batches = data_args.streaming is not True
 
     trainer = SAFETrainer(
         model=model,
         tokenizer=None,  # we don't deal with the tokenizer at all, https://github.com/huggingface/tokenizers/issues/581 -_-
-        dispatch_batches=(data_args.streaming is not True),
         train_dataset=train_dataset.shuffle(seed=(training_args.seed or 42)),
         eval_dataset=dataset.get(eval_dataset_key_name, None),
         args=training_args,
@@ -327,7 +325,6 @@ def train(model_args, data_args, training_args):
         compute_metrics=compute_metrics if training_args.do_eval else None,
         data_collator=data_collator,
         preprocess_logits_for_metrics=(preprocess_logits_for_metrics if training_args.do_eval else None),
-        accelerator_config=accelerator_config,
     )
 
     if training_args.do_train:
