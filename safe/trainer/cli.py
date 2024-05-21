@@ -28,9 +28,7 @@ CURRENT_DIR = os.path.join(safe.__path__[0], "trainer")
 class ModelArguments:
     model_path: str = field(
         default=None,
-        metadata={
-            "help": "Optional model path or model name to use as a starting point for the safe model"
-        },
+        metadata={"help": "Optional model path or model name to use as a starting point for the safe model"},
     )
     config: Optional[str] = field(
         default=None, metadata={"help": "Path to the default config file to use for the safe model"}
@@ -42,16 +40,12 @@ class ModelArguments:
             metadata={"help": "Path to the trained tokenizer to use to build a safe model"},
         ),
     )
-    num_labels: Optional[int] = field(
-        default=None, metadata={"help": "Optional number of labels for the descriptors"}
-    )
+    num_labels: Optional[int] = field(default=None, metadata={"help": "Optional number of labels for the descriptors"})
     include_descriptors: Optional[bool] = field(
         default=True,
         metadata={"help": "Whether to train with descriptors if they are available or Not"},
     )
-    prop_loss_coeff: Optional[float] = field(
-        default=1e-2, metadata={"help": "coefficient for the propery loss"}
-    )
+    prop_loss_coeff: Optional[float] = field(default=1e-2, metadata={"help": "coefficient for the propery loss"})
     model_hub_name: Optional[str] = field(
         default="maclandrol/safe-gpt2",
         metadata={"help": "Name of the model when uploading to huggingface"},
@@ -107,13 +101,9 @@ class DataArguments:
         metadata={"help": "whether the dataset submitted as input is already tokenized or not"},
     )
 
-    streaming: Optional[bool] = field(
-        default=False, metadata={"help": "Whether to use a streaming dataset or not"}
-    )
+    streaming: Optional[bool] = field(default=False, metadata={"help": "Whether to use a streaming dataset or not"})
 
-    text_column: Optional[str] = field(
-        default="inputs", metadata={"help": "Column containing text data to process."}
-    )
+    text_column: Optional[str] = field(default="inputs", metadata={"help": "Column containing text data to process."})
 
     max_train_samples: Optional[int] = field(
         default=None, metadata={"help": "Maximum number of training sample to use."}
@@ -132,9 +122,7 @@ class DataArguments:
 
     property_column: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Column containing the descriptors information. Default to None to use `mc_labels`"
-        },
+        metadata={"help": "Column containing the descriptors information. Default to None to use `mc_labels`"},
     )
 
 
@@ -165,11 +153,7 @@ def train(model_args, data_args, training_args):
 
     # Detecting last checkpoint.
     last_checkpoint = None
-    if (
-        os.path.isdir(training_args.output_dir)
-        and training_args.do_train
-        and not training_args.overwrite_output_dir
-    ):
+    if os.path.isdir(training_args.output_dir) and training_args.do_train and not training_args.overwrite_output_dir:
         last_checkpoint = get_last_checkpoint(training_args.output_dir)
         if last_checkpoint is not None and training_args.resume_from_checkpoint is None:
             logger.info(
@@ -225,9 +209,7 @@ def train(model_args, data_args, training_args):
 
     train_dataset = dataset["train"]
     if data_args.train_split is not None:
-        train_dataset = datasets.concatenate_datasets(
-            [dataset[x] for x in data_args.train_split.split("+")]
-        )
+        train_dataset = datasets.concatenate_datasets([dataset[x] for x in data_args.train_split.split("+")])
         if eval_dataset_key_name in data_args.train_split.split("+"):
             eval_dataset_key_name = None
 
@@ -323,14 +305,16 @@ def train(model_args, data_args, training_args):
         preds = preds[:, :-1].reshape(-1)
         results = accuracy_metric.compute(predictions=preds, references=labels)
         if mc_preds is not None and mc_labels is not None:
-            results_mse = mse_metric.compute(
-                predictions=mc_preds.reshape(-1), references=mc_labels.reshape(-1)
-            )
+            results_mse = mse_metric.compute(predictions=mc_preds.reshape(-1), references=mc_labels.reshape(-1))
             results.update(results_mse)
         return results
 
     if model_args.include_descriptors:
         training_args.label_names = ["labels", "mc_labels"]
+
+    # update dispatch_batches in accelerator
+    accelerator_config = model_args.pop("accelerator_config", {})
+    accelerator_config["dispatch_batches"] = data_args.streaming is not True
 
     trainer = SAFETrainer(
         model=model,
@@ -342,9 +326,8 @@ def train(model_args, data_args, training_args):
         prop_loss_coeff=model_args.prop_loss_coeff,
         compute_metrics=compute_metrics if training_args.do_eval else None,
         data_collator=data_collator,
-        preprocess_logits_for_metrics=(
-            preprocess_logits_for_metrics if training_args.do_eval else None
-        ),
+        preprocess_logits_for_metrics=(preprocess_logits_for_metrics if training_args.do_eval else None),
+        accelerator_config=accelerator_config,
     )
 
     if training_args.do_train:

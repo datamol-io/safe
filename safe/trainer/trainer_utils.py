@@ -11,20 +11,15 @@ class SAFETrainer(Trainer):
 
     """
 
-    def __init__(
-        self, *args, prop_loss_coeff: float = 1e-3, dispatch_batches: bool = False, **kwargs
-    ):
+    def __init__(self, *args, prop_loss_coeff: float = 1e-3, **kwargs):
         super().__init__(*args, **kwargs)
         self.prop_loss_coeff = prop_loss_coeff
-        self.accelerator.dispatch_batches = dispatch_batches
 
     def compute_loss(self, model, inputs, return_outputs=False):
         """
         How the loss is computed by Trainer. By default, all models return the loss in the first element.
         """
-        labels = (
-            inputs.pop("labels") if self.label_smoother is not None and "labels" in inputs else None
-        )
+        labels = inputs.pop("labels") if self.label_smoother is not None and "labels" in inputs else None
 
         outputs = model(**inputs)
         # Save past state if it exists
