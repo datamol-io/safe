@@ -160,9 +160,9 @@ If you use this repository, please cite the following related [paper](https://ar
 
 ## License
 
-Note that all data and model weights of **SAFE** are exclusively licensed for research purposes. The accompanying dataset is licensed under CC BY 4.0, which permits solely non-commercial usage. See [DATA_LICENSE](DATA_LICENSE) for details.
+The training dataset is licensed under CC BY 4.0. See [DATA_LICENSE](DATA_LICENSE) for details.  This code base is licensed under the Apache-2.0 license. See [LICENSE](LICENSE) for details. 
 
-This code base is licensed under the Apache-2.0 license. See [LICENSE](LICENSE) for details.
+Note that the model weights of **SAFE-GPT** are exclusively licensed for research purposes (CC BY-NC 4.0).
 
 ## Development lifecycle
 
