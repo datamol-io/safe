@@ -3128,7 +3128,8 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 <span class="normal">156</span>
 <span class="normal">157</span>
 <span class="normal">158</span>
-<span class="normal">159</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span>
+<span class="normal">159</span>
+<span class="normal">160</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">get_dataset</span><span class="p">(</span>
     <span class="n">data_path</span><span class="p">,</span>
     <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Callable</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -3146,7 +3147,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
         <span class="n">data_path</span> <span class="o">=</span> <span class="n">upath</span><span class="o">.</span><span class="n">UPath</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">data_path</span><span class="p">))</span>
 
         <span class="k">if</span> <span class="n">data_path</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
-            <span class="c1"># the we need to load from disk</span>
+            <span class="c1"># then we need to load from disk</span>
             <span class="n">data_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
             <span class="c1"># for some reason, the datasets package is not able to load the dataset</span>
             <span class="c1"># because the split where not originally proposed</span>
@@ -3170,6 +3171,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
                     <span class="nb">setattr</span><span class="p">(</span><span class="n">raw_datasets</span><span class="p">,</span> <span class="s2">&quot;num_examples&quot;</span><span class="p">,</span> <span class="n">num_examples</span><span class="p">)</span>
 
         <span class="k">else</span><span class="p">:</span>
+            <span class="n">data_path</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">data_path</span><span class="p">)</span>
             <span class="n">raw_datasets</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span>
                 <span class="n">data_path</span><span class="p">,</span>
                 <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
