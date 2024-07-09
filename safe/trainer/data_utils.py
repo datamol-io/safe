@@ -49,9 +49,7 @@ def tokenize_fn(
     # there's probably a way to do this with the tokenizer settings
     # but again, gotta move fast
 
-    fast_tokenizer = (
-        tokenizer.get_pretrained() if isinstance(tokenizer, SAFETokenizer) else tokenizer
-    )
+    fast_tokenizer = tokenizer.get_pretrained() if isinstance(tokenizer, SAFETokenizer) else tokenizer
 
     return fast_tokenizer(
         row[tokenize_column],
@@ -108,10 +106,7 @@ def get_dataset(
                 if isinstance(raw_datasets, datasets.DatasetDict):
                     previous_num_examples = {k: len(dt) for k, dt in raw_datasets.items()}
                     raw_datasets = datasets.IterableDatasetDict(
-                        {
-                            k: dt.to_iterable_dataset(num_shards=num_shards)
-                            for k, dt in raw_datasets.items()
-                        }
+                        {k: dt.to_iterable_dataset(num_shards=num_shards) for k, dt in raw_datasets.items()}
                     )
                     for k, dt in raw_datasets.items():
                         if previous_num_examples[k] is not None:

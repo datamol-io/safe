@@ -19,9 +19,7 @@ class SAFETrainer(Trainer):
         """
         How the loss is computed by Trainer. By default, all models return the loss in the first element.
         """
-        labels = (
-            inputs.pop("labels") if self.label_smoother is not None and "labels" in inputs else None
-        )
+        labels = inputs.pop("labels") if self.label_smoother is not None and "labels" in inputs else None
 
         outputs = model(**inputs)
         # Save past state if it exists

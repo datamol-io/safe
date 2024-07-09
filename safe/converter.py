@@ -212,15 +212,11 @@ class SAFEConverter:
         else:
             matches = set()
             for smarts in self.slicer:
-                matches |= {
-                    tuple(sorted(match)) for match in mol.GetSubstructMatches(smarts, uniquify=True)
-                }
+                matches |= {tuple(sorted(match)) for match in mol.GetSubstructMatches(smarts, uniquify=True)}
             matching_bonds = list(matches)
 
         if matching_bonds is None or len(matching_bonds) == 0 and not allow_empty:
-            raise SAFEFragmentationError(
-                "Slicing algorithms did not return any bonds that can be cut !"
-            )
+            raise SAFEFragmentationError("Slicing algorithms did not return any bonds that can be cut !")
         return matching_bonds or []
 
     def encoder(
@@ -284,12 +280,7 @@ class SAFEConverter:
         substructed_ignored = []
         if constraints is not None:
             substructed_ignored = list(
-                itertools.chain(
-                    *[
-                        mol.GetSubstructMatches(constraint, uniquify=True)
-                        for constraint in constraints
-                    ]
-                )
+                itertools.chain(*[mol.GetSubstructMatches(constraint, uniquify=True) for constraint in constraints])
             )
 
         bonds = []
@@ -321,9 +312,7 @@ class SAFEConverter:
 
         frags_str = []
         for frag in frags:
-            non_map_atom_idxs = [
-                atom.GetIdx() for atom in frag.GetAtoms() if atom.GetAtomicNum() != 0
-            ]
+            non_map_atom_idxs = [atom.GetIdx() for atom in frag.GetAtoms() if atom.GetAtomicNum() != 0]
             frags_str.append(
                 Chem.MolToSmiles(
                     frag,
