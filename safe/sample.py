@@ -58,13 +58,17 @@ class SAFEDesign:
         self.generation_config = generation_config
         for special_token_id in ["bos_token_id", "eos_token_id", "pad_token_id"]:
             if getattr(self.generation_config, special_token_id) is None:
-                setattr(self.generation_config, special_token_id, getattr(tokenizer, special_token_id))
+                setattr(
+                    self.generation_config, special_token_id, getattr(tokenizer, special_token_id)
+                )
 
         self.verbose = verbose
         self.safe_encoder = safe_encoder or sf.SAFEConverter()
 
     @classmethod
-    def load_default(cls, verbose: bool = False, model_dir: Optional[str] = None, device: str = None) -> "SAFEDesign":
+    def load_default(
+        cls, verbose: bool = False, model_dir: Optional[str] = None, device: str = None
+    ) -> "SAFEDesign":
         """Load default SAFEGenerator model
 
         Args:
@@ -110,7 +114,9 @@ class SAFEDesign:
         side_chains = list(groups)
 
         if len(side_chains) != 2:
-            raise ValueError("Linker generation only works when providing two groups as side chains")
+            raise ValueError(
+                "Linker generation only works when providing two groups as side chains"
+            )
 
         return self._fragment_linking(
             side_chains=side_chains,
@@ -213,9 +219,15 @@ class SAFEDesign:
         """
         if side_chains is None:
             if mol is None and core is None:
-                raise ValueError("Either side_chains OR mol+core should be provided for scaffold morphing")
+                raise ValueError(
+                    "Either side_chains OR mol+core should be provided for scaffold morphing"
+                )
             side_chains = sf.trainer.utils.compute_side_chains(mol, core)
-        side_chains = [dm.to_mol(x) for x in side_chains] if isinstance(side_chains, list) else [dm.to_mol(side_chains)]
+        side_chains = (
+            [dm.to_mol(x) for x in side_chains]
+            if isinstance(side_chains, list)
+            else [dm.to_mol(side_chains)]
+        )
 
         side_chains = ".".join([dm.to_smiles(x) for x in side_chains])
 
@@ -232,7 +244,9 @@ class SAFEDesign:
         for _ in tqdm(range(n_trials), disable=(not self.verbose), leave=False):
             with dm.without_rdkit_log():
                 context_mng = (
-                    sf.utils.attr_as(self.safe_encoder, "slicer", None) if do_not_fragment_further else suppress()
+                    sf.utils.attr_as(self.safe_encoder, "slicer", None)
+                    if do_not_fragment_further
+                    else suppress()
                 )
                 old_slicer = getattr(self.safe_encoder, "slicer", None)
                 with context_mng:
@@ -259,7 +273,9 @@ class SAFEDesign:
             missing_closure = Counter(self.safe_encoder._find_branch_number(encoded_fragment))
             missing_closure = [f"{str(x)}" for x in missing_closure if missing_closure[x] % 2 == 1]
 
-            closure_pos = [m.start() for x in missing_closure for m in re.finditer(x, encoded_fragment)]
+            closure_pos = [
+                m.start() for x in missing_closure for m in re.finditer(x, encoded_fragment)
+            ]
             fragment_pos = [m.start() for m in re.finditer(r"\.", encoded_fragment)]
             min_pos = 0
             while fragment_pos[min_pos] < closure_pos[0] and min_pos < len(fragment_pos):
@@ -284,7 +300,9 @@ class SAFEDesign:
 
             constraints_ids = []
             for permutation in itertools.permutations(missing_closure + ["."]):
-                constraints_ids.append(self.tokenizer.encode(list(permutation), add_special_tokens=False))
+                constraints_ids.append(
+                    self.tokenizer.encode(list(permutation), add_special_tokens=False)
+                )
 
             # prefix_constraints_ids = self.tokenizer.encode(missing_prefix_closure, add_special_tokens=False)
             # suffix_constraints_ids = self.tokenizer.encode(missing_suffix_closure, add_special_tokens=False)
@@ -308,17 +326,27 @@ class SAFEDesign:
 
                 # we first generate a part of the fragment with for unique constraint that it should contain
                 # the closure required to join something to the suffix.
-                prefix_kwargs["constraints"] += [DisjunctiveConstraint(tkl) for tkl in constraints_ids]
-                suffix_kwargs["constraints"] += [DisjunctiveConstraint(tkl) for tkl in constraints_ids]
+                prefix_kwargs["constraints"] += [
+                    DisjunctiveConstraint(tkl) for tkl in constraints_ids
+                ]
+                suffix_kwargs["constraints"] += [
+                    DisjunctiveConstraint(tkl) for tkl in constraints_ids
+                ]
 
-                prefix_sequences = self._generate(n_samples=n_samples_per_trial, safe_prefix=prefix, **prefix_kwargs)
-                suffix_sequences = self._generate(n_samples=n_samples_per_trial, safe_prefix=suffixes, **suffix_kwargs)
+                prefix_sequences = self._generate(
+                    n_samples=n_samples_per_trial, safe_prefix=prefix, **prefix_kwargs
+                )
+                suffix_sequences = self._generate(
+                    n_samples=n_samples_per_trial, safe_prefix=suffixes, **suffix_kwargs
+                )
 
                 prefix_sequences = [
-                    self._find_fragment_cut(x, prefix, missing_prefix_closure[1]) for x in prefix_sequences
+                    self._find_fragment_cut(x, prefix, missing_prefix_closure[1])
+                    for x in prefix_sequences
                 ]
                 suffix_sequences = [
-                    self._find_fragment_cut(x, suffixes, missing_suffix_closure[1]) for x in suffix_sequences
+                    self._find_fragment_cut(x, suffixes, missing_suffix_closure[1])
+                    for x in suffix_sequences
                 ]
 
                 linkers = [x for x in set(prefix_sequences + suffix_sequences) if x]
@@ -339,8 +367,12 @@ class SAFEDesign:
                     n_samples=n_samples_per_trial, safe_prefix=suffixes + ".", **suffix_kwargs
                 )
 
-                prefix_sequences = self._decode_safe(prefix_sequences, canonical=True, remove_invalid=True)
-                suffix_sequences = self._decode_safe(suffix_sequences, canonical=True, remove_invalid=True)
+                prefix_sequences = self._decode_safe(
+                    prefix_sequences, canonical=True, remove_invalid=True
+                )
+                suffix_sequences = self._decode_safe(
+                    suffix_sequences, canonical=True, remove_invalid=True
+                )
                 sequences = self.__mix_sequences(
                     prefix_sequences,
                     suffix_sequences,
@@ -354,7 +386,9 @@ class SAFEDesign:
 
         # then we should filter out molecules that do not match the requested
         if sanitize:
-            total_sequences = sf.utils.filter_by_substructure_constraints(total_sequences, side_chains)
+            total_sequences = sf.utils.filter_by_substructure_constraints(
+                total_sequences, side_chains
+            )
             if self.verbose:
                 logger.info(
                     f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %)  generated molecules are valid !"
@@ -535,7 +569,9 @@ class SAFEDesign:
         for _ in tqdm(range(n_trials), disable=(not self.verbose), leave=False):
             sequences = self._generate(n_samples=n_samples_per_trial, **kwargs)
             total_sequences.extend(sequences)
-        total_sequences = self._decode_safe(total_sequences, canonical=True, remove_invalid=sanitize)
+        total_sequences = self._decode_safe(
+            total_sequences, canonical=True, remove_invalid=sanitize
+        )
 
         if sanitize and self.verbose:
             logger.info(
@@ -554,7 +590,11 @@ class SAFEDesign:
             branching_id: branching id to use
         """
         prefix_constraint = prefix_constraint.rstrip(".") + "."
-        fragment = fragment.replace(prefix_constraint, "", 1) if fragment.startswith(prefix_constraint) else fragment
+        fragment = (
+            fragment.replace(prefix_constraint, "", 1)
+            if fragment.startswith(prefix_constraint)
+            else fragment
+        )
         fragments = fragment.split(".")
         i = 0
         for x in fragments:
@@ -607,7 +647,9 @@ class SAFEDesign:
             linked = [x for x in linked if x]
         return linked[:n_samples]
 
-    def _decode_safe(self, sequences: List[str], canonical: bool = True, remove_invalid: bool = False):
+    def _decode_safe(
+        self, sequences: List[str], canonical: bool = True, remove_invalid: bool = False
+    ):
         """Decode a safe sequence into a molecule
 
         Args:
@@ -683,7 +725,9 @@ class SAFEDesign:
             else:
                 with dm.without_rdkit_log():
                     context_mng = (
-                        sf.utils.attr_as(self.safe_encoder, "slicer", None) if do_not_fragment_further else suppress()
+                        sf.utils.attr_as(self.safe_encoder, "slicer", None)
+                        if do_not_fragment_further
+                        else suppress()
                     )
                     old_slicer = getattr(self.safe_encoder, "slicer", None)
                     with context_mng:
@@ -708,7 +752,9 @@ class SAFEDesign:
             if add_dot and encoded_fragment.count("(") == encoded_fragment.count(")"):
                 encoded_fragment = encoded_fragment.rstrip(".") + "."
 
-            sequences = self._generate(n_samples=n_samples_per_trial, safe_prefix=encoded_fragment, **kwargs)
+            sequences = self._generate(
+                n_samples=n_samples_per_trial, safe_prefix=encoded_fragment, **kwargs
+            )
 
             sequences = self._decode_safe(sequences, canonical=True, remove_invalid=sanitize)
             total_sequences.extend(sequences)
@@ -828,7 +874,9 @@ class SAFEDesign:
                 generation_config=self.generation_config,
                 **kwargs,
             )
-            sequences = [pretrained_tk.decode(outputs.sequences.squeeze(), skip_special_tokens=True)] * n_samples
+            sequences = [
+                pretrained_tk.decode(outputs.sequences.squeeze(), skip_special_tokens=True)
+            ] * n_samples
 
         else:
             outputs = self.model.generate(

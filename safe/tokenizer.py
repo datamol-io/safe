@@ -47,9 +47,7 @@ TEMPLATE_SPECIAL_TOKENS = [
 class SAFESplitter:
     """Standard Splitter for SAFE string"""
 
-    REGEX_PATTERN = (
-        r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%[0-9]{2}|[0-9])"""
-    )
+    REGEX_PATTERN = r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%[0-9]{2}|[0-9])"""
 
     name = "safe"
 
@@ -65,7 +63,9 @@ class SAFESplitter:
             tokens = list(self.regex.findall(line))
             reconstruction = "".join(tokens)
             if line != reconstruction:
-                logger.error(f"Tokens different from sample:\ntokens {reconstruction}\nsample {line}.")
+                logger.error(
+                    f"Tokens different from sample:\ntokens {reconstruction}\nsample {line}."
+                )
                 raise ValueError(line)
         else:
             idxs = re.finditer(self.regex, str(line))
@@ -355,8 +355,12 @@ class SAFETokenizer(PushToHubMixin):
                     new_ids.append(id)
             new_ids_list.append(new_ids)
         if len(new_ids_list) == 1:
-            return self.tokenizer.decode(list(new_ids_list[0]), skip_special_tokens=skip_special_tokens)
-        return self.tokenizer.decode_batch(list(new_ids_list), skip_special_tokens=skip_special_tokens)
+            return self.tokenizer.decode(
+                list(new_ids_list[0]), skip_special_tokens=skip_special_tokens
+            )
+        return self.tokenizer.decode_batch(
+            list(new_ids_list), skip_special_tokens=skip_special_tokens
+        )
 
     def get_pretrained(self, **kwargs) -> PreTrainedTokenizerFast:
         r"""
@@ -380,7 +384,11 @@ class SAFETokenizer(PushToHubMixin):
                 "sep_token": self.tokenizer.sep_token,
             }
         )
-        if tk.model_max_length is None or tk.model_max_length > 1e8 and hasattr(self.tokenizer, "model_max_length"):
+        if (
+            tk.model_max_length is None
+            or tk.model_max_length > 1e8
+            and hasattr(self.tokenizer, "model_max_length")
+        ):
             tk.model_max_length = self.tokenizer.model_max_length
             setattr(
                 tk,
@@ -461,7 +469,9 @@ class SAFETokenizer(PushToHubMixin):
         repo_url = deprecated_kwargs.pop("repo_url", None)
         organization = deprecated_kwargs.pop("organization", None)
 
-        repo_id = self._create_repo(repo_id, private, token, repo_url=repo_url, organization=organization)
+        repo_id = self._create_repo(
+            repo_id, private, token, repo_url=repo_url, organization=organization
+        )
 
         if use_temp_dir is None:
             use_temp_dir = not os.path.isdir(working_dir)
@@ -471,7 +481,9 @@ class SAFETokenizer(PushToHubMixin):
 
             # Save all files.
             with contextlib.suppress(Exception):
-                self.save_pretrained(work_dir, max_shard_size=max_shard_size, safe_serialization=safe_serialization)
+                self.save_pretrained(
+                    work_dir, max_shard_size=max_shard_size, safe_serialization=safe_serialization
+                )
 
             self.save(os.path.join(work_dir, self.vocab_files_names))
 
@@ -600,7 +612,9 @@ class SAFETokenizer(PushToHubMixin):
             file_path = resolved_vocab_files
 
         if not os.path.isfile(file_path):
-            logger.info(f"Can't load the following file: {file_path} required for loading the tokenizer")
+            logger.info(
+                f"Can't load the following file: {file_path} required for loading the tokenizer"
+            )
 
         tokenizer = cls.load(file_path)
         if return_fast_tokenizer:
