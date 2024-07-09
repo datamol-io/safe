@@ -98,7 +98,7 @@ def get_dataset(
         data_path = upath.UPath(str(data_path))
 
         if data_path.exists():
-            # the we need to load from disk
+            # then we need to load from disk
             data_path = str(data_path)
             # for some reason, the datasets package is not able to load the dataset
             # because the split where not originally proposed
@@ -122,6 +122,7 @@ def get_dataset(
                     setattr(raw_datasets, "num_examples", num_examples)
 
         else:
+            data_path = str(data_path)
             raw_datasets = datasets.load_dataset(
                 data_path,
                 name=name,
