@@ -46,9 +46,7 @@ class MolSlicer:
     _BOND_BUFFER = 1  # buffer around substructure match size.
     MAX_CUTS = 2  # maximum number of cuts. Here we need two cuts for head-linker-tail.
 
-    _MERGING_RXN = dm.reactions.rxn_from_smarts(
-        "[#0][*:1].[#0][*:4].([#0][*:2].[#0][*:3])>>([*:1][*:2].[*:3][*:4])"
-    )
+    _MERGING_RXN = dm.reactions.rxn_from_smarts("[#0][*:1].[#0][*:4].([#0][*:2].[#0][*:3])>>([*:1][*:2].[*:3][*:4])")
 
     def __init__(
         self,
@@ -133,15 +131,11 @@ class MolSlicer:
             # do not accept bonds part of the same ring system or already known
             for b in bonds:
                 bond_id = mol.GetBondBetweenAtoms(*b).GetIdx()
-                bond_cut = Chem.GetMolFrags(
-                    Chem.FragmentOnBonds(mol, [bond_id], addDummies=False), asMols=True
-                )
+                bond_cut = Chem.GetMolFrags(Chem.FragmentOnBonds(mol, [bond_id], addDummies=False), asMols=True)
                 can_add = not self.require_ring_system or all(
                     len(frag.GetAtomsMatchingQuery(ring_query)) > 0 for frag in bond_cut
                 )
-                if can_add and not (
-                    set(b) in cur_unique_bonds or any(x.issuperset(set(b)) for x in ring_systems)
-                ):
+                if can_add and not (set(b) in cur_unique_bonds or any(x.issuperset(set(b)) for x in ring_systems)):
                     candidate_bonds.append(b)
         return candidate_bonds
 
@@ -204,9 +198,7 @@ class MolSlicer:
                 expected_head = dm.to_mol(expected_head)
             if not mol.HasSubstructMatch(expected_head):
                 if self.verbose:
-                    logger.info(
-                        "Expected head was provided, but does not match molecules. It will be ignored"
-                    )
+                    logger.info("Expected head was provided, but does not match molecules. It will be ignored")
                 expected_head = None
 
         candidate_bonds = self._get_bonds_to_cut(mol)
@@ -260,9 +252,7 @@ class MolSlicer:
         return (head, linker, tail)
 
     @classmethod
-    def link_fragments(
-        cls, linker: Union[dm.Mol, str], head: Union[dm.Mol, str], tail: Union[dm.Mol, str]
-    ):
+    def link_fragments(cls, linker: Union[dm.Mol, str], head: Union[dm.Mol, str], tail: Union[dm.Mol, str]):
         """Link fragments together using the provided linker
 
         Args:
@@ -274,9 +264,7 @@ class MolSlicer:
             linker = dm.to_smiles(linker)
         linker = standardize_attach(linker)
         reactants = [dm.to_mol(head), dm.to_mol(tail), dm.to_mol(linker)]
-        return dm.reactions.apply_reaction(
-            cls._MERGING_RXN, reactants, as_smiles=True, sanitize=True, product_index=0
-        )
+        return dm.reactions.apply_reaction(cls._MERGING_RXN, reactants, as_smiles=True, sanitize=True, product_index=0)
 
 
 @contextmanager
@@ -321,9 +309,7 @@ def _selective_add_hs(mol: dm.Mol, fraction_hs: Optional[bool] = None):
 
 
 @py_random_state("seed")
-def mol_partition(
-    mol: dm.Mol, query: Optional[dm.Mol] = None, seed: Optional[int] = None, **kwargs: Any
-):
+def mol_partition(mol: dm.Mol, query: Optional[dm.Mol] = None, seed: Optional[int] = None, **kwargs: Any):
     """Partition a molecule into fragments using a bond query
 
     Args:
@@ -341,9 +327,7 @@ def mol_partition(
         query = __mmpa_query
 
     G = dm.graph.to_graph(mol)
-    bond_partition = [
-        tuple(sorted(match)) for match in mol.GetSubstructMatches(query, uniquify=True)
-    ]
+    bond_partition = [tuple(sorted(match)) for match in mol.GetSubstructMatches(query, uniquify=True)]
 
     def get_relevant_edges(e1, e2):
         return tuple(sorted([e1, e2])) not in bond_partition
@@ -352,9 +336,7 @@ def mol_partition(
 
     partition = [{u} for u in G.nodes()]
     inner_partition = sorted(nx.connected_components(subgraphs), key=lambda x: min(x))
-    mod = nx.algorithms.community.modularity(
-        G, inner_partition, resolution=resolution, weight=weight
-    )
+    mod = nx.algorithms.community.modularity(G, inner_partition, resolution=resolution, weight=weight)
     is_directed = G.is_directed()
     graph = G.__class__()
     graph.add_nodes_from(G)
@@ -368,9 +350,7 @@ def mol_partition(
     while improvement:
         # gh-5901 protect the sets in the yielded list from further manipulation here
         yield [s.copy() for s in partition]
-        new_mod = nx.algorithms.community.modularity(
-            graph, inner_partition, resolution=resolution, weight="weight"
-        )
+        new_mod = nx.algorithms.community.modularity(graph, inner_partition, resolution=resolution, weight="weight")
         if new_mod - mod <= threshold:
             return
         mod = new_mod
@@ -504,9 +484,7 @@ def compute_side_chains(mol: dm.Mol, core: dm.Mol, label_by_index: bool = False)
     core_query_param.aromatizeIfPossible = True
     core_query_param.makeBondsGeneric = False
     core_query = AdjustQueryProperties(core, core_query_param)
-    return ReplaceCore(
-        mol, core_query, labelByIndex=label_by_index, replaceDummies=False, requireDummyMatch=False
-    )
+    return ReplaceCore(mol, core_query, labelByIndex=label_by_index, replaceDummies=False, requireDummyMatch=False)
 
 
 def list_individual_attach_points(mol: dm.Mol, depth: Optional[int] = None):
