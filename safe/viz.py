@@ -47,7 +47,10 @@ def to_image(
         fragments = [fragments]
 
     if fragments is None and highlight_mode is not None:
-        fragments = [sf.decode(x, as_mol=False, remove_dummies=False, ignore_errors=False) for x in safe_str.split(".")]
+        fragments = [
+            sf.decode(x, as_mol=False, remove_dummies=False, ignore_errors=False)
+            for x in safe_str.split(".")
+        ]
     elif fragments and len(fragments) > 0:
         parsed_fragments = []
         for fg in fragments:
