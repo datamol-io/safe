@@ -11,6 +11,17 @@
 
 ---
 
+## SAFE Design
+
+::: safe.sample
+    options:
+        members:
+            - SAFEDesign
+        show_root_heading: false
+
+
+---
+
 ## SAFE Tokenizer
 
 ::: safe.tokenizer
@@ -19,8 +30,6 @@
             - SAFESplitter
             - SAFETokenizer
         show_root_heading: false
-
-
 
 ---
 
