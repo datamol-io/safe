@@ -5,7 +5,7 @@ import re
 from collections import Counter
 from collections.abc import Mapping
 from contextlib import suppress
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Any, Dict
 
 import datamol as dm
 import torch
@@ -112,11 +112,10 @@ class SAFEDesign:
         do_not_fragment_further: Optional[bool] = True,
         random_seed: Optional[int] = None,
         model_only: Optional[bool] = False,
-        **kwargs,
+        **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform linker generation using the pretrained SAFE model.
         Linker generation is really just scaffold morphing underlying.
-
 
         Args:
             groups: list of fragments to link together, they are joined in the order provided
@@ -157,7 +156,7 @@ class SAFEDesign:
         sanitize: bool = False,
         do_not_fragment_further: Optional[bool] = True,
         random_seed: Optional[int] = None,
-        **kwargs,
+        **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform scaffold morphing decoration using the pretrained SAFE model
 
@@ -207,7 +206,7 @@ class SAFEDesign:
         random_seed: Optional[int] = None,
         is_linking: Optional[bool] = False,
         model_only: Optional[bool] = False,
-        **kwargs,
+        **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform scaffold morphing decoration using the pretrained SAFE model
 
@@ -419,13 +418,13 @@ class SAFEDesign:
         sanitize: bool = False,
         do_not_fragment_further: Optional[bool] = True,
         random_seed: Optional[int] = None,
-        **kwargs,
+        **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform motif extension using the pretrained SAFE model.
         Motif extension is really just scaffold decoration underlying.
 
         Args:
-            scaffold: scaffold (with attachment points) to decorate
+            motif: scaffold (with attachment points) to decorate
             n_samples_per_trial: number of new molecules to generate for each randomization
             n_trials: number of randomization to perform
             do_not_fragment_further: whether to fragment the scaffold further or not
@@ -453,7 +452,7 @@ class SAFEDesign:
         do_not_fragment_further: Optional[bool] = True,
         random_seed: Optional[int] = None,
         attachment_point_depth: Optional[int] = None,
-        **kwargs,
+        **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform super structure generation using the pretrained SAFE model.
 
@@ -518,8 +517,8 @@ class SAFEDesign:
         do_not_fragment_further: Optional[bool] = True,
         sanitize: bool = False,
         random_seed: Optional[int] = None,
-        add_dot=True,
-        **kwargs,
+        add_dot: Optional[bool] = True,
+        **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform scaffold decoration using the pretrained SAFE model
 
@@ -561,7 +560,7 @@ class SAFEDesign:
         n_samples_per_trial: int = 10,
         sanitize: bool = False,
         n_trials: Optional[int] = None,
-        **kwargs,
+        **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform de novo generation using the pretrained SAFE model.
 
@@ -709,7 +708,7 @@ class SAFEDesign:
         """Perform sentence completion using a prefix fragment
 
         Args:
-            scaffold: scaffold (with attachment points) to decorate
+            fragment: fragment (with attachment points)
             n_samples_per_trial: number of new molecules to generate for each randomization
             n_trials: number of randomization to perform
             do_not_fragment_further: whether to fragment the scaffold further or not

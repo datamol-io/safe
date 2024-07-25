@@ -112,7 +112,7 @@ class SAFEConverter:
         Args:
             inp: input smiles
         """
-        inp = re.sub("[\[].*?[\]]", "", inp)  # noqa
+        inp = re.sub(r"\[.*?\]", "", inp)  # noqa
         matching_groups = re.findall(r"((?<=%)\d{2})|((?<!%)\d+)(?![^\[]*\])", inp)
         # first match is for multiple connection as multiple digits
         # second match is for single connections requiring 2 digits
