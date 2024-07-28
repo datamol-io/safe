@@ -95,10 +95,10 @@ class SAFECollator:
 
         # If special token mask has been preprocessed, pop it from the dict.
         batch.pop("special_tokens_mask", None)
-        labels = batch.get("labels", batch["input_ids"].clone())
+        labels = batch.get(self.label_key, batch["input_ids"].clone())
         if tokenizer.pad_token_id is not None:
             labels[labels == tokenizer.pad_token_id] = -100
-        batch["labels"] = labels
+        batch[self.label_key] = labels
 
         if mc_labels is not None and self.include_descriptors:
             batch.update(
