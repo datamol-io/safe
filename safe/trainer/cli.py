@@ -331,7 +331,8 @@ def train(model_args, data_args, training_args):
 
     if model_args.include_descriptors:
         training_args.label_names = ["labels", "mc_labels"]
-    else:
+
+    if training_args.label_names is None:
         training_args.label_names = ["labels"]
     # update dispatch_batches in accelerator
     training_args.accelerator_config.dispatch_batches = data_args.streaming is not True
