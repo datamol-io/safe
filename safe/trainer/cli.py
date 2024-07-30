@@ -46,7 +46,7 @@ class ModelArguments:
         default=None, metadata={"help": "Optional number of labels for the descriptors"}
     )
     include_descriptors: Optional[bool] = field(
-        default=True,
+        default=False,
         metadata={"help": "Whether to train with descriptors if they are available or Not"},
     )
     prop_loss_coeff: Optional[float] = field(
@@ -332,6 +332,8 @@ def train(model_args, data_args, training_args):
     if model_args.include_descriptors:
         training_args.label_names = ["labels", "mc_labels"]
 
+    if training_args.label_names is None:
+        training_args.label_names = ["labels"]
     # update dispatch_batches in accelerator
     training_args.accelerator_config.dispatch_batches = data_args.streaming is not True
 

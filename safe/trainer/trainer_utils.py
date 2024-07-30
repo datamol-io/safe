@@ -1,6 +1,7 @@
 from transformers import Trainer
 from transformers.modeling_utils import unwrap_model
 from transformers.models.auto.modeling_auto import MODEL_FOR_CAUSAL_LM_MAPPING_NAMES
+from transformers.trainer import _is_peft_model
 
 
 class SAFETrainer(Trainer):
@@ -22,7 +23,6 @@ class SAFETrainer(Trainer):
         labels = (
             inputs.pop("labels") if self.label_smoother is not None and "labels" in inputs else None
         )
-
         outputs = model(**inputs)
         # Save past state if it exists
         # TODO: this needs to be fixed and made cleaner later.
@@ -30,7 +30,12 @@ class SAFETrainer(Trainer):
             self._past = outputs[self.args.past_index]
 
         if labels is not None:
-            if unwrap_model(model)._get_name() in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES.values():
+            unwrapped_model = self.accelerator.unwrap_model(model)
+            if _is_peft_model(unwrapped_model):
+                model_name = unwrapped_model.base_model.model._get_name()
+            else:
+                model_name = unwrapped_model._get_name()
+            if model_name in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES.values():
                 loss = self.label_smoother(outputs, labels, shift_labels=True)
             else:
                 loss = self.label_smoother(outputs, labels)
@@ -42,6 +47,7 @@ class SAFETrainer(Trainer):
                 )
             # We don't use .loss here since the model may return tuples instead of ModelOutput.
             loss = outputs["loss"] if isinstance(outputs, dict) else outputs[0]
+
         mc_loss = outputs.get("mc_loss", None) if isinstance(outputs, dict) else outputs[1]
         if mc_loss is not None:
             loss = loss + self.prop_loss_coeff * mc_loss
