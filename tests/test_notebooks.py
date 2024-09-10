@@ -12,7 +12,7 @@ NOTEBOOK_PATHS = sorted(TUTORIALS_DIR.glob("*.ipynb"))
 NOTEBOOK_PATHS = list(filter(lambda x: x.name not in DISABLE_NOTEBOOKS, NOTEBOOK_PATHS))
 
 # Discard some notebooks
-NOTEBOOKS_TO_DISCARD = ["extracting-representation-molfeat.ipynb"]
+NOTEBOOKS_TO_DISCARD = ["extracting-representation-molfeat.ipynb", "load-from-wandb.ipynb"]
 NOTEBOOK_PATHS = list(filter(lambda x: x.name not in NOTEBOOKS_TO_DISCARD, NOTEBOOK_PATHS))
 
 

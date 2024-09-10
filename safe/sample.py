@@ -9,7 +9,9 @@ from typing import List, Optional, Union, Any, Dict
 
 import datamol as dm
 import torch
+import tempfile
 from loguru import logger
+from pathlib import Path
 from tqdm.auto import tqdm
 from transformers import GenerationConfig
 from transformers.generation import DisjunctiveConstraint, PhrasalConstraint
@@ -17,6 +19,8 @@ from transformers.generation import DisjunctiveConstraint, PhrasalConstraint
 import safe as sf
 from safe.tokenizer import SAFETokenizer
 from safe.trainer.model import SAFEDoubleHeadsModel
+
+# modify this code to allow loading the model from wandb
 
 
 class SAFEDesign:
@@ -59,6 +63,7 @@ class SAFEDesign:
             safe_encoder: custom safe encoder to use
             verbose: whether to print out logging information during generation
         """
+
         if isinstance(model, (str, os.PathLike)):
             model = SAFEDoubleHeadsModel.from_pretrained(model)
 
@@ -83,8 +88,73 @@ class SAFEDesign:
         self.safe_encoder = safe_encoder or sf.SAFEConverter()
 
     @classmethod
+    def load_from_wandb(
+        cls, artifact_path: str, device: Optional[str] = None, verbose: bool = True, **kwargs
+    ) -> "SAFEDesign":
+        """
+        Load SAFE model and tokenizer from a Weights and Biases (wandb) artifact. By default, the model will be downloaded into SAFE_MODEL_ROOT.
+
+        Args:
+            artifact_path: The path to the wandb artifact in the format `entity/project/artifact:version`.
+            device: The device where the model should be loaded ('cpu' or 'cuda'). If None, it defaults to the available device.
+            verbose: Whether to print out logging information during generation.
+
+        Returns:
+            SAFEDesign: An instance of SAFEDesign class with the model, tokenizer, and generation config loaded from wandb.
+        """
+        # EN: potentially remove wandb scheme
+        import wandb
+
+        artifact_path = artifact_path.replace("wandb://", "")
+
+        # Parse the artifact path to extract project and artifact name
+        parts = artifact_path.split("/", 1)
+        if len(parts) > 1:
+            project_name, artifact_name = parts
+        else:
+            project_name = os.getenv("SAFE_WANDB_PROJECT", "safe-models")
+            artifact_name = artifact_path
+
+        if ":" not in artifact_name:
+            artifact_name += ":latest"
+
+        artifact_path = f"{project_name}/{artifact_name}"
+
+        # Check if SAFE_MODEL_ROOT environment variable is defined
+        cache_path = os.getenv("SAFE_MODEL_ROOT", None)
+        if cache_path is not None:
+            # Ensure the cache path exists
+            cache_path = Path(cache_path)
+            cache_path.mkdir(parents=True, exist_ok=True)
+            artifact_subfolder = artifact_path.replace("/", "_").replace(":", "_")
+            cache_dir = cache_path / artifact_subfolder
+            cache_path = cache_dir.as_posix()
+
+        api = wandb.Api()
+        # Download the artifact from wandb to the cache directory
+        artifact = api.artifact(artifact_path, type="model")
+        artifact_dir = artifact.download(root=cache_path)
+
+        # Load the model, tokenizer, and generation config from the artifact directory
+        model = SAFEDoubleHeadsModel.from_pretrained(artifact_dir)
+        tokenizer = SAFETokenizer.from_pretrained(artifact_dir)
+        gen_config = GenerationConfig.from_pretrained(artifact_dir)
+
+        # Move model to the specified device if provided
+        if device is not None:
+            model = model.to(device)
+
+        return cls(
+            model=model,
+            tokenizer=tokenizer,
+            generation_config=gen_config,
+            verbose=verbose,
+            **kwargs,
+        )
+
+    @classmethod
     def load_default(
-        cls, verbose: bool = False, model_dir: Optional[str] = None, device: str = None
+        cls, model_dir: Optional[str] = None, device: str = None, verbose: bool = False, **kwargs
     ) -> "SAFEDesign":
         """Load default SAFEGenerator model
 
@@ -93,6 +163,7 @@ class SAFEDesign:
             model_dir: Optional path to model folder to use instead of the default one.
                 If provided the tokenizer should be in the model_dir named as `tokenizer.json`
             device: optional device where to move the model
+            kwargs: any additional argument to pass to the init function
         """
         if model_dir is None or not model_dir:
             model_dir = cls._DEFAULT_MODEL_PATH
@@ -101,7 +172,13 @@ class SAFEDesign:
         gen_config = GenerationConfig.from_pretrained(model_dir)
         if device is not None:
             model = model.to(device)
-        return cls(model=model, tokenizer=tokenizer, generation_config=gen_config, verbose=verbose)
+        return cls(
+            model=model,
+            tokenizer=tokenizer,
+            generation_config=gen_config,
+            verbose=verbose,
+            **kwargs,
+        )
 
     def linker_generation(
         self,
