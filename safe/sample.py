@@ -89,7 +89,7 @@ class SAFEDesign:
 
     @classmethod
     def load_from_wandb(
-        cls, artifact_path: str, device: Optional[str] = None, verbose: bool = True, **kwargs
+        cls, artifact_path: str, device: Optional[str] = None, verbose: bool = True, **kwargs: Any
     ) -> "SAFEDesign":
         """
         Load SAFE model and tokenizer from a Weights and Biases (wandb) artifact. By default, the model will be downloaded into SAFE_MODEL_ROOT.
@@ -154,7 +154,11 @@ class SAFEDesign:
 
     @classmethod
     def load_default(
-        cls, model_dir: Optional[str] = None, device: str = None, verbose: bool = False, **kwargs
+        cls,
+        model_dir: Optional[str] = None,
+        device: str = None,
+        verbose: bool = False,
+        **kwargs: Any,
     ) -> "SAFEDesign":
         """Load default SAFEGenerator model
 
