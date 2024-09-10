@@ -1144,7 +1144,7 @@
               Bases: <code><span title="torch.nn.Module">Module</span></code></p>
 
 
-      <p>Compute a single vector summary of a sequence hidden states.</p>
+        <p>Compute a single vector summary of a sequence hidden states.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -1390,7 +1390,7 @@ config class of your model for the default values it uses):</p>
 
     <div class="doc doc-contents ">
 
-      <p>Compute a single vector summary of a sequence hidden states.</p>
+        <p>Compute a single vector summary of a sequence hidden states.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -1586,7 +1586,7 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
               Bases: <code><span title="transformers.GPT2DoubleHeadsModel">GPT2DoubleHeadsModel</span></code></p>
 
 
-      <p>The safe model is a dual head GPT2 model with a language modeling head and an optional multi-task regression head</p>
+        <p>The safe model is a dual head GPT2 model with a language modeling head and an optional multi-task regression head</p>
 
               <details class="quote">
                 <summary>Source code in <code>safe/trainer/model.py</code></summary>
@@ -1911,7 +1911,7 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
           </tr>
       </tbody>
     </table>
-      <p>Returns:
+        <p>Returns:
     output (GPT2DoubleHeadsModelOutput): output of the model</p>
 
             <details class="quote">
@@ -2176,7 +2176,7 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
               Bases: <code><span title="transformers.Trainer">Trainer</span></code></p>
 
 
-      <p>Custom trainer for training SAFE model.</p>
+        <p>Custom trainer for training SAFE model.</p>
 <p>This custom trainer changes the loss function to support the property head</p>
 
               <details class="quote">
@@ -2302,7 +2302,7 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
 
     <div class="doc doc-contents ">
 
-      <p>How the loss is computed by Trainer. By default, all models return the loss in the first element.</p>
+        <p>How the loss is computed by Trainer. By default, all models return the loss in the first element.</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/trainer/trainer_utils.py</code></summary>
@@ -2434,7 +2434,7 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
     <div class="doc doc-contents ">
 
 
-      <p>Collate function for language modelling tasks</p>
+        <p>Collate function for language modelling tasks</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The collate function is based on the default DataCollatorForLanguageModeling in huggingface
@@ -2664,7 +2664,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
     <div class="doc doc-contents ">
 
-      <p>Call collate function</p>
+        <p>Call collate function</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2817,7 +2817,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
     <div class="doc doc-contents ">
 
-      <p>Default collator for huggingface transformers in izanagi.</p>
+        <p>Default collator for huggingface transformers in izanagi.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2998,7 +2998,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
     <div class="doc doc-contents ">
 
-      <p>Get underlying tokenizer</p>
+        <p>Get underlying tokenizer</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/trainer/collator.py</code></summary>
@@ -3068,7 +3068,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
     <div class="doc doc-contents ">
 
-      <p>Get the datasets from the config file</p>
+        <p>Get the datasets from the config file</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/trainer/data_utils.py</code></summary>
@@ -3244,7 +3244,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
     <div class="doc doc-contents ">
 
-      <p>Get the column names in a dataset</p>
+        <p>Get the column names in a dataset</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3321,7 +3321,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
     <div class="doc doc-contents ">
 
-      <p>Return first n items of the iterable as a list</p>
+        <p>Return first n items of the iterable as a list</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/trainer/data_utils.py</code></summary>
@@ -3347,7 +3347,7 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
     <div class="doc doc-contents ">
 
-      <p>Perform the tokenization of a row
+        <p>Perform the tokenization of a row
 Args:
     row: row to tokenize
     tokenizer: tokenizer to use
