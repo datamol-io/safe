@@ -612,6 +612,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#safe.sample.SAFEDesign.load_from_wandb" class="md-nav__link">
+    <span class="md-ellipsis">
+      load_from_wandb
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#safe.sample.SAFEDesign.motif_extension" class="md-nav__link">
     <span class="md-ellipsis">
       motif_extension
@@ -1360,6 +1369,15 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#safe.sample.SAFEDesign.load_from_wandb" class="md-nav__link">
+    <span class="md-ellipsis">
+      load_from_wandb
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#safe.sample.SAFEDesign.motif_extension" class="md-nav__link">
     <span class="md-ellipsis">
       motif_extension
@@ -1860,7 +1878,7 @@
     <div class="doc doc-contents ">
 
 
-      <p>Molecule line notation conversion from SMILES to SAFE</p>
+        <p>Molecule line notation conversion from SMILES to SAFE</p>
 <p>A SAFE representation is a string based representation of a molecule decomposition into fragment components,
 separated by a dot ('.'). Note that each component (fragment) might not be a valid molecule by themselves,
 unless explicitely correct to add missing hydrogens.</p>
@@ -2604,7 +2622,7 @@ corresponding to the bonds to break.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Constructor for the SAFE converter</p>
+        <p>Constructor for the SAFE converter</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2763,7 +2781,7 @@ mapping number to attachment points, or use simple enumeration.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Convert input SAFE representation to smiles</p>
+        <p>Convert input SAFE representation to smiles</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -2960,7 +2978,7 @@ mapping number to attachment points, or use simple enumeration.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Convert input smiles to SAFE representation</p>
+        <p>Convert input smiles to SAFE representation</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3383,7 +3401,7 @@ happen outside of a substructure matching one of the patterns.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Randomize the position of the atoms in a mol.</p>
+        <p>Randomize the position of the atoms in a mol.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3485,7 +3503,7 @@ happen outside of a substructure matching one of the patterns.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Convert input smiles to SAFE representation</p>
+        <p>Convert input smiles to SAFE representation</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -3712,7 +3730,7 @@ happen outside of a substructure matching one of the patterns.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Convert input SAFE representation to smiles
+        <p>Convert input SAFE representation to smiles
 Args:
     safe_str: input SAFE representation to decode as a valid molecule or smiles
     as_mol: whether to return a molecule object or a smiles string
@@ -3845,15 +3863,11 @@ Args:
     <div class="doc doc-contents ">
 
 
-      <p>Molecular generation using SAFE pretrained model</p>
+        <p>Molecular generation using SAFE pretrained model</p>
 
               <details class="quote">
                 <summary>Source code in <code>safe/sample.py</code></summary>
-                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 22</span>
-<span class="normal"> 23</span>
-<span class="normal"> 24</span>
-<span class="normal"> 25</span>
-<span class="normal"> 26</span>
+                <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 26</span>
 <span class="normal"> 27</span>
 <span class="normal"> 28</span>
 <span class="normal"> 29</span>
@@ -4732,7 +4746,88 @@ Args:
 <span class="normal">902</span>
 <span class="normal">903</span>
 <span class="normal">904</span>
-<span class="normal">905</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">SAFEDesign</span><span class="p">:</span>
+<span class="normal">905</span>
+<span class="normal">906</span>
+<span class="normal">907</span>
+<span class="normal">908</span>
+<span class="normal">909</span>
+<span class="normal">910</span>
+<span class="normal">911</span>
+<span class="normal">912</span>
+<span class="normal">913</span>
+<span class="normal">914</span>
+<span class="normal">915</span>
+<span class="normal">916</span>
+<span class="normal">917</span>
+<span class="normal">918</span>
+<span class="normal">919</span>
+<span class="normal">920</span>
+<span class="normal">921</span>
+<span class="normal">922</span>
+<span class="normal">923</span>
+<span class="normal">924</span>
+<span class="normal">925</span>
+<span class="normal">926</span>
+<span class="normal">927</span>
+<span class="normal">928</span>
+<span class="normal">929</span>
+<span class="normal">930</span>
+<span class="normal">931</span>
+<span class="normal">932</span>
+<span class="normal">933</span>
+<span class="normal">934</span>
+<span class="normal">935</span>
+<span class="normal">936</span>
+<span class="normal">937</span>
+<span class="normal">938</span>
+<span class="normal">939</span>
+<span class="normal">940</span>
+<span class="normal">941</span>
+<span class="normal">942</span>
+<span class="normal">943</span>
+<span class="normal">944</span>
+<span class="normal">945</span>
+<span class="normal">946</span>
+<span class="normal">947</span>
+<span class="normal">948</span>
+<span class="normal">949</span>
+<span class="normal">950</span>
+<span class="normal">951</span>
+<span class="normal">952</span>
+<span class="normal">953</span>
+<span class="normal">954</span>
+<span class="normal">955</span>
+<span class="normal">956</span>
+<span class="normal">957</span>
+<span class="normal">958</span>
+<span class="normal">959</span>
+<span class="normal">960</span>
+<span class="normal">961</span>
+<span class="normal">962</span>
+<span class="normal">963</span>
+<span class="normal">964</span>
+<span class="normal">965</span>
+<span class="normal">966</span>
+<span class="normal">967</span>
+<span class="normal">968</span>
+<span class="normal">969</span>
+<span class="normal">970</span>
+<span class="normal">971</span>
+<span class="normal">972</span>
+<span class="normal">973</span>
+<span class="normal">974</span>
+<span class="normal">975</span>
+<span class="normal">976</span>
+<span class="normal">977</span>
+<span class="normal">978</span>
+<span class="normal">979</span>
+<span class="normal">980</span>
+<span class="normal">981</span>
+<span class="normal">982</span>
+<span class="normal">983</span>
+<span class="normal">984</span>
+<span class="normal">985</span>
+<span class="normal">986</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">class</span> <span class="nc">SAFEDesign</span><span class="p">:</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Molecular generation using SAFE pretrained model&quot;&quot;&quot;</span>
 
     <span class="n">_DEFAULT_MAX_LENGTH</span> <span class="o">=</span> <span class="mi">1024</span>  <span class="c1"># default max length used during training</span>
@@ -4772,6 +4867,7 @@ Args:
 <span class="sd">            safe_encoder: custom safe encoder to use</span>
 <span class="sd">            verbose: whether to print out logging information during generation</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)):</span>
             <span class="n">model</span> <span class="o">=</span> <span class="n">SAFEDoubleHeadsModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
@@ -4796,8 +4892,77 @@ Args:
         <span class="bp">self</span><span class="o">.</span><span class="n">safe_encoder</span> <span class="o">=</span> <span class="n">safe_encoder</span> <span class="ow">or</span> <span class="n">sf</span><span class="o">.</span><span class="n">SAFEConverter</span><span class="p">()</span>
 
     <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">load_from_wandb</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span> <span class="n">artifact_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SAFEDesign&quot;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load SAFE model and tokenizer from a Weights and Biases (wandb) artifact. By default, the model will be downloaded into SAFE_MODEL_ROOT.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            artifact_path: The path to the wandb artifact in the format `entity/project/artifact:version`.</span>
+<span class="sd">            device: The device where the model should be loaded (&#39;cpu&#39; or &#39;cuda&#39;). If None, it defaults to the available device.</span>
+<span class="sd">            verbose: Whether to print out logging information during generation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            SAFEDesign: An instance of SAFEDesign class with the model, tokenizer, and generation config loaded from wandb.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># EN: potentially remove wandb scheme</span>
+        <span class="kn">import</span> <span class="nn">wandb</span>
+
+        <span class="n">artifact_path</span> <span class="o">=</span> <span class="n">artifact_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;wandb://&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Parse the artifact path to extract project and artifact name</span>
+        <span class="n">parts</span> <span class="o">=</span> <span class="n">artifact_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">project_name</span><span class="p">,</span> <span class="n">artifact_name</span> <span class="o">=</span> <span class="n">parts</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">project_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SAFE_WANDB_PROJECT&quot;</span><span class="p">,</span> <span class="s2">&quot;safe-models&quot;</span><span class="p">)</span>
+            <span class="n">artifact_name</span> <span class="o">=</span> <span class="n">artifact_path</span>
+
+        <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">artifact_name</span><span class="p">:</span>
+            <span class="n">artifact_name</span> <span class="o">+=</span> <span class="s2">&quot;:latest&quot;</span>
+
+        <span class="n">artifact_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">project_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">artifact_name</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="c1"># Check if SAFE_MODEL_ROOT environment variable is defined</span>
+        <span class="n">cache_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SAFE_MODEL_ROOT&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">cache_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Ensure the cache path exists</span>
+            <span class="n">cache_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">cache_path</span><span class="p">)</span>
+            <span class="n">cache_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="n">artifact_subfolder</span> <span class="o">=</span> <span class="n">artifact_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+            <span class="n">cache_dir</span> <span class="o">=</span> <span class="n">cache_path</span> <span class="o">/</span> <span class="n">artifact_subfolder</span>
+            <span class="n">cache_path</span> <span class="o">=</span> <span class="n">cache_dir</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
+
+        <span class="n">api</span> <span class="o">=</span> <span class="n">wandb</span><span class="o">.</span><span class="n">Api</span><span class="p">()</span>
+        <span class="c1"># Download the artifact from wandb to the cache directory</span>
+        <span class="n">artifact</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">artifact</span><span class="p">(</span><span class="n">artifact_path</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">)</span>
+        <span class="n">artifact_dir</span> <span class="o">=</span> <span class="n">artifact</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="n">cache_path</span><span class="p">)</span>
+
+        <span class="c1"># Load the model, tokenizer, and generation config from the artifact directory</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">SAFEDoubleHeadsModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">artifact_dir</span><span class="p">)</span>
+        <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">SAFETokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">artifact_dir</span><span class="p">)</span>
+        <span class="n">gen_config</span> <span class="o">=</span> <span class="n">GenerationConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">artifact_dir</span><span class="p">)</span>
+
+        <span class="c1"># Move model to the specified device if provided</span>
+        <span class="k">if</span> <span class="n">device</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+            <span class="n">generation_config</span><span class="o">=</span><span class="n">gen_config</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
     <span class="k">def</span> <span class="nf">load_default</span><span class="p">(</span>
-        <span class="bp">cls</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">model_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">model_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SAFEDesign&quot;</span><span class="p">:</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Load default SAFEGenerator model</span>
 
@@ -4806,6 +4971,7 @@ Args:
 <span class="sd">            model_dir: Optional path to model folder to use instead of the default one.</span>
 <span class="sd">                If provided the tokenizer should be in the model_dir named as `tokenizer.json`</span>
 <span class="sd">            device: optional device where to move the model</span>
+<span class="sd">            kwargs: any additional argument to pass to the init function</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">model_dir</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">model_dir</span><span class="p">:</span>
             <span class="n">model_dir</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_DEFAULT_MODEL_PATH</span>
@@ -4814,7 +4980,13 @@ Args:
         <span class="n">gen_config</span> <span class="o">=</span> <span class="n">GenerationConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">device</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">generation_config</span><span class="o">=</span><span class="n">gen_config</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+            <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+            <span class="n">generation_config</span><span class="o">=</span><span class="n">gen_config</span><span class="p">,</span>
+            <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">linker_generation</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -5642,7 +5814,7 @@ Args:
 
     <div class="doc doc-contents ">
 
-      <p>SAFEDesign constructor</p>
+        <p>SAFEDesign constructor</p>
 <div class="admonition info">
 <p class="admonition-title">Info</p>
 <p>Design methods in SAFE are not deterministic when it comes to the token sampling step.
@@ -5746,11 +5918,7 @@ please set the seed at the <code>transformers</code> package level.</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/sample.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">28</span>
-<span class="normal">29</span>
-<span class="normal">30</span>
-<span class="normal">31</span>
-<span class="normal">32</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">32</span>
 <span class="normal">33</span>
 <span class="normal">34</span>
 <span class="normal">35</span>
@@ -5801,7 +5969,12 @@ please set the seed at the <code>transformers</code> package level.</p>
 <span class="normal">80</span>
 <span class="normal">81</span>
 <span class="normal">82</span>
-<span class="normal">83</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+<span class="normal">83</span>
+<span class="normal">84</span>
+<span class="normal">85</span>
+<span class="normal">86</span>
+<span class="normal">87</span>
+<span class="normal">88</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SAFEDoubleHeadsModel</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
     <span class="n">tokenizer</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">SAFETokenizer</span><span class="p">],</span>
@@ -5835,6 +6008,7 @@ please set the seed at the <code>transformers</code> package level.</p>
 <span class="sd">        safe_encoder: custom safe encoder to use</span>
 <span class="sd">        verbose: whether to print out logging information during generation</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">os</span><span class="o">.</span><span class="n">PathLike</span><span class="p">)):</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">SAFEDoubleHeadsModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model</span><span class="p">)</span>
 
@@ -5874,7 +6048,7 @@ please set the seed at the <code>transformers</code> package level.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Use generated prefix and suffix sequences to form new molecules
+        <p>Use generated prefix and suffix sequences to form new molecules
 that will be the merging of both. This is the two step scaffold morphing and linker generation scheme
 Args:
     prefix_sequences: list of prefix sequences
@@ -5885,49 +6059,49 @@ Args:
 
             <details class="quote">
               <summary>Source code in <code>safe/sample.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">621</span>
-<span class="normal">622</span>
-<span class="normal">623</span>
-<span class="normal">624</span>
-<span class="normal">625</span>
-<span class="normal">626</span>
-<span class="normal">627</span>
-<span class="normal">628</span>
-<span class="normal">629</span>
-<span class="normal">630</span>
-<span class="normal">631</span>
-<span class="normal">632</span>
-<span class="normal">633</span>
-<span class="normal">634</span>
-<span class="normal">635</span>
-<span class="normal">636</span>
-<span class="normal">637</span>
-<span class="normal">638</span>
-<span class="normal">639</span>
-<span class="normal">640</span>
-<span class="normal">641</span>
-<span class="normal">642</span>
-<span class="normal">643</span>
-<span class="normal">644</span>
-<span class="normal">645</span>
-<span class="normal">646</span>
-<span class="normal">647</span>
-<span class="normal">648</span>
-<span class="normal">649</span>
-<span class="normal">650</span>
-<span class="normal">651</span>
-<span class="normal">652</span>
-<span class="normal">653</span>
-<span class="normal">654</span>
-<span class="normal">655</span>
-<span class="normal">656</span>
-<span class="normal">657</span>
-<span class="normal">658</span>
-<span class="normal">659</span>
-<span class="normal">660</span>
-<span class="normal">661</span>
-<span class="normal">662</span>
-<span class="normal">663</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">__mix_sequences</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">702</span>
+<span class="normal">703</span>
+<span class="normal">704</span>
+<span class="normal">705</span>
+<span class="normal">706</span>
+<span class="normal">707</span>
+<span class="normal">708</span>
+<span class="normal">709</span>
+<span class="normal">710</span>
+<span class="normal">711</span>
+<span class="normal">712</span>
+<span class="normal">713</span>
+<span class="normal">714</span>
+<span class="normal">715</span>
+<span class="normal">716</span>
+<span class="normal">717</span>
+<span class="normal">718</span>
+<span class="normal">719</span>
+<span class="normal">720</span>
+<span class="normal">721</span>
+<span class="normal">722</span>
+<span class="normal">723</span>
+<span class="normal">724</span>
+<span class="normal">725</span>
+<span class="normal">726</span>
+<span class="normal">727</span>
+<span class="normal">728</span>
+<span class="normal">729</span>
+<span class="normal">730</span>
+<span class="normal">731</span>
+<span class="normal">732</span>
+<span class="normal">733</span>
+<span class="normal">734</span>
+<span class="normal">735</span>
+<span class="normal">736</span>
+<span class="normal">737</span>
+<span class="normal">738</span>
+<span class="normal">739</span>
+<span class="normal">740</span>
+<span class="normal">741</span>
+<span class="normal">742</span>
+<span class="normal">743</span>
+<span class="normal">744</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">__mix_sequences</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">prefix_sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
     <span class="n">suffix_sequences</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
@@ -5987,7 +6161,7 @@ Args:
 
     <div class="doc doc-contents ">
 
-      <p>Perform de novo generation using the pretrained SAFE model.</p>
+        <p>Perform de novo generation using the pretrained SAFE model.</p>
 <p>De novo generation is equivalent to not having any prefix.</p>
 
 
@@ -6063,44 +6237,44 @@ Args:
 
             <details class="quote">
               <summary>Source code in <code>safe/sample.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">558</span>
-<span class="normal">559</span>
-<span class="normal">560</span>
-<span class="normal">561</span>
-<span class="normal">562</span>
-<span class="normal">563</span>
-<span class="normal">564</span>
-<span class="normal">565</span>
-<span class="normal">566</span>
-<span class="normal">567</span>
-<span class="normal">568</span>
-<span class="normal">569</span>
-<span class="normal">570</span>
-<span class="normal">571</span>
-<span class="normal">572</span>
-<span class="normal">573</span>
-<span class="normal">574</span>
-<span class="normal">575</span>
-<span class="normal">576</span>
-<span class="normal">577</span>
-<span class="normal">578</span>
-<span class="normal">579</span>
-<span class="normal">580</span>
-<span class="normal">581</span>
-<span class="normal">582</span>
-<span class="normal">583</span>
-<span class="normal">584</span>
-<span class="normal">585</span>
-<span class="normal">586</span>
-<span class="normal">587</span>
-<span class="normal">588</span>
-<span class="normal">589</span>
-<span class="normal">590</span>
-<span class="normal">591</span>
-<span class="normal">592</span>
-<span class="normal">593</span>
-<span class="normal">594</span>
-<span class="normal">595</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">de_novo_generation</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">639</span>
+<span class="normal">640</span>
+<span class="normal">641</span>
+<span class="normal">642</span>
+<span class="normal">643</span>
+<span class="normal">644</span>
+<span class="normal">645</span>
+<span class="normal">646</span>
+<span class="normal">647</span>
+<span class="normal">648</span>
+<span class="normal">649</span>
+<span class="normal">650</span>
+<span class="normal">651</span>
+<span class="normal">652</span>
+<span class="normal">653</span>
+<span class="normal">654</span>
+<span class="normal">655</span>
+<span class="normal">656</span>
+<span class="normal">657</span>
+<span class="normal">658</span>
+<span class="normal">659</span>
+<span class="normal">660</span>
+<span class="normal">661</span>
+<span class="normal">662</span>
+<span class="normal">663</span>
+<span class="normal">664</span>
+<span class="normal">665</span>
+<span class="normal">666</span>
+<span class="normal">667</span>
+<span class="normal">668</span>
+<span class="normal">669</span>
+<span class="normal">670</span>
+<span class="normal">671</span>
+<span class="normal">672</span>
+<span class="normal">673</span>
+<span class="normal">674</span>
+<span class="normal">675</span>
+<span class="normal">676</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">de_novo_generation</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">n_samples_per_trial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
     <span class="n">sanitize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -6155,7 +6329,7 @@ Args:
 
     <div class="doc doc-contents ">
 
-      <p>Perform linker generation using the pretrained SAFE model.
+        <p>Perform linker generation using the pretrained SAFE model.
 Linker generation is really just scaffold morphing underlying.</p>
 
 
@@ -6287,48 +6461,48 @@ Linker generation is really just scaffold morphing underlying.</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/sample.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">106</span>
-<span class="normal">107</span>
-<span class="normal">108</span>
-<span class="normal">109</span>
-<span class="normal">110</span>
-<span class="normal">111</span>
-<span class="normal">112</span>
-<span class="normal">113</span>
-<span class="normal">114</span>
-<span class="normal">115</span>
-<span class="normal">116</span>
-<span class="normal">117</span>
-<span class="normal">118</span>
-<span class="normal">119</span>
-<span class="normal">120</span>
-<span class="normal">121</span>
-<span class="normal">122</span>
-<span class="normal">123</span>
-<span class="normal">124</span>
-<span class="normal">125</span>
-<span class="normal">126</span>
-<span class="normal">127</span>
-<span class="normal">128</span>
-<span class="normal">129</span>
-<span class="normal">130</span>
-<span class="normal">131</span>
-<span class="normal">132</span>
-<span class="normal">133</span>
-<span class="normal">134</span>
-<span class="normal">135</span>
-<span class="normal">136</span>
-<span class="normal">137</span>
-<span class="normal">138</span>
-<span class="normal">139</span>
-<span class="normal">140</span>
-<span class="normal">141</span>
-<span class="normal">142</span>
-<span class="normal">143</span>
-<span class="normal">144</span>
-<span class="normal">145</span>
-<span class="normal">146</span>
-<span class="normal">147</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">linker_generation</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">187</span>
+<span class="normal">188</span>
+<span class="normal">189</span>
+<span class="normal">190</span>
+<span class="normal">191</span>
+<span class="normal">192</span>
+<span class="normal">193</span>
+<span class="normal">194</span>
+<span class="normal">195</span>
+<span class="normal">196</span>
+<span class="normal">197</span>
+<span class="normal">198</span>
+<span class="normal">199</span>
+<span class="normal">200</span>
+<span class="normal">201</span>
+<span class="normal">202</span>
+<span class="normal">203</span>
+<span class="normal">204</span>
+<span class="normal">205</span>
+<span class="normal">206</span>
+<span class="normal">207</span>
+<span class="normal">208</span>
+<span class="normal">209</span>
+<span class="normal">210</span>
+<span class="normal">211</span>
+<span class="normal">212</span>
+<span class="normal">213</span>
+<span class="normal">214</span>
+<span class="normal">215</span>
+<span class="normal">216</span>
+<span class="normal">217</span>
+<span class="normal">218</span>
+<span class="normal">219</span>
+<span class="normal">220</span>
+<span class="normal">221</span>
+<span class="normal">222</span>
+<span class="normal">223</span>
+<span class="normal">224</span>
+<span class="normal">225</span>
+<span class="normal">226</span>
+<span class="normal">227</span>
+<span class="normal">228</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">linker_generation</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="o">*</span><span class="n">groups</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">],</span>
     <span class="n">n_samples_per_trial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
@@ -6380,7 +6554,7 @@ Linker generation is really just scaffold morphing underlying.</p>
 
 
 <h3 id="safe.sample.SAFEDesign.load_default" class="doc doc-heading">
-            <code class="highlight language-python"><span class="n">load_default</span><span class="p">(</span><span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">model_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span></code>
+            <code class="highlight language-python"><span class="n">load_default</span><span class="p">(</span><span class="n">model_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
 
   <span class="doc doc-labels">
       <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
@@ -6391,7 +6565,7 @@ Linker generation is really just scaffold morphing underlying.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Load default SAFEGenerator model</p>
+        <p>Load default SAFEGenerator model</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -6448,17 +6622,192 @@ If provided the tokenizer should be in the model_dir named as <code>tokenizer.js
                   <code>None</code>
             </td>
           </tr>
+          <tr class="doc-section-item">
+            <td><code>kwargs</code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>any additional argument to pass to the init function</p>
+              </div>
+            </td>
+            <td>
+                  <code>{}</code>
+            </td>
+          </tr>
       </tbody>
     </table>
 
             <details class="quote">
               <summary>Source code in <code>safe/sample.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 85</span>
-<span class="normal"> 86</span>
-<span class="normal"> 87</span>
-<span class="normal"> 88</span>
-<span class="normal"> 89</span>
-<span class="normal"> 90</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">155</span>
+<span class="normal">156</span>
+<span class="normal">157</span>
+<span class="normal">158</span>
+<span class="normal">159</span>
+<span class="normal">160</span>
+<span class="normal">161</span>
+<span class="normal">162</span>
+<span class="normal">163</span>
+<span class="normal">164</span>
+<span class="normal">165</span>
+<span class="normal">166</span>
+<span class="normal">167</span>
+<span class="normal">168</span>
+<span class="normal">169</span>
+<span class="normal">170</span>
+<span class="normal">171</span>
+<span class="normal">172</span>
+<span class="normal">173</span>
+<span class="normal">174</span>
+<span class="normal">175</span>
+<span class="normal">176</span>
+<span class="normal">177</span>
+<span class="normal">178</span>
+<span class="normal">179</span>
+<span class="normal">180</span>
+<span class="normal">181</span>
+<span class="normal">182</span>
+<span class="normal">183</span>
+<span class="normal">184</span>
+<span class="normal">185</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="k">def</span> <span class="nf">load_default</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span>
+    <span class="n">model_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SAFEDesign&quot;</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load default SAFEGenerator model</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        verbose: whether to print out logging information during generation</span>
+<span class="sd">        model_dir: Optional path to model folder to use instead of the default one.</span>
+<span class="sd">            If provided the tokenizer should be in the model_dir named as `tokenizer.json`</span>
+<span class="sd">        device: optional device where to move the model</span>
+<span class="sd">        kwargs: any additional argument to pass to the init function</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">model_dir</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">model_dir</span><span class="p">:</span>
+        <span class="n">model_dir</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_DEFAULT_MODEL_PATH</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">SAFEDoubleHeadsModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">SAFETokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
+    <span class="n">gen_config</span> <span class="o">=</span> <span class="n">GenerationConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">device</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+        <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+        <span class="n">generation_config</span><span class="o">=</span><span class="n">gen_config</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span>
+</code></pre></div></td></tr></table></div>
+            </details>
+    </div>
+
+</div>
+
+<div class="doc doc-object doc-function">
+
+
+<h3 id="safe.sample.SAFEDesign.load_from_wandb" class="doc doc-heading">
+            <code class="highlight language-python"><span class="n">load_from_wandb</span><span class="p">(</span><span class="n">artifact_path</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></code>
+
+  <span class="doc doc-labels">
+      <small class="doc doc-label doc-label-classmethod"><code>classmethod</code></small>
+  </span>
+
+<a href="#safe.sample.SAFEDesign.load_from_wandb" class="headerlink" title="Permanent link">&para;</a></h3>
+
+
+    <div class="doc doc-contents ">
+
+        <p>Load SAFE model and tokenizer from a Weights and Biases (wandb) artifact. By default, the model will be downloaded into SAFE_MODEL_ROOT.</p>
+
+
+<p><span class="doc-section-title">Parameters:</span></p>
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Type</th>
+          <th>Description</th>
+          <th>Default</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+            <td><code>artifact_path</code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The path to the wandb artifact in the format <code>entity/project/artifact:version</code>.</p>
+              </div>
+            </td>
+            <td>
+                <em>required</em>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code>device</code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>]</code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>The device where the model should be loaded ('cpu' or 'cuda'). If None, it defaults to the available device.</p>
+              </div>
+            </td>
+            <td>
+                  <code>None</code>
+            </td>
+          </tr>
+          <tr class="doc-section-item">
+            <td><code>verbose</code></td>
+            <td>
+                  <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>Whether to print out logging information during generation.</p>
+              </div>
+            </td>
+            <td>
+                  <code>True</code>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+
+    <p><span class="doc-section-title">Returns:</span></p>
+    <table>
+      <thead>
+        <tr>
+<th>Name</th>          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+          <tr class="doc-section-item">
+<td><code>SAFEDesign</code></td>            <td>
+                  <code><a class="autorefs autorefs-internal" title="safe.sample.SAFEDesign" href="#safe.sample.SAFEDesign">SAFEDesign</a></code>
+            </td>
+            <td>
+              <div class="doc-md-description">
+                <p>An instance of SAFEDesign class with the model, tokenizer, and generation config loaded from wandb.</p>
+              </div>
+            </td>
+          </tr>
+      </tbody>
+    </table>
+
+            <details class="quote">
+              <summary>Source code in <code>safe/sample.py</code></summary>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal"> 90</span>
 <span class="normal"> 91</span>
 <span class="normal"> 92</span>
 <span class="normal"> 93</span>
@@ -6472,26 +6821,119 @@ If provided the tokenizer should be in the model_dir named as <code>tokenizer.js
 <span class="normal">101</span>
 <span class="normal">102</span>
 <span class="normal">103</span>
-<span class="normal">104</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
-<span class="k">def</span> <span class="nf">load_default</span><span class="p">(</span>
-    <span class="bp">cls</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="n">model_dir</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="normal">104</span>
+<span class="normal">105</span>
+<span class="normal">106</span>
+<span class="normal">107</span>
+<span class="normal">108</span>
+<span class="normal">109</span>
+<span class="normal">110</span>
+<span class="normal">111</span>
+<span class="normal">112</span>
+<span class="normal">113</span>
+<span class="normal">114</span>
+<span class="normal">115</span>
+<span class="normal">116</span>
+<span class="normal">117</span>
+<span class="normal">118</span>
+<span class="normal">119</span>
+<span class="normal">120</span>
+<span class="normal">121</span>
+<span class="normal">122</span>
+<span class="normal">123</span>
+<span class="normal">124</span>
+<span class="normal">125</span>
+<span class="normal">126</span>
+<span class="normal">127</span>
+<span class="normal">128</span>
+<span class="normal">129</span>
+<span class="normal">130</span>
+<span class="normal">131</span>
+<span class="normal">132</span>
+<span class="normal">133</span>
+<span class="normal">134</span>
+<span class="normal">135</span>
+<span class="normal">136</span>
+<span class="normal">137</span>
+<span class="normal">138</span>
+<span class="normal">139</span>
+<span class="normal">140</span>
+<span class="normal">141</span>
+<span class="normal">142</span>
+<span class="normal">143</span>
+<span class="normal">144</span>
+<span class="normal">145</span>
+<span class="normal">146</span>
+<span class="normal">147</span>
+<span class="normal">148</span>
+<span class="normal">149</span>
+<span class="normal">150</span>
+<span class="normal">151</span>
+<span class="normal">152</span>
+<span class="normal">153</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="nd">@classmethod</span>
+<span class="k">def</span> <span class="nf">load_from_wandb</span><span class="p">(</span>
+    <span class="bp">cls</span><span class="p">,</span> <span class="n">artifact_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">device</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SAFEDesign&quot;</span><span class="p">:</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load default SAFEGenerator model</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Load SAFE model and tokenizer from a Weights and Biases (wandb) artifact. By default, the model will be downloaded into SAFE_MODEL_ROOT.</span>
 
 <span class="sd">    Args:</span>
-<span class="sd">        verbose: whether to print out logging information during generation</span>
-<span class="sd">        model_dir: Optional path to model folder to use instead of the default one.</span>
-<span class="sd">            If provided the tokenizer should be in the model_dir named as `tokenizer.json`</span>
-<span class="sd">        device: optional device where to move the model</span>
+<span class="sd">        artifact_path: The path to the wandb artifact in the format `entity/project/artifact:version`.</span>
+<span class="sd">        device: The device where the model should be loaded (&#39;cpu&#39; or &#39;cuda&#39;). If None, it defaults to the available device.</span>
+<span class="sd">        verbose: Whether to print out logging information during generation.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        SAFEDesign: An instance of SAFEDesign class with the model, tokenizer, and generation config loaded from wandb.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="n">model_dir</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">model_dir</span><span class="p">:</span>
-        <span class="n">model_dir</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="n">_DEFAULT_MODEL_PATH</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="n">SAFEDoubleHeadsModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
-    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">SAFETokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
-    <span class="n">gen_config</span> <span class="o">=</span> <span class="n">GenerationConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_dir</span><span class="p">)</span>
+    <span class="c1"># EN: potentially remove wandb scheme</span>
+    <span class="kn">import</span> <span class="nn">wandb</span>
+
+    <span class="n">artifact_path</span> <span class="o">=</span> <span class="n">artifact_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;wandb://&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Parse the artifact path to extract project and artifact name</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">artifact_path</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">project_name</span><span class="p">,</span> <span class="n">artifact_name</span> <span class="o">=</span> <span class="n">parts</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">project_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SAFE_WANDB_PROJECT&quot;</span><span class="p">,</span> <span class="s2">&quot;safe-models&quot;</span><span class="p">)</span>
+        <span class="n">artifact_name</span> <span class="o">=</span> <span class="n">artifact_path</span>
+
+    <span class="k">if</span> <span class="s2">&quot;:&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">artifact_name</span><span class="p">:</span>
+        <span class="n">artifact_name</span> <span class="o">+=</span> <span class="s2">&quot;:latest&quot;</span>
+
+    <span class="n">artifact_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">project_name</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">artifact_name</span><span class="si">}</span><span class="s2">&quot;</span>
+
+    <span class="c1"># Check if SAFE_MODEL_ROOT environment variable is defined</span>
+    <span class="n">cache_path</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;SAFE_MODEL_ROOT&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">cache_path</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Ensure the cache path exists</span>
+        <span class="n">cache_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">cache_path</span><span class="p">)</span>
+        <span class="n">cache_path</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">artifact_subfolder</span> <span class="o">=</span> <span class="n">artifact_path</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;:&quot;</span><span class="p">,</span> <span class="s2">&quot;_&quot;</span><span class="p">)</span>
+        <span class="n">cache_dir</span> <span class="o">=</span> <span class="n">cache_path</span> <span class="o">/</span> <span class="n">artifact_subfolder</span>
+        <span class="n">cache_path</span> <span class="o">=</span> <span class="n">cache_dir</span><span class="o">.</span><span class="n">as_posix</span><span class="p">()</span>
+
+    <span class="n">api</span> <span class="o">=</span> <span class="n">wandb</span><span class="o">.</span><span class="n">Api</span><span class="p">()</span>
+    <span class="c1"># Download the artifact from wandb to the cache directory</span>
+    <span class="n">artifact</span> <span class="o">=</span> <span class="n">api</span><span class="o">.</span><span class="n">artifact</span><span class="p">(</span><span class="n">artifact_path</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="s2">&quot;model&quot;</span><span class="p">)</span>
+    <span class="n">artifact_dir</span> <span class="o">=</span> <span class="n">artifact</span><span class="o">.</span><span class="n">download</span><span class="p">(</span><span class="n">root</span><span class="o">=</span><span class="n">cache_path</span><span class="p">)</span>
+
+    <span class="c1"># Load the model, tokenizer, and generation config from the artifact directory</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">SAFEDoubleHeadsModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">artifact_dir</span><span class="p">)</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">SAFETokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">artifact_dir</span><span class="p">)</span>
+    <span class="n">gen_config</span> <span class="o">=</span> <span class="n">GenerationConfig</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">artifact_dir</span><span class="p">)</span>
+
+    <span class="c1"># Move model to the specified device if provided</span>
     <span class="k">if</span> <span class="n">device</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
         <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span><span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span> <span class="n">generation_config</span><span class="o">=</span><span class="n">gen_config</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="bp">cls</span><span class="p">(</span>
+        <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+        <span class="n">tokenizer</span><span class="o">=</span><span class="n">tokenizer</span><span class="p">,</span>
+        <span class="n">generation_config</span><span class="o">=</span><span class="n">gen_config</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span>
 </code></pre></div></td></tr></table></div>
             </details>
     </div>
@@ -6509,7 +6951,7 @@ If provided the tokenizer should be in the model_dir named as <code>tokenizer.js
 
     <div class="doc doc-contents ">
 
-      <p>Perform motif extension using the pretrained SAFE model.
+        <p>Perform motif extension using the pretrained SAFE model.
 Motif extension is really just scaffold decoration underlying.</p>
 
 
@@ -6627,38 +7069,38 @@ Motif extension is really just scaffold decoration underlying.</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/sample.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">413</span>
-<span class="normal">414</span>
-<span class="normal">415</span>
-<span class="normal">416</span>
-<span class="normal">417</span>
-<span class="normal">418</span>
-<span class="normal">419</span>
-<span class="normal">420</span>
-<span class="normal">421</span>
-<span class="normal">422</span>
-<span class="normal">423</span>
-<span class="normal">424</span>
-<span class="normal">425</span>
-<span class="normal">426</span>
-<span class="normal">427</span>
-<span class="normal">428</span>
-<span class="normal">429</span>
-<span class="normal">430</span>
-<span class="normal">431</span>
-<span class="normal">432</span>
-<span class="normal">433</span>
-<span class="normal">434</span>
-<span class="normal">435</span>
-<span class="normal">436</span>
-<span class="normal">437</span>
-<span class="normal">438</span>
-<span class="normal">439</span>
-<span class="normal">440</span>
-<span class="normal">441</span>
-<span class="normal">442</span>
-<span class="normal">443</span>
-<span class="normal">444</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">motif_extension</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">494</span>
+<span class="normal">495</span>
+<span class="normal">496</span>
+<span class="normal">497</span>
+<span class="normal">498</span>
+<span class="normal">499</span>
+<span class="normal">500</span>
+<span class="normal">501</span>
+<span class="normal">502</span>
+<span class="normal">503</span>
+<span class="normal">504</span>
+<span class="normal">505</span>
+<span class="normal">506</span>
+<span class="normal">507</span>
+<span class="normal">508</span>
+<span class="normal">509</span>
+<span class="normal">510</span>
+<span class="normal">511</span>
+<span class="normal">512</span>
+<span class="normal">513</span>
+<span class="normal">514</span>
+<span class="normal">515</span>
+<span class="normal">516</span>
+<span class="normal">517</span>
+<span class="normal">518</span>
+<span class="normal">519</span>
+<span class="normal">520</span>
+<span class="normal">521</span>
+<span class="normal">522</span>
+<span class="normal">523</span>
+<span class="normal">524</span>
+<span class="normal">525</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">motif_extension</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">motif</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">],</span>
     <span class="n">n_samples_per_trial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
@@ -6707,7 +7149,7 @@ Motif extension is really just scaffold decoration underlying.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Perform scaffold decoration using the pretrained SAFE model</p>
+        <p>Perform scaffold decoration using the pretrained SAFE model</p>
 <p>For scaffold decoration, we basically starts with a prefix with the attachment point.
 We first convert the prefix into valid safe string.</p>
 
@@ -6826,51 +7268,51 @@ We first convert the prefix into valid safe string.</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/sample.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">512</span>
-<span class="normal">513</span>
-<span class="normal">514</span>
-<span class="normal">515</span>
-<span class="normal">516</span>
-<span class="normal">517</span>
-<span class="normal">518</span>
-<span class="normal">519</span>
-<span class="normal">520</span>
-<span class="normal">521</span>
-<span class="normal">522</span>
-<span class="normal">523</span>
-<span class="normal">524</span>
-<span class="normal">525</span>
-<span class="normal">526</span>
-<span class="normal">527</span>
-<span class="normal">528</span>
-<span class="normal">529</span>
-<span class="normal">530</span>
-<span class="normal">531</span>
-<span class="normal">532</span>
-<span class="normal">533</span>
-<span class="normal">534</span>
-<span class="normal">535</span>
-<span class="normal">536</span>
-<span class="normal">537</span>
-<span class="normal">538</span>
-<span class="normal">539</span>
-<span class="normal">540</span>
-<span class="normal">541</span>
-<span class="normal">542</span>
-<span class="normal">543</span>
-<span class="normal">544</span>
-<span class="normal">545</span>
-<span class="normal">546</span>
-<span class="normal">547</span>
-<span class="normal">548</span>
-<span class="normal">549</span>
-<span class="normal">550</span>
-<span class="normal">551</span>
-<span class="normal">552</span>
-<span class="normal">553</span>
-<span class="normal">554</span>
-<span class="normal">555</span>
-<span class="normal">556</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">scaffold_decoration</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">593</span>
+<span class="normal">594</span>
+<span class="normal">595</span>
+<span class="normal">596</span>
+<span class="normal">597</span>
+<span class="normal">598</span>
+<span class="normal">599</span>
+<span class="normal">600</span>
+<span class="normal">601</span>
+<span class="normal">602</span>
+<span class="normal">603</span>
+<span class="normal">604</span>
+<span class="normal">605</span>
+<span class="normal">606</span>
+<span class="normal">607</span>
+<span class="normal">608</span>
+<span class="normal">609</span>
+<span class="normal">610</span>
+<span class="normal">611</span>
+<span class="normal">612</span>
+<span class="normal">613</span>
+<span class="normal">614</span>
+<span class="normal">615</span>
+<span class="normal">616</span>
+<span class="normal">617</span>
+<span class="normal">618</span>
+<span class="normal">619</span>
+<span class="normal">620</span>
+<span class="normal">621</span>
+<span class="normal">622</span>
+<span class="normal">623</span>
+<span class="normal">624</span>
+<span class="normal">625</span>
+<span class="normal">626</span>
+<span class="normal">627</span>
+<span class="normal">628</span>
+<span class="normal">629</span>
+<span class="normal">630</span>
+<span class="normal">631</span>
+<span class="normal">632</span>
+<span class="normal">633</span>
+<span class="normal">634</span>
+<span class="normal">635</span>
+<span class="normal">636</span>
+<span class="normal">637</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">scaffold_decoration</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">scaffold</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">],</span>
     <span class="n">n_samples_per_trial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
@@ -6932,7 +7374,7 @@ We first convert the prefix into valid safe string.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Perform scaffold morphing decoration using the pretrained SAFE model</p>
+        <p>Perform scaffold morphing decoration using the pretrained SAFE model</p>
 <p>For scaffold morphing, we try to replace the core by a new one. If the side_chains are provided, we use them.
 If a combination of molecule and core is provided, then, we use them to extract the side chains and performing the
 scaffold morphing then.</p>
@@ -7086,53 +7528,53 @@ See ~sf.utils.compute_side_chains for more information.</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/sample.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">149</span>
-<span class="normal">150</span>
-<span class="normal">151</span>
-<span class="normal">152</span>
-<span class="normal">153</span>
-<span class="normal">154</span>
-<span class="normal">155</span>
-<span class="normal">156</span>
-<span class="normal">157</span>
-<span class="normal">158</span>
-<span class="normal">159</span>
-<span class="normal">160</span>
-<span class="normal">161</span>
-<span class="normal">162</span>
-<span class="normal">163</span>
-<span class="normal">164</span>
-<span class="normal">165</span>
-<span class="normal">166</span>
-<span class="normal">167</span>
-<span class="normal">168</span>
-<span class="normal">169</span>
-<span class="normal">170</span>
-<span class="normal">171</span>
-<span class="normal">172</span>
-<span class="normal">173</span>
-<span class="normal">174</span>
-<span class="normal">175</span>
-<span class="normal">176</span>
-<span class="normal">177</span>
-<span class="normal">178</span>
-<span class="normal">179</span>
-<span class="normal">180</span>
-<span class="normal">181</span>
-<span class="normal">182</span>
-<span class="normal">183</span>
-<span class="normal">184</span>
-<span class="normal">185</span>
-<span class="normal">186</span>
-<span class="normal">187</span>
-<span class="normal">188</span>
-<span class="normal">189</span>
-<span class="normal">190</span>
-<span class="normal">191</span>
-<span class="normal">192</span>
-<span class="normal">193</span>
-<span class="normal">194</span>
-<span class="normal">195</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">scaffold_morphing</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">230</span>
+<span class="normal">231</span>
+<span class="normal">232</span>
+<span class="normal">233</span>
+<span class="normal">234</span>
+<span class="normal">235</span>
+<span class="normal">236</span>
+<span class="normal">237</span>
+<span class="normal">238</span>
+<span class="normal">239</span>
+<span class="normal">240</span>
+<span class="normal">241</span>
+<span class="normal">242</span>
+<span class="normal">243</span>
+<span class="normal">244</span>
+<span class="normal">245</span>
+<span class="normal">246</span>
+<span class="normal">247</span>
+<span class="normal">248</span>
+<span class="normal">249</span>
+<span class="normal">250</span>
+<span class="normal">251</span>
+<span class="normal">252</span>
+<span class="normal">253</span>
+<span class="normal">254</span>
+<span class="normal">255</span>
+<span class="normal">256</span>
+<span class="normal">257</span>
+<span class="normal">258</span>
+<span class="normal">259</span>
+<span class="normal">260</span>
+<span class="normal">261</span>
+<span class="normal">262</span>
+<span class="normal">263</span>
+<span class="normal">264</span>
+<span class="normal">265</span>
+<span class="normal">266</span>
+<span class="normal">267</span>
+<span class="normal">268</span>
+<span class="normal">269</span>
+<span class="normal">270</span>
+<span class="normal">271</span>
+<span class="normal">272</span>
+<span class="normal">273</span>
+<span class="normal">274</span>
+<span class="normal">275</span>
+<span class="normal">276</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">scaffold_morphing</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">side_chains</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">mol</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -7196,7 +7638,7 @@ See ~sf.utils.compute_side_chains for more information.</p>
 
     <div class="doc doc-contents ">
 
-      <p>Perform super structure generation using the pretrained SAFE model.</p>
+        <p>Perform super structure generation using the pretrained SAFE model.</p>
 <p>To generate super-structure, we basically just create various attachment points to the input core,
 then perform scaffold decoration.</p>
 
@@ -7330,71 +7772,71 @@ Increasing this, means you increase the number of substitution point to consider
 
             <details class="quote">
               <summary>Source code in <code>safe/sample.py</code></summary>
-              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">446</span>
-<span class="normal">447</span>
-<span class="normal">448</span>
-<span class="normal">449</span>
-<span class="normal">450</span>
-<span class="normal">451</span>
-<span class="normal">452</span>
-<span class="normal">453</span>
-<span class="normal">454</span>
-<span class="normal">455</span>
-<span class="normal">456</span>
-<span class="normal">457</span>
-<span class="normal">458</span>
-<span class="normal">459</span>
-<span class="normal">460</span>
-<span class="normal">461</span>
-<span class="normal">462</span>
-<span class="normal">463</span>
-<span class="normal">464</span>
-<span class="normal">465</span>
-<span class="normal">466</span>
-<span class="normal">467</span>
-<span class="normal">468</span>
-<span class="normal">469</span>
-<span class="normal">470</span>
-<span class="normal">471</span>
-<span class="normal">472</span>
-<span class="normal">473</span>
-<span class="normal">474</span>
-<span class="normal">475</span>
-<span class="normal">476</span>
-<span class="normal">477</span>
-<span class="normal">478</span>
-<span class="normal">479</span>
-<span class="normal">480</span>
-<span class="normal">481</span>
-<span class="normal">482</span>
-<span class="normal">483</span>
-<span class="normal">484</span>
-<span class="normal">485</span>
-<span class="normal">486</span>
-<span class="normal">487</span>
-<span class="normal">488</span>
-<span class="normal">489</span>
-<span class="normal">490</span>
-<span class="normal">491</span>
-<span class="normal">492</span>
-<span class="normal">493</span>
-<span class="normal">494</span>
-<span class="normal">495</span>
-<span class="normal">496</span>
-<span class="normal">497</span>
-<span class="normal">498</span>
-<span class="normal">499</span>
-<span class="normal">500</span>
-<span class="normal">501</span>
-<span class="normal">502</span>
-<span class="normal">503</span>
-<span class="normal">504</span>
-<span class="normal">505</span>
-<span class="normal">506</span>
-<span class="normal">507</span>
-<span class="normal">508</span>
-<span class="normal">509</span>
-<span class="normal">510</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">super_structure</span><span class="p">(</span>
+              <div class="highlight"><table class="highlighttable"><tr><td class="linenos"><div class="linenodiv"><pre><span></span><span class="normal">527</span>
+<span class="normal">528</span>
+<span class="normal">529</span>
+<span class="normal">530</span>
+<span class="normal">531</span>
+<span class="normal">532</span>
+<span class="normal">533</span>
+<span class="normal">534</span>
+<span class="normal">535</span>
+<span class="normal">536</span>
+<span class="normal">537</span>
+<span class="normal">538</span>
+<span class="normal">539</span>
+<span class="normal">540</span>
+<span class="normal">541</span>
+<span class="normal">542</span>
+<span class="normal">543</span>
+<span class="normal">544</span>
+<span class="normal">545</span>
+<span class="normal">546</span>
+<span class="normal">547</span>
+<span class="normal">548</span>
+<span class="normal">549</span>
+<span class="normal">550</span>
+<span class="normal">551</span>
+<span class="normal">552</span>
+<span class="normal">553</span>
+<span class="normal">554</span>
+<span class="normal">555</span>
+<span class="normal">556</span>
+<span class="normal">557</span>
+<span class="normal">558</span>
+<span class="normal">559</span>
+<span class="normal">560</span>
+<span class="normal">561</span>
+<span class="normal">562</span>
+<span class="normal">563</span>
+<span class="normal">564</span>
+<span class="normal">565</span>
+<span class="normal">566</span>
+<span class="normal">567</span>
+<span class="normal">568</span>
+<span class="normal">569</span>
+<span class="normal">570</span>
+<span class="normal">571</span>
+<span class="normal">572</span>
+<span class="normal">573</span>
+<span class="normal">574</span>
+<span class="normal">575</span>
+<span class="normal">576</span>
+<span class="normal">577</span>
+<span class="normal">578</span>
+<span class="normal">579</span>
+<span class="normal">580</span>
+<span class="normal">581</span>
+<span class="normal">582</span>
+<span class="normal">583</span>
+<span class="normal">584</span>
+<span class="normal">585</span>
+<span class="normal">586</span>
+<span class="normal">587</span>
+<span class="normal">588</span>
+<span class="normal">589</span>
+<span class="normal">590</span>
+<span class="normal">591</span></pre></div></td><td class="code"><div><pre><span></span><code><span class="k">def</span> <span class="nf">super_structure</span><span class="p">(</span>
     <span class="bp">self</span><span class="p">,</span>
     <span class="n">core</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">dm</span><span class="o">.</span><span class="n">Mol</span><span class="p">],</span>
     <span class="n">n_samples_per_trial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
@@ -7516,7 +7958,7 @@ Increasing this, means you increase the number of substitution point to consider
     <div class="doc doc-contents ">
 
 
-      <p>Standard Splitter for SAFE string</p>
+        <p>Standard Splitter for SAFE string</p>
 
               <details class="quote">
                 <summary>Source code in <code>safe/tokenizer.py</code></summary>
@@ -7627,7 +8069,7 @@ Increasing this, means you increase the number of substitution point to consider
 
     <div class="doc doc-contents ">
 
-      <p>Detokenize SAFE notation</p>
+        <p>Detokenize SAFE notation</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/tokenizer.py</code></summary>
@@ -7657,7 +8099,7 @@ Increasing this, means you increase the number of substitution point to consider
 
     <div class="doc doc-contents ">
 
-      <p>Pretokenize using an input pretokenizer object from the tokenizer library</p>
+        <p>Pretokenize using an input pretokenizer object from the tokenizer library</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/tokenizer.py</code></summary>
@@ -7683,7 +8125,7 @@ Increasing this, means you increase the number of substitution point to consider
 
     <div class="doc doc-contents ">
 
-      <p>Perform splitting for pretokenization</p>
+        <p>Perform splitting for pretokenization</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/tokenizer.py</code></summary>
@@ -7709,7 +8151,7 @@ Increasing this, means you increase the number of substitution point to consider
 
     <div class="doc doc-contents ">
 
-      <p>Tokenize a safe string into characters.</p>
+        <p>Tokenize a safe string into characters.</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/tokenizer.py</code></summary>
@@ -7770,7 +8212,7 @@ Increasing this, means you increase the number of substitution point to consider
               Bases: <code><span title="transformers.utils.PushToHubMixin">PushToHubMixin</span></code></p>
 
 
-      <p>Class to initialize and train a tokenizer for SAFE string
+        <p>Class to initialize and train a tokenizer for SAFE string
 Once trained, you can use the converted version of the tokenizer to an HuggingFace PreTrainedTokenizerFast</p>
 
               <details class="quote">
@@ -8869,7 +9311,7 @@ Once trained, you can use the converted version of the tokenizer to an HuggingFa
 
     <div class="doc doc-contents ">
 
-      <p>Get the bos token id</p>
+        <p>Get the bos token id</p>
     </div>
 
 </div>
@@ -8890,7 +9332,7 @@ Once trained, you can use the converted version of the tokenizer to an HuggingFa
 
     <div class="doc doc-contents ">
 
-      <p>Get the bos token id</p>
+        <p>Get the bos token id</p>
     </div>
 
 </div>
@@ -8911,7 +9353,7 @@ Once trained, you can use the converted version of the tokenizer to an HuggingFa
 
     <div class="doc doc-contents ">
 
-      <p>Get the bos token id</p>
+        <p>Get the bos token id</p>
     </div>
 
 </div>
@@ -8929,7 +9371,7 @@ Once trained, you can use the converted version of the tokenizer to an HuggingFa
 
     <div class="doc doc-contents ">
 
-      <p>Getting state to allow pickling</p>
+        <p>Getting state to allow pickling</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/tokenizer.py</code></summary>
@@ -8965,7 +9407,7 @@ Once trained, you can use the converted version of the tokenizer to an HuggingFa
 
     <div class="doc doc-contents ">
 
-      <p>Gets the count of tokens in vocab along with special tokens.</p>
+        <p>Gets the count of tokens in vocab along with special tokens.</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/tokenizer.py</code></summary>
@@ -8995,7 +9437,7 @@ Once trained, you can use the converted version of the tokenizer to an HuggingFa
 
     <div class="doc doc-contents ">
 
-      <p>Setting state during reloading pickling</p>
+        <p>Setting state during reloading pickling</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/tokenizer.py</code></summary>
@@ -9029,7 +9471,7 @@ Once trained, you can use the converted version of the tokenizer to an HuggingFa
 
     <div class="doc doc-contents ">
 
-      <p>Decodes a list of ids to molecular representation in the format in which this tokenizer was created.</p>
+        <p>Decodes a list of ids to molecular representation in the format in which this tokenizer was created.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -9243,7 +9685,7 @@ Once trained, you can use the converted version of the tokenizer to an HuggingFa
 
     <div class="doc doc-contents ">
 
-      <p>Encodes a given molecule string once training is done</p>
+        <p>Encodes a given molecule string once training is done</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -9375,7 +9817,7 @@ Once trained, you can use the converted version of the tokenizer to an HuggingFa
 
     <div class="doc doc-contents ">
 
-      <p>Load tokenizer from dict</p>
+        <p>Load tokenizer from dict</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -9464,7 +9906,7 @@ Once trained, you can use the converted version of the tokenizer to an HuggingFa
 
     <div class="doc doc-contents ">
 
-      <p>Instantiate a [<code>~tokenization_utils_base.PreTrainedTokenizerBase</code>] (or a derived class) from a predefined
+        <p>Instantiate a [<code>~tokenization_utils_base.PreTrainedTokenizerBase</code>] (or a derived class) from a predefined
 tokenizer.</p>
 
 
@@ -9597,7 +10039,7 @@ If <code>True</code>, will use the token generated when running <code>huggingfac
 
 <p><span class="doc-section-title">Examples:</span></p>
     
-      <div class="highlight"><pre><span></span><code>    <span class="c1"># We can&#39;t instantiate directly the base class *PreTrainedTokenizerBase* so let&#39;s show our examples on a derived class: BertTokenizer</span>
+        <div class="highlight"><pre><span></span><code>    <span class="c1"># We can&#39;t instantiate directly the base class *PreTrainedTokenizerBase* so let&#39;s show our examples on a derived class: BertTokenizer</span>
     <span class="c1"># Download vocabulary from huggingface.co and cache.</span>
     <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">SAFETokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="s2">&quot;datamol-io/safe-gpt&quot;</span><span class="p">)</span>
 
@@ -9874,7 +10316,7 @@ If <code>True</code>, will use the token generated when running <code>huggingfac
 
     <div class="doc doc-contents ">
 
-      <p>Get a pretrained tokenizer from this tokenizer</p>
+        <p>Get a pretrained tokenizer from this tokenizer</p>
 
 
     <p><span class="doc-section-title">Returns:</span></p>
@@ -9989,7 +10431,7 @@ If <code>True</code>, will use the token generated when running <code>huggingfac
 
     <div class="doc doc-contents ">
 
-      <p>Load the current tokenizer from file</p>
+        <p>Load the current tokenizer from file</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/tokenizer.py</code></summary>
@@ -10027,7 +10469,7 @@ If <code>True</code>, will use the token generated when running <code>huggingfac
 
     <div class="doc doc-contents ">
 
-      <p>Upload the tokenizer to the 🤗 Model Hub.</p>
+        <p>Upload the tokenizer to the 🤗 Model Hub.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10376,7 +10818,7 @@ by a unit (like <code>"5MB"</code>).</p>
 
     <div class="doc doc-contents ">
 
-      <p>Saves the :class:<code>~tokenizers.Tokenizer</code> to the file at the given path.</p>
+        <p>Saves the :class:<code>~tokenizers.Tokenizer</code> to the file at the given path.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10449,7 +10891,7 @@ by a unit (like <code>"5MB"</code>).</p>
 
     <div class="doc doc-contents ">
 
-      <p>Save pretrained tokenizer</p>
+        <p>Save pretrained tokenizer</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/tokenizer.py</code></summary>
@@ -10479,7 +10921,7 @@ by a unit (like <code>"5MB"</code>).</p>
 
     <div class="doc doc-contents ">
 
-      <p>Set special tokens for a tokenizer</p>
+        <p>Set special tokens for a tokenizer</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -10626,7 +11068,7 @@ by a unit (like <code>"5MB"</code>).</p>
 
     <div class="doc doc-contents ">
 
-      <p>Convert tokenizer to dict</p>
+        <p>Convert tokenizer to dict</p>
 
             <details class="quote">
               <summary>Source code in <code>safe/tokenizer.py</code></summary>
@@ -10672,7 +11114,7 @@ by a unit (like <code>"5MB"</code>).</p>
 
     <div class="doc doc-contents ">
 
-      <p>This is to train a new tokenizer from either a list of file or some input data</p>
+        <p>This is to train a new tokenizer from either a list of file or some input data</p>
 <p>Args
     files (str): file in which your molecules are separated by new line
     kwargs (dict): optional args for the tokenizer <code>train</code></p>
@@ -10717,7 +11159,7 @@ by a unit (like <code>"5MB"</code>).</p>
 
     <div class="doc doc-contents ">
 
-      <p>Train the Tokenizer using the provided iterator.</p>
+        <p>Train the Tokenizer using the provided iterator.</p>
 <p>You can provide anything that is a Python Iterator
     * A list of sequences :obj:<code>List[str]</code>
     * A generator that yields :obj:<code>str</code> or :obj:<code>List[str]</code>
@@ -10850,7 +11292,7 @@ by a unit (like <code>"5MB"</code>).</p>
     <div class="doc doc-contents ">
 
 
-      <p>Slice a molecule into head-linker-tail</p>
+        <p>Slice a molecule into head-linker-tail</p>
 
               <details class="quote">
                 <summary>Source code in <code>safe/utils.py</code></summary>
@@ -11365,7 +11807,7 @@ by a unit (like <code>"5MB"</code>).</p>
 
     <div class="doc doc-contents ">
 
-      <p>Perform slicing of the input molecule</p>
+        <p>Perform slicing of the input molecule</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11577,7 +12019,7 @@ The small fragment containing this substructure would be kept as head</p>
 
     <div class="doc doc-contents ">
 
-      <p>Constructor of bond slicer.</p>
+        <p>Constructor of bond slicer.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11715,7 +12157,7 @@ Does not have any effect when expected_head group is provided during splitting</
 
     <div class="doc doc-contents ">
 
-      <p>Get the list of ring system from a molecule</p>
+        <p>Get the list of ring system from a molecule</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11808,7 +12250,7 @@ Does not have any effect when expected_head group is provided during splitting</
 
     <div class="doc doc-contents ">
 
-      <p>Link fragments together using the provided linker</p>
+        <p>Link fragments together using the provided linker</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -11930,7 +12372,7 @@ Does not have any effect when expected_head group is provided during splitting</
 
     <div class="doc doc-contents ">
 
-      <p>Temporary replace the value of an object</p>
+        <p>Temporary replace the value of an object</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12035,7 +12477,7 @@ Does not have any effect when expected_head group is provided during splitting</
 
     <div class="doc doc-contents ">
 
-      <p>Compute the side chain of a molecule given a core</p>
+        <p>Compute the side chain of a molecule given a core</p>
 <div class="admonition note">
 <p class="admonition-title">Finding the side chains</p>
 <p>The algorithm to find the side chains from core assumes that the core we get as input has attachment points.
@@ -12184,7 +12626,7 @@ Therefore on the above, core0 and core1 are equivalent for the molecule <code>mo
 
     <div class="doc doc-contents ">
 
-      <p>Convert a molecule to a safe representation</p>
+        <p>Convert a molecule to a safe representation</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12445,7 +12887,7 @@ Therefore on the above, core0 and core1 are equivalent for the molecule <code>mo
 
     <div class="doc doc-contents ">
 
-      <p>Check whether the input substructures are present in each of the molecule in the sequences</p>
+        <p>Check whether the input substructures are present in each of the molecule in the sequences</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12570,7 +13012,7 @@ Therefore on the above, core0 and core1 are equivalent for the molecule <code>mo
 
     <div class="doc doc-contents ">
 
-      <p>Find the edges connecting the subgraphs in a given partition of a graph.</p>
+        <p>Find the edges connecting the subgraphs in a given partition of a graph.</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -12688,7 +13130,7 @@ Therefore on the above, core0 and core1 are equivalent for the molecule <code>mo
 
     <div class="doc doc-contents ">
 
-      <p>Custom splitting algorithm for dataset building.</p>
+        <p>Custom splitting algorithm for dataset building.</p>
 <p>This slicing strategy will cut any bond including bonding with hydrogens
 However, only one cut per atom is allowed</p>
 
@@ -12805,7 +13247,7 @@ However, only one cut per atom is allowed</p>
 
     <div class="doc doc-contents ">
 
-      <p>List all individual attachement points.</p>
+        <p>List all individual attachement points.</p>
 <p>We do not allow multiple attachment points per substitution position.</p>
 
 
@@ -12917,7 +13359,7 @@ However, only one cut per atom is allowed</p>
 
     <div class="doc doc-contents ">
 
-      <p>Partition a molecule into fragments using a bond query</p>
+        <p>Partition a molecule into fragments using a bond query</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
@@ -13124,7 +13566,7 @@ However, only one cut per atom is allowed</p>
 
     <div class="doc doc-contents ">
 
-      <p>Standardize the attachment points of a molecule</p>
+        <p>Standardize the attachment points of a molecule</p>
 
 
 <p><span class="doc-section-title">Parameters:</span></p>
