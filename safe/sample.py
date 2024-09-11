@@ -698,8 +698,7 @@ class SAFEDesign:
             with suppress(Exception), dm.without_rdkit_log():
                 cur_sequences = self._completion(
                     fragment=dm.from_smarts(scaff),
-                    n_samples_per_trial=int(n_samples_per_trial / max(len(all_scaffolds), 1))
-                    + 1,
+                    n_samples_per_trial=int(n_samples_per_trial / max(len(all_scaffolds), 1)) + 1,
                     n_trials=n_trials,
                     do_not_fragment_further=do_not_fragment_further,
                     sanitize=sanitize,
