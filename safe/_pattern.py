@@ -62,14 +62,14 @@ class PatternConstraint:
         Initialize the PatternConstraint with a scaffold and tokenizer.
 
         Args:
-            scaffold (str): The input scaffold for decoration.
+            scaffold: The input scaffold for decoration.
             tokenizer: The tokenizer to use for encoding the scaffold.
-            branch_opener (str): Character to represent branch openers.
-            branch_closer (str): Character to represent branch closers.
-            min_linker_size (int): Minimum size of linkers.
-            min_ring_size (int): Minimum size of rings.
-            force_constraint_sample (bool): Whether to force sampling constraints.
-            temperature: temperature to apply when sampling scaffold from patterns
+            branch_opener: Character to represent branch openers.
+            branch_closer: Character to represent branch closers.
+            min_linker_size: Minimum size of linkers.
+            min_ring_size: Minimum size of rings.
+            force_constraint_sample: Whether to force sampling constraints.
+            temperature: temperature to apply when sampling scaffold from patterns. Higher temperature will generate more diverse scaffolds
         """
         self.input_scaffold = scaffold
         self.temperature = temperature
@@ -169,9 +169,6 @@ class PatternConstraint:
         """
         Initialize the current scaffold decorator object with the scaffold object.
         The initialization will also set and validate the vocab object to use for the scaffold decoration,
-
-        Args:
-            vocab: the vocab object to initialize the decorator with
         """
         self._is_initialized = False
         pretrained_tokenizer = self.tokenizer.get_pretrained()
@@ -280,7 +277,6 @@ class PatternConstraint:
     def _parse_token_as_mol(self, token):
         """
         Parse a token as a valid molecular pattern
-        EN: the logic is a bit wonky, but works for simple pattern
         """
         tk_mol = None
         with dm.without_rdkit_log():
@@ -323,9 +319,9 @@ class PatternSampler:
     Args:
         model: Pretrained model used for generation.
         pattern_decorator: The PatternConstraint object that provides the scaffold and sampling constraints.
-        min_linker_size (int): Minimum size of the linker.
-        max_steps_to_eos (int): Maximum steps to end-of-sequence token.
-        max_length (int): Maximum length of the generated sequences.
+        min_linker_size: Minimum size of the linker.
+        max_steps_to_eos: Maximum steps to end-of-sequence token.
+        max_length: Maximum length of the generated sequences.
     """
 
     def __init__(
@@ -371,9 +367,9 @@ class PatternSampler:
         Sample a batch of sequences based on the scaffold provided by the PatternConstraint.
 
         Args:
-            n_samples (int): Number of sequences to sample.
-            n_trials (int): Number of sampling trials to perform.
-            random_seed (Optional[int]): Seed for random number generation.
+            n_samples: Number of sequences to sample.
+            n_trials: Number of sampling trials to perform.
+            random_seed: Seed for random number generation.
 
         Returns:
             List[str]: List of sampled sequences as strings.
@@ -397,7 +393,7 @@ class PatternSampler:
         Converts the generated sequence to a valid scaffold by replacing unknown tokens.
 
         Args:
-            scaff (str): The generated sequence string.
+            scaff: The generated sequence string.
 
         Returns:
             str: The scaffold string with unknown tokens replaced.
@@ -415,8 +411,8 @@ class PatternSampler:
         Generate sequences with custom constraints using the model and PatternConstraint.
 
         Args:
-            batch_size (int): Number of sequences to generate.
-            max_length (Optional[int]): Maximum length of the sequence.
+            batch_size: Number of sequences to generate.
+            max_length: Maximum length of the sequence.
 
         Returns:
             Tuple: Generated sequences, log probabilities, and entropies.

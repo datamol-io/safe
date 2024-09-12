@@ -672,7 +672,7 @@ class SAFEDesign:
                 Increasing this will improve sampling, but will require more time.
             n_scaff_samples: Maximum number of samples to sample for a given scaffold from the pattern.
                 Increasing this will make sure you have more diversity in the scaffold coming from the pattern
-            scaff_temperature: Temperature to use when sampling valid scaffolds from the pattern.
+            scaff_temperature: Temperature to use when sampling valid scaffolds from the pattern. Higher temperature means more diverse scaffold
             kwargs: Additional arguments for the underlying generation function.
 
         Returns:
@@ -694,6 +694,8 @@ class SAFEDesign:
             )
             all_scaffolds.update(cur_scaffolds)
 
+        if sanitize:
+            all_scaffolds = [x for x in all_scaffolds if dm.from_smarts(x) is not None]
         total_sequences = []
         for scaff in all_scaffolds:
             with suppress(Exception), dm.without_rdkit_log():
