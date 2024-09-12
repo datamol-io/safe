@@ -652,7 +652,8 @@ class SAFEDesign:
         **kwargs: Optional[Dict[Any, Any]],
     ) -> List[str]:
         """
-        Perform pattern decoration using the pretrained SAFE model.
+        Perform pattern decoration using the pretrained SAFE model. The pattern decoration algorithm works by first examplifying the patterns
+        as a set of scaffold then performing scaffold decoration on each scaffold.
 
         !!! warning
             Designing molecules from a given molecule pattern is more challenging than fragment-constrained design.

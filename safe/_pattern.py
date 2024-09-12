@@ -16,7 +16,7 @@ import contextlib
 
 class PatternConstraint:
     """
-    Sampling decorator for pretrained Izanagi models.
+    Sampling decorator for pretrained SAFE models.
     This implementation is inspired by the Sanofi decorator with:
         1. new generalization to different tokenizers
         2. support for a subset of smarts notations
@@ -69,6 +69,7 @@ class PatternConstraint:
             min_linker_size (int): Minimum size of linkers.
             min_ring_size (int): Minimum size of rings.
             force_constraint_sample (bool): Whether to force sampling constraints.
+            temperature: temperature to apply when sampling scaffold from patterns
         """
         self.input_scaffold = scaffold
         self.temperature = temperature
@@ -441,12 +442,6 @@ class PatternSampler:
 
         input_ids = start_token
         trackers = torch.zeros(batch_size, dtype=torch.int)  # Tracks the position in the scaffold
-        torch.zeros(batch_size)
-        torch.zeros(batch_size)
-        torch.zeros(batch_size)
-
-        [[] for _ in range(batch_size)]
-        [[] for _ in range(batch_size)]
 
         for step in range(max_length):
             current_tokens = [self.pattern_decorator.tokens[index] for index in trackers]
