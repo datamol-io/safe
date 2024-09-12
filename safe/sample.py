@@ -19,6 +19,7 @@ from transformers.generation import DisjunctiveConstraint, PhrasalConstraint
 import safe as sf
 from safe.tokenizer import SAFETokenizer
 from safe.trainer.model import SAFEDoubleHeadsModel
+from safe._pattern import PatternConstraint, PatternSampler
 
 # modify this code to allow loading the model from wandb
 
@@ -635,6 +636,92 @@ class SAFEDesign:
                     f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %)  generated molecules are valid !"
                 )
         return total_sequences
+
+    def pattern_decoration(
+        self,
+        scaffold: Union[str, dm.Mol],
+        n_samples_per_trial: int = 10,
+        n_trials: int = 1,
+        do_not_fragment_further: bool = True,
+        sanitize: bool = False,
+        random_seed: Optional[int] = None,
+        add_dot: bool = True,
+        n_scaff_random: Optional[int] = 3,
+        n_scaff_samples: Optional[int] = 10,
+        scaff_temperature: float = 1.0,
+        **kwargs: Optional[Dict[Any, Any]],
+    ) -> List[str]:
+        """
+        Perform pattern decoration using the pretrained SAFE model. The pattern decoration algorithm works by first examplifying the patterns
+        as a set of scaffold then performing scaffold decoration on each scaffold.
+
+        !!! warning
+            Designing molecules from a given molecule pattern is more challenging than fragment-constrained design.
+            SAFE does not currently support complex SMARTS pattern schemes (e.g., valence or connectivity constraints, some ring constraints).
+            This function works best when sampling given a list of atoms. However, sampling depends on the model's conditional probabilities,
+            meaning that if the model assigns zero probability to a token, you are unlikely to see it.
+
+        Args:
+            scaffold: Scaffold (with attachment points) to decorate.
+            n_samples_per_trial: Number of new molecules to generate for each randomization.
+            n_trials: Number of randomizations to perform.
+            do_not_fragment_further: Whether to prevent further fragmentation of the scaffold.
+            sanitize: Whether to sanitize the generated molecules and ensure the scaffold is present.
+            random_seed: Seed for randomization.
+            n_scaff_random: Number of scaffold randomizations to try (to reposition constraints in the string and increase rollout likelihood).
+                Increasing this will improve sampling, but will require more time.
+            n_scaff_samples: Maximum number of samples to sample for a given scaffold from the pattern.
+                Increasing this will make sure you have more diversity in the scaffold coming from the pattern
+            scaff_temperature: Temperature to use when sampling valid scaffolds from the pattern. Higher temperature means more diverse scaffold
+            kwargs: Additional arguments for the underlying generation function.
+
+        Returns:
+            List of decorated molecule sequences.
+        """
+
+        smarts_scaffolds = [scaffold]
+        if n_scaff_random and n_scaff_random > 0:
+            smarts_scaffolds = PatternConstraint.randomize(scaffold, n_scaff_random)
+
+        all_scaffolds = set()
+        for sm in smarts_scaffolds:
+            cur_dec_pattern = PatternConstraint(sm, self.tokenizer, temperature=scaff_temperature)
+            decorator = PatternSampler(self.model, cur_dec_pattern)
+            cur_scaffolds = decorator.sample_scaffolds(
+                n_samples=min(n_samples_per_trial, n_scaff_samples),
+                n_trials=1,
+                random_seed=random_seed,
+            )
+            all_scaffolds.update(cur_scaffolds)
+
+        if sanitize:
+            all_scaffolds = [x for x in all_scaffolds if dm.from_smarts(x) is not None]
+        total_sequences = []
+        for scaff in all_scaffolds:
+            with suppress(Exception), dm.without_rdkit_log():
+                cur_sequences = self._completion(
+                    fragment=dm.from_smarts(scaff),
+                    n_samples_per_trial=int(n_samples_per_trial / max(len(all_scaffolds), 1)) + 1,
+                    n_trials=n_trials,
+                    do_not_fragment_further=do_not_fragment_further,
+                    sanitize=sanitize,
+                    random_seed=random_seed,
+                    add_dot=add_dot,
+                    **kwargs,
+                )
+                total_sequences.extend(cur_sequences)
+
+        random.shuffle(total_sequences)
+        if sanitize:
+            total_sequences = sf.utils.filter_by_substructure_constraints(total_sequences, scaffold)
+            total_sequences = total_sequences[:n_samples_per_trial]
+            if self.verbose:
+                logger.info(
+                    f"After sanitization, {len(total_sequences)} / {n_samples_per_trial * n_trials} "
+                    f"({len(total_sequences) * 100 / (n_samples_per_trial * n_trials):.2f}%) generated molecules are valid!"
+                )
+
+        return total_sequences[:n_samples_per_trial]
 
     def de_novo_generation(
         self,
