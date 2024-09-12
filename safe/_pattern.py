@@ -318,7 +318,7 @@ class PatternConstraint:
 
 class PatternSampler:
     """
-    Implements a scaffold-constrained sequence sampler for GPT-2 models using a PatternConstraint.
+    Implements a pattern-constrained sequence sampler for Autoregressive transformer models using a PatternConstraint.
 
     Args:
         model: Pretrained model used for generation.
