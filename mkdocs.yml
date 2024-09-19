@@ -16,7 +16,9 @@ nav:
       - Getting Started: tutorials/getting-started.ipynb
       - Molecular design: tutorials/design-with-safe.ipynb
       - How it works: tutorials/how-it-works.ipynb
+      - WANDB support: tutorials/load-from-wandb.ipynb
       - Extracting representation (molfeat): tutorials/extracting-representation-molfeat.ipynb
+      - Optimization with REINVENT: tutorials/optim-reinvent.ipynb
   - API:
       - SAFE: api/safe.md
       - Visualization: api/safe.viz.md
@@ -32,7 +34,7 @@ theme:
 
 extra_javascript:
   - assets/js/google-analytics.js
-  
+
 markdown_extensions:
   - admonition
   - markdown_include.include
