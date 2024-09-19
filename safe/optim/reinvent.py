@@ -86,7 +86,6 @@ class REINVENTTrainer(BaseTrainer):
 
         # Runtime variables filled by the accelerator
         config.world_size = self.accelerator.num_processes
-        config.global_backward_batch_size = config.backward_batch_size * config.world_size
         config.global_batch_size = config.batch_size * config.world_size
 
         self.model = model
@@ -100,7 +99,7 @@ class REINVENTTrainer(BaseTrainer):
         self.accelerator.init_trackers(
             config.tracker_project_name,
             config=(
-                {"trl_reinvent_trainer_config": config.to_dict()}
+                {"safe_reinvent_trainer_config": config.to_dict()}
                 if not is_using_tensorboard
                 else config.to_dict()
             ),
@@ -202,6 +201,7 @@ class REINVENTTrainer(BaseTrainer):
 
         # Initialize experience replay buffer (if needed)
         self.use_experience_replay = config.use_experience_replay
+        self.experience_buffer = None
         if self.use_experience_replay:
             self.experience_buffer = []
             self.max_buffer_size = getattr(config, "max_buffer_size", 10000)  # Default buffer size
@@ -418,20 +418,6 @@ class REINVENTTrainer(BaseTrainer):
             prior_log_probs = self.compute_log_probs(self.ref_model, model_inputs)
             prior_log_probs = prior_log_probs.detach()
 
-        agent_log_probs, agent_logits = self.compute_log_probs(
-            self.model, model_inputs, return_logits=True
-        )
-
-        # Compute entropies
-        entropies = entropy_from_logits(agent_logits)
-
-        # Adjust log_probs based on is_action_basis
-        attention_mask = model_inputs["attention_mask"][:, 1:].float()  # Shifted mask
-        if not self.is_action_basis:
-            agent_log_probs = agent_log_probs * attention_mask
-            prior_log_probs = prior_log_probs * attention_mask
-            entropies = entropies * attention_mask
-
         # Prepare dataset for mini-batching
         dataset = torch.utils.data.TensorDataset(
             torch.arange(len(queries)),  # Indices
@@ -445,31 +431,40 @@ class REINVENTTrainer(BaseTrainer):
         # Initialize variables for logging
         total_loss = 0.0
 
-        # Training loop over epochs and mini-batches
         for epoch in range(self.reinvent_epochs):
             for batch_indices in dataloader:
                 idx = batch_indices[0]
 
-                # Get mini-batch data
                 [queries[i] for i in idx]
                 [responses[i] for i in idx]
                 mb_scores = scores[idx]
-                {key: value[idx] for key, value in model_inputs.items()}
+                mb_model_inputs = {key: value[idx] for key, value in model_inputs.items()}
                 mb_prior_log_probs = prior_log_probs[idx]
-                mb_agent_log_probs = agent_log_probs[idx]
-                mb_entropies = entropies[idx]
-                mb_attention_mask = attention_mask[idx]
+
+                agent_log_probs, agent_logits = self.compute_log_probs(
+                    self.model, mb_model_inputs, return_logits=True
+                )
+
+                # Compute entropies for the mini-batch
+                entropies = entropy_from_logits(agent_logits)
+
+                # Adjust log_probs based on is_action_basis
+                mb_attention_mask = mb_model_inputs["attention_mask"][:, 1:].float()  # Shifted mask
+                if not self.is_action_basis:
+                    agent_log_probs = agent_log_probs * mb_attention_mask
+                    mb_prior_log_probs = mb_prior_log_probs * mb_attention_mask
+                    entropies = entropies * mb_attention_mask
 
                 # Compute loss based on the selected strategy
                 loss = self.loss(
-                    mb_agent_log_probs,
+                    agent_log_probs,
                     mb_prior_log_probs,
                     mb_scores,
-                    mb_entropies,
+                    entropies,
                     mb_attention_mask,
                 )
 
-                # Backpropagation
+                # Backpropagation (rest of your code remains the same)
                 self.optimizer.zero_grad()
                 self.accelerator.backward(loss)
                 if self.config.max_grad_norm is not None and self.accelerator.sync_gradients:
@@ -645,7 +640,7 @@ class REINVENTTrainer(BaseTrainer):
                 loss = -reward * agent_log_probs
 
             # Include entropy regularization
-            if self.config.entropy_coeff:
+            if self.config.entropy_coeff > 0:
                 loss = loss - self.config.entropy_coeff * entropies
 
             # Apply masking and reduction
@@ -673,7 +668,7 @@ class REINVENTTrainer(BaseTrainer):
             # Compute loss per sequence
             loss = -rewards_sum * agent_log_probs_sum
 
-            if self.config.entropy_coeff:
+            if self.config.entropy_coeff > 0:
                 loss = loss - self.config.entropy_coeff * entropies_sum
             loss = loss.mean()
 
@@ -689,7 +684,12 @@ class REINVENTTrainer(BaseTrainer):
                 # Push new experience and pop the smallest (lowest score) experience
                 heapq.heappushpop(self.experience_buffer, experience)
 
-    def sample_from_experience_buffer(self, batch_size):
+    def sample_from_experience_buffer(self, batch_size: int):
+        """Sample examples from the experience buffer
+
+        Args:
+            batch_size: Number of example to sample from the buffer
+        """
         experiences = self.experience_buffer.copy()
         queries, responses, scores = zip(*[(q, r, -s) for s, q, r in experiences])
         indices = np.random.choice(len(queries), batch_size, replace=False)

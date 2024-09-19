@@ -33,104 +33,68 @@ class REINVENTConfig:
     This class encapsulates all the configuration parameters required for training using the REINVENT algorithm.
     It is a standalone class and does not inherit from any other configuration classes.
 
-    Parameters:
+    Args:
         # General Configuration
-        exp_name (str, optional):
-            Name of the experiment. Defaults to the name of the script being run.
-        seed (int, optional, default=0):
-            Random seed for reproducibility.
-        log_with (Optional[Literal["wandb", "tensorboard"]], optional, default=None):
-            Logging backend to use. Supported options are:
-                - "wandb"
-                - "tensorboard"
-        task_name (Optional[str], optional):
-            Name of the task (used for logging/tracking purposes).
-        model_name (str, optional, default="gpt2"):
-            Name of the model (used for logging/tracking purposes).
-        reward_model (Optional[str], optional):
-            Name of the reward model (used for logging/tracking purposes).
-        remove_unused_columns (bool, optional, default=True):
-            Whether to remove unused columns from the dataset.
+        exp_name: Name of the experiment (used for logging/tracking purposes).. Defaults to the name of the script being run.
+        seed: Random seed for reproducibility. Default=0
+        log_with: Logging backend to use. Supported options are: ["wandb", "tensorboard"]
+        model_name: Name of the model (used for logging/tracking purposes).
+        reward_model: Name of the reward model (used for logging/tracking purposes).
+        remove_unused_columns: Whether to remove unused columns from the dataset. Default=True
 
         # Tracker and Accelerator Configuration
-        tracker_project_name (str, optional, default="trl"):
-            Name of the project for tracking.
-        tracker_kwargs (Dict[str, Any], optional, default_factory=dict):
-            Additional keyword arguments for the tracker.
-        accelerator_kwargs (Dict[str, Any], optional, default_factory=dict):
-            Additional keyword arguments for the Accelerator.
-        project_kwargs (Dict[str, Any], optional, default_factory=dict):
+        tracker_project_name: Name of the project for tracking. Default to safe-reinvent
+        tracker_kwargs: Additional keyword arguments for the tracker.
+        accelerator_kwargs: Additional keyword arguments for the Accelerator.
+        project_kwargs: additional information for the project configuration of the accelerator
 
         # Training Configuration
-        steps (int, optional, default=20000):
-            Number of training steps.
-        learning_rate (float, optional, default=1.41e-5):
-            Learning rate for the optimizer.
-        batch_size (int, optional, default=128):
-            Number of samples per optimization step.
-        mini_batch_size (int, optional, default=128):
-            Number of samples optimized in each mini-batch.
-        gradient_accumulation_steps (int, optional, default=1):
-            Number of gradient accumulation steps.
-        max_grad_norm (Optional[float], optional, default=None):
-            Maximum gradient norm for clipping.
-        gradient_checkpointing (bool, optional, default=False):
-            Whether to use gradient checkpointing.
-        optimize_device_cache (bool, optional, default=False):
-            Optimize device cache for slightly more memory-efficient training.
+        steps: Number of training steps. Default to 10000
+        learning_rate: Learning rate for the optimizer. Default=1e-5
+        batch_size: Number of samples per optimization step. Default to 128
+        mini_batch_size: Number of samples optimized in each mini-batch. Default to 128
+        gradient_accumulation_steps: Number of gradient accumulation steps.
+        max_grad_norm: Maximum gradient norm for clipping. Default to None for no grad clipping
+        gradient_checkpointing: Whether to use gradient checkpointing. Default to False
+        optimize_device_cache: Optimize device cache for slightly more memory-efficient training. Default to False
 
         # REINVENT-Specific Parameters
-        sigma (float, optional, default=60.0):
-            Scaling factor for the score.
-        strategy (Literal["dap", "sdap", "mauli", "mascof"], optional, default="dap"):
-            Strategy to use for optimization.
-        entropy_coeff (float, optional, default=0.0):
-            Entropy regularization coefficient. Increasing the entropy regularization will change
-            the loss to promote preserving diversity as much as possible, this can decrease performance however.
-        is_action_basis (bool, optional, default=False):
-            Whether to compute loss on an action (token) basis.
-        use_experience_replay (bool, optional, default=False):
-            Whether to use experience replay during training.
-        max_buffer_size (int, optional, default=10000):
-            Maximum size of the experience replay buffer.
-        reinvent_epochs (int, optional, default=4):
-            Number of epochs per step (equivalent to PPO epochs).
-        score_clip (Optional[float], optional, default=None):
-            Value to clip the scores. If `None`, no clipping is applied.
-        use_score_scaling (bool, optional, default=False):
-            Whether to scale the scores.
-        use_score_norm (bool, optional, default=False):
-            Whether to normalize the scores when scaling is used.
+        sigma: Scaling factor for the score. Default to 10.0
+        strategy: Strategy to use for optimization. One of ["dap", "sdap", "mauli", "mascof"]. Default to "dap"
+        entropy_coeff:  Entropy regularization coefficient. Increasing the entropy regularization will change
+            the loss to promote preserving diversity as much as possible, this can decrease performance however. Default to 0
+        is_action_basis: Whether to compute loss on an action (token) basis. Default to False
+        use_experience_replay: Whether to use experience replay during training. Default To False
+        max_buffer_size: Maximum size of the experience replay buffer. Default to 10_000
+        reinvent_epochs: Number of epochs per step (equivalent to PPO epochs). Default to 1
+        score_clip: Value to clip the scores range into [-score_clip, +score_clip]. If `None`, no clipping is applied.
+        use_score_scaling: Whether to scale the scores. Default to False
+        use_score_norm: Whether to normalize the scores when scaling is used. Default to True
 
     Attributes:
-        world_size (Optional[int]):
-            Number of processes to use for distributed training. Set by REINVENTTrainer.
-        global_batch_size (Optional[int]):
-            Effective batch size across all processes. Set by REINVENTTrainer.
-        is_encoder_decoder (Optional[bool]):
-            Whether the model is an encoder-decoder model. Set by REINVENTTrainer.
-        is_peft_model (Optional[bool]):
-            Whether the model is a PEFT (Parameter-Efficient Fine-Tuning) model. Set by REINVENTTrainer.
+        world_size: Number of processes to use for distributed training. Set by REINVENTTrainer.
+        global_batch_size: Effective batch size across all processes. Set by REINVENTTrainer.
+        is_encoder_decoder: Whether the model is an encoder-decoder model. Set by REINVENTTrainer.
+        is_peft_model: Whether the model is a PEFT (Parameter-Efficient Fine-Tuning) model. Set by REINVENTTrainer.
     """
 
     # General Configuration
     exp_name: str = None  # Will default to script name if not provided
     seed: int = 0
     log_with: Optional[Literal["wandb", "tensorboard"]] = None
-    task_name: Optional[str] = None
     model_name: str = "gpt2"
     reward_model: Optional[str] = None
     remove_unused_columns: bool = True
 
     # Tracker and Accelerator Configuration
-    tracker_project_name: str = "trl"
+    tracker_project_name: str = "safe-reinvent"
     tracker_kwargs: Dict[str, Any] = field(default_factory=dict)
     accelerator_kwargs: Dict[str, Any] = field(default_factory=dict)
     project_kwargs: Dict[str, Any] = field(default_factory=dict)
 
     # Training Configuration
-    steps: int = 20000
-    learning_rate: float = 1.41e-5
+    steps: int = 10000
+    learning_rate: float = 1e-3
     batch_size: int = 128
     mini_batch_size: int = 128
     gradient_accumulation_steps: int = 1
@@ -141,14 +105,14 @@ class REINVENTConfig:
     # REINVENT-Specific Parameters
     sigma: float = 60.0
     strategy: Literal["dap", "sdap", "mauli", "mascof"] = "dap"
-    entropy_coeff: float = 0.0
+    entropy_coeff: Optional[float] = None
     is_action_basis: bool = False
     use_experience_replay: bool = False
     max_buffer_size: int = 10000
-    reinvent_epochs: int = 4
+    reinvent_epochs: int = 1
     score_clip: Optional[float] = None
     use_score_scaling: bool = False
-    use_score_norm: bool = False
+    use_score_norm: bool = True
 
     # Internal attributes set by the trainer
     world_size: Optional[int] = None
@@ -186,6 +150,8 @@ class REINVENTConfig:
             raise ImportError(
                 "Please install wandb to use wandb logging. You can do this by running `pip install wandb`."
             )
+
+        self.tracker_kwargs.setdefault(self.log_with, {})["name"] = self.exp_name
 
     def to_dict(self) -> Dict[str, Any]:
         """
