@@ -136,13 +136,33 @@ class SAFETokenizer(PushToHubMixin):
 
     @property
     def pad_token_id(self):
-        """Get the bos token id"""
+        """Get the pad token id"""
         return self.tokenizer.token_to_id(self.tokenizer.pad_token)
 
     @property
     def eos_token_id(self):
-        """Get the bos token id"""
+        """Get the eos token id"""
         return self.tokenizer.token_to_id(self.tokenizer.eos_token)
+
+    @property
+    def unk_token_id(self):
+        """Get the unk token id"""
+        return self.tokenizer.token_to_id(self.tokenizer.unk_token)
+
+    @property
+    def mask_token_id(self):
+        """Get the mask token id"""
+        return self.tokenizer.token_to_id(self.tokenizer.mask_token)
+
+    @property
+    def cls_token_id(self):
+        """Get the cls token id"""
+        return self.tokenizer.token_to_id(self.tokenizer.cls_token)
+
+    @property
+    def sep_token_id(self):
+        """Get the sep token id"""
+        return self.tokenizer.token_to_id(self.tokenizer.sep_token)
 
     @classmethod
     def set_special_tokens(

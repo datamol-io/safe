@@ -79,6 +79,25 @@ You can use conda/mamba:
 mamba install -c conda-forge safe-mol
 ```
 
+#### 2024/11/22
+NOTE: Installation might cause issues like no detection of GPUs (which can be checked by `torch.cuda.is_available()`) and sengmentation error due to mismatch between installed and driver cuda versions. In that case, follow these steps:
+
+Create a new environment using conda:
+
+```bash
+conda create -n env_safe python=3.12
+conda activate env_safe
+```
+
+Check nvidia driver version on machine by running `nvcc --version` or `nvidia-smi` commands
+
+Install pytorch with compatible cuda versions (from `https://pytorch.org/get-started/locally/`) and safe-mol:
+
+```bash
+conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
+conda install -c conda-forge safe-mol
+```
+
 ### Datasets and Models
 
 | Type                   | Name                                                                           | Infos      | Size  | Comment              |
