@@ -1119,6 +1119,11 @@
 
 
 
+
+
+
+
+
   <div class="doc doc-children">
 
 
@@ -1159,7 +1164,9 @@
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td><code>config</code></td>
+            <td>
+                <code>config</code>
+            </td>
             <td>
                   <code>[`PretrainedConfig`]</code>
             </td>
@@ -1186,6 +1193,11 @@ config class of your model for the default values it uses):</p>
           </tr>
       </tbody>
     </table>
+
+
+
+
+
 
               <details class="quote">
                 <summary>Source code in <code>safe/trainer/model.py</code></summary>
@@ -1405,7 +1417,9 @@ config class of your model for the default values it uses):</p>
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td><code>hidden_states</code></td>
+            <td>
+                <code>hidden_states</code>
+            </td>
             <td>
                   <code><span title="torch.FloatTensor">FloatTensor</span></code>
             </td>
@@ -1420,7 +1434,9 @@ The hidden states of the last layer.</p>
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code>cls_index</code></td>
+            <td>
+                <code>cls_index</code>
+            </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<span title="torch.LongTensor">LongTensor</span>]</code>
             </td>
@@ -1587,6 +1603,11 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
 
 
         <p>The safe model is a dual head GPT2 model with a language modeling head and an optional multi-task regression head</p>
+
+
+
+
+
 
               <details class="quote">
                 <summary>Source code in <code>safe/trainer/model.py</code></summary>
@@ -1851,7 +1872,9 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td><code>mc_token_ids</code></td>
+            <td>
+                <code>mc_token_ids</code>
+            </td>
             <td>
                   <code>`torch.LongTensor` of shape `(batch_size, num_choices)`, *optional*, default to index of the last token of the input</code>
             </td>
@@ -1866,7 +1889,9 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code>labels</code></td>
+            <td>
+                <code>labels</code>
+            </td>
             <td>
                   <code>`torch.LongTensor` of shape `(batch_size, sequence_length)`, *optional*</code>
             </td>
@@ -1882,7 +1907,9 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code>mc_labels</code></td>
+            <td>
+                <code>mc_labels</code>
+            </td>
             <td>
                   <code>`torch.LongTensor` of shape `(batch_size, n_tasks)`, *optional*</code>
             </td>
@@ -1896,7 +1923,9 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code>inputs</code></td>
+            <td>
+                <code>inputs</code>
+            </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]</code>
             </td>
@@ -2151,6 +2180,11 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
 
 
 
+
+
+
+
+
   <div class="doc doc-children">
 
 
@@ -2178,6 +2212,11 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
 
         <p>Custom trainer for training SAFE model.</p>
 <p>This custom trainer changes the loss function to support the property head</p>
+
+
+
+
+
 
               <details class="quote">
                 <summary>Source code in <code>safe/trainer/trainer_utils.py</code></summary>
@@ -2411,6 +2450,11 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
 
 
 
+
+
+
+
+
   <div class="doc doc-children">
 
 
@@ -2440,6 +2484,11 @@ Used if <code>summary_type == "cls_index"</code> and takes the last token of the
 <p>The collate function is based on the default DataCollatorForLanguageModeling in huggingface
 see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/transformers/data/data_collator.py">https://github.com/huggingface/transformers/blob/v4.19.2/src/transformers/data/data_collator.py</a></p>
 </div>
+
+
+
+
+
 
               <details class="quote">
                 <summary>Source code in <code>safe/trainer/collator.py</code></summary>
@@ -2679,7 +2728,9 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td><code>samples</code></td>
+            <td>
+                <code>samples</code>
+            </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="typing.List" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-external" title="typing.Union" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a>[<a class="autorefs autorefs-external" title="typing.List" href="https://docs.python.org/3/library/typing.html#typing.List">List</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>], <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>, <a class="autorefs autorefs-external" title="typing.Dict" href="https://docs.python.org/3/library/typing.html#typing.Dict">Dict</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a>, <a class="autorefs autorefs-external" title="typing.Any" href="https://docs.python.org/3/library/typing.html#typing.Any">Any</a>]]]</code>
             </td>
@@ -2832,7 +2883,9 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td><code>tokenizer</code></td>
+            <td>
+                <code>tokenizer</code>
+            </td>
             <td>
                   <code><span title="tokenizers.Tokenizer">Tokenizer</span></code>
             </td>
@@ -2846,7 +2899,9 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code>input_key</code></td>
+            <td>
+                <code>input_key</code>
+            </td>
             <td>
                   <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
             </td>
@@ -2860,7 +2915,9 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code>label_key</code></td>
+            <td>
+                <code>label_key</code>
+            </td>
             <td>
                   <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
             </td>
@@ -2874,7 +2931,9 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code>property_key</code></td>
+            <td>
+                <code>property_key</code>
+            </td>
             <td>
                   <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/stdtypes.html#str">str</a></code>
             </td>
@@ -2888,7 +2947,9 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code>include_descriptors</code></td>
+            <td>
+                <code>include_descriptors</code>
+            </td>
             <td>
                   <code><a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#bool">bool</a></code>
             </td>
@@ -2902,7 +2963,9 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
             </td>
           </tr>
           <tr class="doc-section-item">
-            <td><code>pad_to_multiple_of</code></td>
+            <td>
+                <code>pad_to_multiple_of</code>
+            </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="typing.Optional" href="https://docs.python.org/3/library/typing.html#typing.Optional">Optional</a>[<a class="autorefs autorefs-external" href="https://docs.python.org/3/library/functions.html#int">int</a>]</code>
             </td>
@@ -3044,6 +3107,11 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
 
 <a id="safe.trainer.data_utils"></a>
     <div class="doc doc-contents first">
+
+
+
+
+
 
 
 
@@ -3259,7 +3327,9 @@ see: <a href="https://github.com/huggingface/transformers/blob/v4.19.2/src/trans
       </thead>
       <tbody>
           <tr class="doc-section-item">
-            <td><code>dataset</code></td>
+            <td>
+                <code>dataset</code>
+            </td>
             <td>
                   <code><a class="autorefs autorefs-external" title="typing.Union" href="https://docs.python.org/3/library/typing.html#typing.Union">Union</a>[<span title="datasets.Dataset">Dataset</span>, <span title="datasets.IterableDataset">IterableDataset</span>, <a class="autorefs autorefs-external" title="collections.abc.Mapping" href="https://docs.python.org/3/library/collections.abc.html#collections.abc.Mapping">Mapping</a>]</code>
             </td>
