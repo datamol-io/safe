@@ -5,12 +5,9 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
 from transformers import GPT2DoubleHeadsModel, PretrainedConfig
 from transformers.activations import get_activation
+from transformers.utils import auto_docstring
 from transformers.models.gpt2.modeling_gpt2 import (
-    _CONFIG_FOR_DOC,
-    GPT2_INPUTS_DOCSTRING,
     GPT2DoubleHeadsModelOutput,
-    add_start_docstrings_to_model_forward,
-    replace_return_docstrings,
 )
 
 
@@ -114,8 +111,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
         del self.multiple_choice_head
         self.multiple_choice_head = PropertyHead(config)
 
-    @add_start_docstrings_to_model_forward(GPT2_INPUTS_DOCSTRING)
-    @replace_return_docstrings(output_type=GPT2DoubleHeadsModelOutput, config_class=_CONFIG_FOR_DOC)
+    @auto_docstring()
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
@@ -149,8 +145,6 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
             mc_labels (`torch.LongTensor` of shape `(batch_size, n_tasks)`, *optional*):
                 Labels for computing the supervized loss for regularization.
             inputs: List of inputs, put here because the trainer removes information not in signature
-        Returns:
-            output (GPT2DoubleHeadsModelOutput): output of the model
         """
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
         transformer_outputs = self.transformer(
