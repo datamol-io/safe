@@ -48,6 +48,19 @@ dependencies = [
     "rdkit"
 ]
 
+[project.optional-dependencies]
+docs = [
+    "mkdocsi <= 1.6.0",
+    "mkdocs-material>=7.1.1",
+    "mkdocs-material-extensions",
+    "mkdocstrings < 0.28.0",
+    "mkdocstrings-python",
+    "mkdocs-jupyter",
+    "markdown-include",
+    "mdx_truly_sane_lists",
+    "mike >=1.0.0",
+]
+
 [project.urls]
 "Source Code" = "https://github.com/datamol-io/safe"
 "Bug Tracker" = "https://github.com/datamol-io/safe/issues"
@@ -91,10 +104,10 @@ lint.select = [
     "F", # see: https://pypi.org/project/pyflakes
 ]
 lint.extend-select = [
-    "C4",  # see: https://pypi.org/project/flake8-comprehensions
+    "C4", # see: https://pypi.org/project/flake8-comprehensions
     "SIM", # see: https://pypi.org/project/flake8-simplify
     "RET", # see: https://pypi.org/project/flake8-return
-    "PT",  # see: https://pypi.org/project/flake8-pytest-style
+    "PT", # see: https://pypi.org/project/flake8-pytest-style
 ]
 lint.ignore = [
     "E731", # Do not assign a lambda expression, use a def
