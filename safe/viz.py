@@ -79,8 +79,8 @@ def to_image(
         bond_matches = list(itertools.chain(*bond_matches))
         atom_indices.extend(atom_matches)
         bond_indices.extend(bond_matches)
-        atom_colors.update({x: current_colors[i] for x in atom_matches})
-        bond_colors.update({x: current_colors[i] for x in bond_matches})
+        atom_colors.update(dict.fromkeys(atom_matches, current_colors[i]))
+        bond_colors.update(dict.fromkeys(bond_matches, current_colors[i]))
 
     return dm.viz.to_image(
         mol,
