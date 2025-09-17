@@ -939,6 +939,7 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
                     processEnvironments: true
                 },
                 displayAlign: 'center',
+                messageStyle: 'none',
                 CommonHTML: {
                     linebreaks: {
                     automatic: true
@@ -1199,8 +1200,8 @@ span.linenos.special { color: #000000; background-color: #ffffc0; padding-left: 
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span> <span class="nn">safe</span> <span class="k">as</span> <span class="nn">sf</span>
-<span class="kn">import</span> <span class="nn">datamol</span> <span class="k">as</span> <span class="nn">dm</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">safe</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sf</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datamol</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dm</span>
 
 <span class="n">celecoxib</span> <span class="o">=</span> <span class="s2">"Cc1ccc(-c2cc(C(F)(F)F)nn2-c2ccc(S(N)(=O)=O)cc2)cc1"</span>
 <span class="n">celecoxib_mol</span> <span class="o">=</span> <span class="n">dm</span><span class="o">.</span><span class="n">to_mol</span><span class="p">(</span><span class="n">celecoxib</span><span class="p">)</span>
@@ -1448,7 +1449,7 @@ assert dm.same_mol(celecoxib_mol, reconstructed)
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="n">fragments</span> <span class="o">=</span> <span class="n">safe_str</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
 <span class="n">randomized_fragment_safe_str</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">permutation</span><span class="p">(</span><span class="n">fragments</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
@@ -1522,7 +1523,7 @@ assert dm.same_mol(celecoxib_mol, randomized_fragment_safe_str)
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="k">def</span> <span class="nf">my_slicer</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">my_slicer</span><span class="p">(</span><span class="n">mol</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">"""Slice on non single bonds where at both atoms are in a distinct rings"""</span>
     <span class="k">for</span> <span class="n">bond</span> <span class="ow">in</span> <span class="n">mol</span><span class="o">.</span><span class="n">GetBonds</span><span class="p">():</span>
         <span class="k">if</span> <span class="n">bond</span><span class="o">.</span><span class="n">GetBondType</span><span class="p">()</span> <span class="o">==</span> <span class="n">dm</span><span class="o">.</span><span class="n">SINGLE_BOND</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">bond</span><span class="o">.</span><span class="n">IsInRing</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span><span class="n">bond</span><span class="o">.</span><span class="n">GetBeginAtom</span><span class="p">()</span><span class="o">.</span><span class="n">IsInRing</span><span class="p">()</span> <span class="ow">and</span> <span class="n">bond</span><span class="o">.</span><span class="n">GetEndAtom</span><span class="p">()</span><span class="o">.</span><span class="n">IsInRing</span><span class="p">()):</span>
@@ -1920,10 +1921,10 @@ sf.decode(safe_fragment[0], as_mol=True, remove_dummies=False)
 </div>
 </clipboard-copy>
 </div>
-<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span> <span class="nn">IPython.display</span> <span class="kn">import</span> <span class="n">display</span>
-<span class="kn">from</span> <span class="nn">ipywidgets</span> <span class="kn">import</span> <span class="n">widgets</span><span class="p">,</span> <span class="n">HBox</span>
+<div class="highlight-ipynb hl-python"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">IPython.display</span><span class="w"> </span><span class="kn">import</span> <span class="n">display</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">ipywidgets</span><span class="w"> </span><span class="kn">import</span> <span class="n">widgets</span><span class="p">,</span> <span class="n">HBox</span>
 
-<span class="k">def</span> <span class="nf">display_image</span><span class="p">(</span><span class="n">safe_str</span><span class="p">):</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">display_image</span><span class="p">(</span><span class="n">safe_str</span><span class="p">):</span>
     <span class="n">image_lasso</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">sf</span><span class="o">.</span><span class="n">to_image</span><span class="p">(</span><span class="n">safe_str</span><span class="p">,</span> <span class="n">highlight_mode</span><span class="o">=</span><span class="s2">"lasso"</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="s2">"lasso mode"</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'svg+xml'</span><span class="p">)</span>
     <span class="n">image_fill</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">sf</span><span class="o">.</span><span class="n">to_image</span><span class="p">(</span><span class="n">safe_str</span><span class="p">,</span> <span class="n">highlight_mode</span><span class="o">=</span><span class="s2">"fill"</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="s2">"fill mode"</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'svg+xml'</span><span class="p">)</span>
     <span class="n">image_color</span> <span class="o">=</span> <span class="n">widgets</span><span class="o">.</span><span class="n">Image</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">sf</span><span class="o">.</span><span class="n">to_image</span><span class="p">(</span><span class="n">safe_str</span><span class="p">,</span> <span class="n">highlight_mode</span><span class="o">=</span><span class="s2">"color"</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="s2">"color mode"</span><span class="p">)</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="nb">format</span><span class="o">=</span><span class="s1">'svg+xml'</span><span class="p">)</span>
