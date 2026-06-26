@@ -146,3 +146,40 @@ def test_stereochemistry_issue():
     # check if we ignore the stereo
     output = safe.encode(STEREO_MOL_LIST[0], ignore_stereo=True, slicer="brics")
     assert dm.same_mol(dm.remove_stereochemistry(dm.to_mol(STEREO_MOL_LIST[0])), output)
+
+
+def test_large_molecule_ring_closures():
+    # A long peptide produces > 99 SAFE fragments, whose attachment bonds need
+    # the %(nnn) extended ring-closure form to be valid SMILES.
+    from rdkit import Chem
+
+    seq = "LVYTDCTESGQNLCLCEGSNVCGQGNKCILGSDGEKNQCVTGEGTPKPQSHNDGDFEEIPEEYLQ"
+    smiles = Chem.MolToSmiles(Chem.MolFromSequence(seq))
+    encoded = safe.encode(smiles, canonical=True)
+    assert "%(" in encoded  # uses extended ring closures
+    assert dm.same_mol(smiles, safe.decode(encoded))
+
+
+def test_extended_ring_closure_decoding():
+    # The decoder must understand RDKit's extended '%(nnn)' ring-closure form,
+    # both when reading branch numbers and when completing unpaired attachment
+    # points.
+    from rdkit import Chem
+
+    conv = safe.SAFEConverter()
+
+    # '%(nnn)' is a single ring-closure label, not three separate digits
+    assert conv._find_branch_number("C%(100)") == [100]
+    assert conv._find_branch_number("c1ccccc1%(123)") == [1, 1, 123]
+    # plain single-digit and two-digit forms keep their existing behaviour
+    assert conv._find_branch_number("C1CC%23C") == [1, 23]
+
+    # an unpaired extended label must be completed into a valid molecule
+    assert dm.to_mol(conv._ensure_valid("C%(100)")) is not None
+
+    # fragment-level decoding of a >99 ring-closure molecule must not silently fail
+    seq = "LVYTDCTESGQNLCLCEGSNVCGQGNKCILGSDGEKNQCVTGEGTPKPQSHNDGDFEEIPEEYLQ"
+    encoded = safe.encode(Chem.MolToSmiles(Chem.MolFromSequence(seq)), canonical=True)
+    decoded_fragments = [safe.decode(fragment, fix=True) for fragment in encoded.split(".")]
+    assert all(x is not None for x in decoded_fragments)
+    assert safe.decode(encoded, as_mol=True) is not None
