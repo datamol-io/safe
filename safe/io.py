@@ -1,14 +1,11 @@
-from typing import Optional, List
-
-import tempfile
-import os
 import contextlib
-import torch
-import wandb
-import fsspec
+import os
+import tempfile
+from typing import List, Optional
 
-from transformers import PreTrainedModel, is_torch_available
-from transformers.processing_utils import PushToHubMixin
+import fsspec
+import wandb
+from transformers import PreTrainedModel
 
 
 def upload_to_wandb(

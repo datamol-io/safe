@@ -1,11 +1,9 @@
 import copy
 import functools
-from collections.abc import Mapping
 from typing import Any, Dict, List, Optional, Union
 
 import torch
 from tokenizers import Tokenizer
-from transformers.data.data_collator import _torch_collate_batch
 
 from safe.tokenizer import SAFETokenizer
 

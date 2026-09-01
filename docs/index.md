@@ -14,7 +14,7 @@
   <a href="https://safe-docs.datamol.io/" target="_blank">
       Docs
   </a> |
-  <a href="https://huggingface.co/datamol-io/safe" target="_blank">
+  <a href="https://huggingface.co/datamol-io/safe-gpt" target="_blank">
     🤗 Model
   </a> |
   <a href="https://huggingface.co/datasets/datamol-io/safe-gpt" target="_blank">
@@ -68,7 +68,7 @@ The construction of a SAFE strings requires defining a molecular fragmentation a
 
 ### Installation
 
-You can install `safe` using pip:
+SAFE 1.0 supports Python 3.11 through 3.14. Install it from PyPI with:
 
 ```bash
 pip install safe-mol
@@ -79,6 +79,8 @@ You can use conda/mamba:
 ```bash
 mamba install -c conda-forge safe-mol
 ```
+
+SAFE currently uses Transformers 4.57.x because Transformers 5 removed the constrained-generation API used by linker generation and scaffold decoration. RDKit 2026.03 is excluded because of an upstream stereochemistry regression; RDKit 2024.09 through 2025.09 are covered by CI. Read [Migrating to SAFE 1.0](migration.md) before upgrading an existing environment.
 
 ### Datasets and Models
 
@@ -116,9 +118,9 @@ ibuprofen = "CC(Cc1ccc(cc1)C(C(=O)O)C)C"
 try:
     ibuprofen_sf = safe.encode(ibuprofen)  # c12ccc3cc1.C3(C)C(=O)O.CC(C)C2
     ibuprofen_smi = safe.decode(ibuprofen_sf, canonical=True)  # CC(C)Cc1ccc(C(C)C(=O)O)cc1
-except safe.EncoderError:
+except safe.SAFEEncodeError:
     pass
-except safe.DecoderError:
+except safe.SAFEDecodeError:
     pass
 
 ibuprofen_tokens = list(safe.split(ibuprofen_sf))
@@ -172,10 +174,8 @@ This code base is licensed under the Apache-2.0 license. See [LICENSE](license.m
 ### Setup dev environment
 
 ```bash
-mamba create -n safe -f env.yml
+micromamba create -f env.yml
 mamba activate safe
-
-pip install --no-deps -e .
 ```
 
 ### Tests
@@ -183,5 +183,7 @@ pip install --no-deps -e .
 You can run tests locally with:
 
 ```bash
-pytest
+pytest -m "not integration and not notebook"
+pytest -m integration
+pytest -m notebook
 ```

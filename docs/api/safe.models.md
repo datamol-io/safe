@@ -27,7 +27,7 @@ The input config file for training a `SAFE` model is very similar to the GPT2 co
   "summary_type": "cls_index",
   "summary_hidden_size": 128,
   "summary_use_proj": true,
-  "transformers_version": "4.31.0",
+  "transformers_version": "4.57.6",
   "use_cache": true,
   "vocab_size": 10000,
   "num_labels": 9
@@ -52,5 +52,4 @@ The input config file for training a `SAFE` model is very similar to the GPT2 co
 
 ## Data Utils
 ::: safe.trainer.data_utils
-
 

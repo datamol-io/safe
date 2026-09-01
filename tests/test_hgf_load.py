@@ -1,6 +1,10 @@
+import pytest
+
 from safe.sample import SAFEDesign
 from safe.tokenizer import SAFETokenizer
 from safe.trainer.model import SAFEDoubleHeadsModel
+
+pytestmark = pytest.mark.integration
 
 
 def test_load_default_safe_model():

@@ -6,8 +6,6 @@ import datamol as dm
 import torch
 import numpy as np
 import safe as sf
-import torch.nn.functional as F
-import transformers
 
 from loguru import logger
 from tqdm.auto import tqdm
@@ -282,14 +280,14 @@ class PatternConstraint:
         with dm.without_rdkit_log():
             try:
                 tk_mol = dm.from_smarts(token)
-            except:
+            except Exception:
                 tk_mol = dm.to_mol(token, sanitize=True)
             # didn't work, try with second strategy
             if tk_mol is None:
                 tk_mol = dm.to_mol(token, sanitize=False)
                 try:
                     tk_mol = dm.from_smarts(dm.smiles_as_smarts(tk_mol))
-                except:
+                except Exception:
                     tk_mol = None
         return tk_mol
 

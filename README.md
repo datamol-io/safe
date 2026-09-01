@@ -67,7 +67,7 @@ The construction of a SAFE strings requires defining a molecular fragmentation a
 
 ### Installation
 
-You can install `safe` using pip:
+SAFE 1.0 supports Python 3.11 through 3.14. Install it from PyPI with:
 
 ```bash
 pip install safe-mol
@@ -79,23 +79,14 @@ You can use conda/mamba:
 mamba install -c conda-forge safe-mol
 ```
 
-#### 2024/11/22
-NOTE: Installation might cause issues like no detection of GPUs (which can be checked by `torch.cuda.is_available()`) and sengmentation error due to mismatch between installed and driver cuda versions. In that case, follow these steps:
+SAFE currently uses Transformers 4.57.x because Transformers 5 removed the constrained-generation API used by linker generation and scaffold decoration. RDKit 2026.03 is also excluded because of an upstream stereochemistry regression; RDKit 2024.09 through 2025.09 are covered by CI. See the [1.0 migration guide](https://safe-docs.datamol.io/migration.html) for details.
 
-Create a new environment using conda:
+For GPU workloads, install the PyTorch build matching your CUDA driver before installing SAFE. You can verify the resulting environment with:
 
-```bash
-conda create -n env_safe python=3.12
-conda activate env_safe
-```
+```python
+import torch
 
-Check nvidia driver version on machine by running `nvcc --version` or `nvidia-smi` commands
-
-Install pytorch with compatible cuda versions (from `https://pytorch.org/get-started/locally/`) and safe-mol:
-
-```bash
-conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
-conda install -c conda-forge safe-mol
+print(torch.cuda.is_available())
 ```
 
 ### Datasets and Models
@@ -133,9 +124,9 @@ ibuprofen = "CC(Cc1ccc(cc1)C(C(=O)O)C)C"
 try:
     ibuprofen_sf = safe.encode(ibuprofen)  # c12ccc3cc1.C3(C)C(=O)O.CC(C)C2
     ibuprofen_smi = safe.decode(ibuprofen_sf, canonical=True)  # CC(C)Cc1ccc(C(C)C(=O)O)cc1
-except safe.EncoderError:
+except safe.SAFEEncodeError:
     pass
-except safe.DecoderError:
+except safe.SAFEDecodeError:
     pass
 
 ibuprofen_tokens = list(safe.split(ibuprofen_sf))
@@ -188,10 +179,8 @@ Note that the model weights of **SAFE-GPT** are exclusively licensed for researc
 ### Setup dev environment
 
 ```bash
-mamba create -n safe -f env.yml
+micromamba create -f env.yml
 mamba activate safe
-
-pip install --no-deps -e .
 ```
 
 ### Tests
@@ -199,5 +188,7 @@ pip install --no-deps -e .
 You can run tests locally with:
 
 ```bash
-pytest
+pytest -m "not integration and not notebook"
+pytest -m integration
+pytest -m notebook
 ```

@@ -36,11 +36,9 @@ class ModelArguments:
         default=None, metadata={"help": "Path to the default config file to use for the safe model"}
     )
 
-    tokenizer: str = (
-        field(
-            default=None,
-            metadata={"help": "Path to the trained tokenizer to use to build a safe model"},
-        ),
+    tokenizer: Optional[str] = field(
+        default=None,
+        metadata={"help": "Path to the trained tokenizer to use to build a safe model"},
     )
     num_labels: Optional[int] = field(
         default=None, metadata={"help": "Optional number of labels for the descriptors"}
@@ -194,12 +192,14 @@ def train(model_args, data_args, training_args):
 
     set_seed(training_args.seed)
     # load the tokenizer
+    if model_args.tokenizer is None:
+        raise ValueError("--tokenizer is required when training a SAFE model")
     if model_args.tokenizer.endswith(".json"):
         tokenizer = SAFETokenizer.load(model_args.tokenizer)
     else:
         try:
             tokenizer = SAFETokenizer.load(model_args.tokenizer)
-        except:
+        except (OSError, ValueError):
             tokenizer = AutoTokenizer.from_pretrained(model_args.tokenizer)
 
     # load dataset
@@ -255,7 +255,7 @@ def train(model_args, data_args, training_args):
         config.bos_token_id = tokenizer.bos_token_id
         config.eos_token_id = tokenizer.eos_token_id
         config.pad_token_id = tokenizer.pad_token_id
-    except:
+    except Exception:
         config.bos_token_id = pretrained_tokenizer.bos_token_id
         config.eos_token_id = pretrained_tokenizer.eos_token_id
         config.pad_token_id = pretrained_tokenizer.pad_token_id
@@ -361,7 +361,7 @@ def train(model_args, data_args, training_args):
         try:
             # we were unable to save the model because of the tokenizer
             trainer.save_model()  # Saves the tokenizer too for easy upload
-        except:
+        except Exception:
             model.save_pretrained(os.path.join(training_args.output_dir, "safe-model"))
 
         if training_args.push_to_hub and model_args.model_hub_name:

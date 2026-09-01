@@ -61,6 +61,7 @@ notebooks/
 
 # MkDocs
 site/
+.cache/
 
 .vscode
 

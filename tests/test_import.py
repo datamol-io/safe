@@ -1,2 +1,4 @@
 def test_import():
-    import safe
+    import importlib
+
+    assert importlib.import_module("safe") is not None

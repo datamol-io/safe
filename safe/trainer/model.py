@@ -5,7 +5,6 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
 from transformers import GPT2DoubleHeadsModel, PretrainedConfig
 from transformers.activations import get_activation
-from transformers.utils import auto_docstring
 from transformers.models.gpt2.modeling_gpt2 import (
     GPT2DoubleHeadsModelOutput,
 )
@@ -77,22 +76,15 @@ class PropertyHead(torch.nn.Module):
         elif self.summary_type == "mean":
             output = hidden_states.mean(dim=1)
         elif self.summary_type == "cls_index":
-            # if cls_index is None:
-            #     cls_index = torch.full_like(
-            #         hidden_states[..., :1, :],
-            #         hidden_states.shape[-2] - 1,
-            #         dtype=torch.long,
-            #     )
-            # else:
-            #     cls_index = cls_index.unsqueeze(-1).unsqueeze(-1)
-            #     cls_index = cls_index.expand(
-            #         (-1,) * (cls_index.dim() - 1) + (hidden_states.size(-1),)
-            #     )
-
-            # shape of cls_index: (bsz, XX, 1, hidden_size) where XX are optional leading dim of hidden_states
-            # output = hidden_states.gather(-2, cls_index).squeeze(-2)  # shape (bsz, XX, hidden_size)
             batch_size = hidden_states.shape[0]
-            output = hidden_states.squeeze()[torch.arange(batch_size), cls_index]
+            if cls_index is None:
+                cls_index = torch.full(
+                    (batch_size,),
+                    hidden_states.shape[1] - 1,
+                    device=hidden_states.device,
+                    dtype=torch.long,
+                )
+            output = hidden_states[torch.arange(batch_size, device=hidden_states.device), cls_index]
         else:
             raise NotImplementedError
 
@@ -111,7 +103,6 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
         del self.multiple_choice_head
         self.multiple_choice_head = PropertyHead(config)
 
-    @auto_docstring()
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,

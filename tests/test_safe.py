@@ -1,3 +1,5 @@
+from collections import Counter
+
 import datamol as dm
 import numpy as np
 import pytest
@@ -174,6 +176,8 @@ def test_extended_ring_closure_decoding():
     assert conv._find_branch_number("c1ccccc1%(123)") == [1, 1, 123]
     # plain single-digit and two-digit forms keep their existing behaviour
     assert conv._find_branch_number("C1CC%23C") == [1, 23]
+    # isotope and atom-map digits inside brackets are not ring closures
+    assert conv._find_branch_number("[13C:2]C12CC%23C%(100)") == [1, 2, 23, 100]
 
     # an unpaired extended label must be completed into a valid molecule
     assert dm.to_mol(conv._ensure_valid("C%(100)")) is not None
@@ -184,3 +188,21 @@ def test_extended_ring_closure_decoding():
     decoded_fragments = [safe.decode(fragment, fix=True) for fragment in encoded.split(".")]
     assert all(x is not None for x in decoded_fragments)
     assert safe.decode(encoded, as_mol=True) is not None
+
+
+def test_extended_ring_closure_tokenization():
+    assert safe.split("C%(100).N%99") == ["C", "%(100)", ".", "N", "%99"]
+
+
+def test_explicit_attachment_points_remain_open():
+    converter = safe.SAFEConverter(slicer=None)
+    for side_chains in ("[1*]CC.[2*]N", "[*]CC.[*]N"):
+        encoded = converter.encoder(
+            side_chains,
+            canonical=False,
+            allow_empty=True,
+        )
+
+        branch_counts = Counter(converter._find_branch_number(encoded))
+        assert len([label for label, count in branch_counts.items() if count % 2]) == 2
+        assert "*" not in encoded

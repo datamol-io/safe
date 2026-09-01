@@ -9,12 +9,11 @@ from typing import List, Optional, Union, Any, Dict
 
 import datamol as dm
 import torch
-import tempfile
 from loguru import logger
 from pathlib import Path
 from tqdm.auto import tqdm
 from transformers import GenerationConfig
-from transformers.generation import DisjunctiveConstraint, PhrasalConstraint
+from transformers.generation import DisjunctiveConstraint
 
 import safe as sf
 from safe.tokenizer import SAFETokenizer
@@ -367,32 +366,58 @@ class SAFEDesign:
                             self.safe_encoder.slicer = old_slicer
 
             fragments = encoded_fragment.split(".")
-            missing_closure = Counter(self.safe_encoder._find_branch_number(encoded_fragment))
-            missing_closure = [f"{str(x)}" for x in missing_closure if missing_closure[x] % 2 == 1]
-
+            branch_positions = self.safe_encoder._find_branch_number_positions(encoded_fragment)
+            branch_counts = Counter(label for label, _ in branch_positions)
+            missing_closure_labels = [
+                label for label, count in branch_counts.items() if count % 2 == 1
+            ]
+            missing_closure = [
+                self.safe_encoder._format_ring_closure(label) for label in missing_closure_labels
+            ]
             closure_pos = [
-                m.start() for x in missing_closure for m in re.finditer(x, encoded_fragment)
+                position for label, position in branch_positions if label in missing_closure_labels
             ]
             fragment_pos = [m.start() for m in re.finditer(r"\.", encoded_fragment)]
+            if not closure_pos or not fragment_pos:
+                raise ValueError(
+                    "Side chains must contain terminal attachment points "
+                    "distributed across at least two fragments"
+                )
             min_pos = 0
-            while fragment_pos[min_pos] < closure_pos[0] and min_pos < len(fragment_pos):
+            while min_pos < len(fragment_pos) and fragment_pos[min_pos] < closure_pos[0]:
                 min_pos += 1
             min_pos += 1
             max_pos = len(fragment_pos)
-            while fragment_pos[max_pos - 1] > closure_pos[-1] and max_pos > 0:
+            while max_pos > 0 and fragment_pos[max_pos - 1] > closure_pos[-1]:
                 max_pos -= 1
+
+            if min_pos > max_pos:
+                raise ValueError(
+                    "Attachment points must be distributed across at least two fragments"
+                )
 
             split_index = rng.randint(min_pos, max_pos)
             prefix, suffixes = ".".join(fragments[:split_index]), ".".join(fragments[split_index:])
 
-            missing_prefix_closure = Counter(self.safe_encoder._find_branch_number(prefix))
-            missing_suffix_closure = Counter(self.safe_encoder._find_branch_number(suffixes))
-
+            prefix_branch_counts = Counter(self.safe_encoder._find_branch_number(prefix))
+            suffix_branch_counts = Counter(self.safe_encoder._find_branch_number(suffixes))
             missing_prefix_closure = (
-                ["."] + [x for x in missing_closure if int(x) not in missing_prefix_closure] + ["."]
+                ["."]
+                + [
+                    token
+                    for label, token in zip(missing_closure_labels, missing_closure)
+                    if label not in prefix_branch_counts
+                ]
+                + ["."]
             )
             missing_suffix_closure = (
-                ["."] + [x for x in missing_closure if int(x) not in missing_suffix_closure] + ["."]
+                ["."]
+                + [
+                    token
+                    for label, token in zip(missing_closure_labels, missing_closure)
+                    if label not in suffix_branch_counts
+                ]
+                + ["."]
             )
 
             constraints_ids = []
@@ -400,12 +425,6 @@ class SAFEDesign:
                 constraints_ids.append(
                     self.tokenizer.encode(list(permutation), add_special_tokens=False)
                 )
-
-            # prefix_constraints_ids = self.tokenizer.encode(missing_prefix_closure, add_special_tokens=False)
-            # suffix_constraints_ids = self.tokenizer.encode(missing_suffix_closure, add_special_tokens=False)
-
-            # suffix_ids = self.tokenizer.encode([suffixes+self.tokenizer.tokenizer.eos_token], add_special_tokens=False)
-            # prefix_ids = self.tokenizer.encode([prefix], add_special_tokens=False)
 
             prefix_kwargs = kwargs.copy()
             suffix_kwargs = prefix_kwargs.copy()

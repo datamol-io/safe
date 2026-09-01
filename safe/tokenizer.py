@@ -8,7 +8,6 @@ from typing import Any, Dict, Iterator, List, Optional, Union
 
 import fsspec
 import numpy as np
-import packaging.version
 import torch
 from loguru import logger
 from tokenizers import Tokenizer, decoders
@@ -17,7 +16,6 @@ from tokenizers.pre_tokenizers import PreTokenizer, Whitespace
 from tokenizers.processors import TemplateProcessing
 from tokenizers.trainers import BpeTrainer, WordLevelTrainer
 from transformers import PreTrainedTokenizerFast
-from transformers import __version__ as transformers_version
 from transformers.utils import (
     PushToHubMixin,
     cached_file,
@@ -47,7 +45,7 @@ TEMPLATE_SPECIAL_TOKENS = [
 class SAFESplitter:
     """Standard Splitter for SAFE string"""
 
-    REGEX_PATTERN = r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%[0-9]{2}|[0-9])"""
+    REGEX_PATTERN = r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%\([0-9]{3,5}\)|\%[0-9]{2}|[0-9])"""
 
     name = "safe"
 
@@ -285,9 +283,13 @@ class SAFETokenizer(PushToHubMixin):
         tk_data["tokenizer_attrs"] = self.tokenizer.__dict__
         return tk_data
 
-    def save_pretrained(self, *args, **kwargs):
-        """Save pretrained tokenizer"""
-        self.tokenizer.save_pretrained(*args, **kwargs)
+    def save_pretrained(self, save_directory, **kwargs):
+        """Save the tokenizer in a Hugging Face-compatible directory."""
+        del kwargs
+        os.makedirs(save_directory, exist_ok=True)
+        tokenizer_path = os.path.join(save_directory, self.vocab_files_names)
+        self.save(tokenizer_path)
+        return (tokenizer_path,)
 
     def save(self, file_name=None):
         r"""
@@ -568,7 +570,7 @@ class SAFETokenizer(PushToHubMixin):
             tokenizer = BertTokenizer.from_pretrained("./test/saved_model/tokenizer.json")
         ```
         """
-        resume_download = kwargs.pop("resume_download", False)
+        kwargs.pop("resume_download", None)
         use_auth_token = kwargs.pop("use_auth_token", None)
         subfolder = kwargs.pop("subfolder", None)
         from_pipeline = kwargs.pop("_from_pipeline", None)
@@ -608,17 +610,12 @@ class SAFETokenizer(PushToHubMixin):
             file_path = download_url(pretrained_model_name_or_path, proxies=proxies)
 
         else:
-            # EN: remove this when transformers package has uniform API
-            cached_file_extra_kwargs = {"use_auth_token": token}
-            if packaging.version.parse(transformers_version) >= packaging.version.parse("5.0"):
-                cached_file_extra_kwargs = {"token": token}
             # Try to get the tokenizer config to see if there are versioned tokenizer files.
             resolved_vocab_files = cached_file(
                 pretrained_model_name_or_path,
                 cls.vocab_files_names,
                 cache_dir=cache_dir,
                 force_download=force_download,
-                resume_download=resume_download,
                 proxies=proxies,
                 local_files_only=local_files_only,
                 subfolder=subfolder,
@@ -626,14 +623,15 @@ class SAFETokenizer(PushToHubMixin):
                 _raise_exceptions_for_missing_entries=False,
                 _raise_exceptions_for_connection_errors=False,
                 _commit_hash=commit_hash,
-                **cached_file_extra_kwargs,
+                token=token,
             )
             commit_hash = extract_commit_hash(resolved_vocab_files, commit_hash)
             file_path = resolved_vocab_files
 
-        if not os.path.isfile(file_path):
-            logger.info(
-                f"Can't load the following file: {file_path} required for loading the tokenizer"
+        if file_path is None or not os.path.isfile(file_path):
+            raise OSError(
+                f"Could not resolve {cls.vocab_files_names!r} from "
+                f"{pretrained_model_name_or_path!r}."
             )
 
         tokenizer = cls.load(file_path)

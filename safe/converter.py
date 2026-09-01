@@ -11,7 +11,6 @@ from rdkit.Chem import BRICS
 from loguru import logger
 
 from ._exception import SAFEDecodeError, SAFEEncodeError, SAFEFragmentationError
-from .utils import standardize_attach
 
 
 class SAFEConverter:
@@ -123,26 +122,30 @@ class SAFEConverter:
         return f"%({num})"
 
     @classmethod
+    def _find_branch_number_positions(cls, inp: str):
+        """Find ring-closure labels and their positions in a SMILES string."""
+        matches = re.finditer(r"\[[^\]]+\]|%\((\d+)\)|%(\d{2})|(\d+)", inp)
+        branch_numbers = []
+        for match in matches:
+            extended, double, singles = match.groups()
+            if extended:
+                branch_numbers.append((int(extended), match.start()))
+            elif double:
+                branch_numbers.append((int(double), match.start()))
+            elif singles:
+                branch_numbers.extend(
+                    (int(digit), match.start(3) + offset) for offset, digit in enumerate(singles)
+                )
+        return branch_numbers
+
+    @classmethod
     def _find_branch_number(cls, inp: str):
-        """Find the branch number and ring closure in the SMILES representation using regexp
+        """Find the branch numbers and ring closures in a SMILES representation.
 
         Args:
             inp: input smiles
         """
-        inp = re.sub(r"\[.*?\]", "", inp)  # noqa
-        matching_groups = re.findall(r"(?<=%)\((\d+)\)|(?<=%)(\d{2})|((?<!%)\d+)(?![^\[]*\])", inp)
-        # first match is the extended '%(nnn)' ring closure (a single label)
-        # second match is for two-digit '%NN' ring closures
-        # third match is for plain digits, each one a single-digit ring closure
-        branch_numbers = []
-        for extended, double, single in matching_groups:
-            if extended:
-                branch_numbers.append(int(extended))
-            elif double:
-                branch_numbers.append(int(double))
-            elif single:
-                branch_numbers.extend(int(d) for d in single)
-        return branch_numbers
+        return [label for label, _ in cls._find_branch_number_positions(inp)]
 
     def _ensure_valid(self, inp: str):
         """Ensure that the input SAFE string is valid by fixing the missing attachment points
@@ -291,8 +294,18 @@ class SAFEConverter:
             mol = dm.remove_stereochemistry(mol)
 
         bond_map_id = 1
+        open_attachment_ids = set()
         for atom in mol.GetAtoms():
             if atom.GetAtomicNum() == 0:
+                # Preserve the distinction between an explicitly labelled
+                # attachment point (for example ``[1*]`` or ``[*:1]``), or a
+                # terminal ``[*]``, and a literal wildcard atom embedded in a
+                # structure (for example ``C1*CCC1``). All are normalised below
+                # so fragment labels remain unique, but only attachment points
+                # must survive as unmatched SAFE ring closures for constrained
+                # generation.
+                if atom.GetIsotope() or atom.GetAtomMapNum() or atom.GetDegree() == 1:
+                    open_attachment_ids.add(bond_map_id)
                 atom.SetAtomMapNum(0)
                 atom.SetIsotope(bond_map_id)
                 bond_map_id += 1
@@ -369,9 +382,14 @@ class SAFEConverter:
             attach_regexp = re.compile(r"(" + re.escape(attach) + r")")
             # check if we have at least 2 matches, if not, we have a dummy
             n_matches = len(attach_regexp.findall(scaffold_str))
+            attachment_match = re.fullmatch(r"\[(\d+)\*\]", attach)
+            is_explicit_attachment = (
+                attachment_match is not None
+                and int(attachment_match.group(1)) in open_attachment_ids
+            )
             scaffold_str = (
                 attach_regexp.sub(val, scaffold_str)
-                if n_matches > 1
+                if n_matches > 1 or is_explicit_attachment
                 else scaffold_str.replace(attach, "*")
             )
             starting_num += 1
