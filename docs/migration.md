@@ -10,12 +10,21 @@ SAFE 1.0 is a maintenance-focused major release. It keeps the established encodi
 - Transformers 4.57 is the supported generation stack. Transformers 5 is intentionally excluded because it removed `PhrasalConstraint` and `DisjunctiveConstraint`, which SAFE uses for constrained linker generation and scaffold decoration. Upgrading prematurely would remove existing behaviour rather than modernize it.
 - Datasets 4+, Accelerate 1.1+, Tokenizers 0.22, and current NumPy and NetworkX releases are supported.
 
+Datasets, Evaluate, Accelerate and universal-pathlib now belong to the `train`
+extra instead of the default installation. Matplotlib and Weights & Biases are
+likewise isolated in `viz` and `wandb` extras. The model-generation stack stays
+in the default installation to preserve `SAFEDesign` and `SAFETokenizer`
+behaviour.
+
 Recreate the environment rather than upgrading it in place:
 
 ```bash
 micromamba create -f env.yml
 micromamba activate safe
 ```
+
+For a pip training environment, install `safe-mol[train]` (and
+`safe-mol[wandb]` only if experiment reporting is required).
 
 For GPU installations, install the PyTorch build appropriate for the CUDA driver before installing SAFE.
 

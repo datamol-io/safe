@@ -2,7 +2,6 @@ import itertools
 from typing import Any, Optional, Tuple, Union
 
 import datamol as dm
-import matplotlib.pyplot as plt
 
 import safe as sf
 
@@ -32,6 +31,13 @@ def to_image(
             https://www.rdkit.org/docs/source/rdkit.Chem.Draw.rdMolDraw2D.html.
 
     """
+
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        raise ImportError(
+            'SAFE visualization requires: python -m pip install "safe-mol[viz]"'
+        ) from None
 
     kwargs["legends"] = legend
     kwargs["mol_size"] = mol_size

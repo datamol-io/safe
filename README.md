@@ -81,6 +81,10 @@ mamba install -c conda-forge safe-mol
 
 SAFE currently uses Transformers 4.57.x because Transformers 5 removed the constrained-generation API used by linker generation and scaffold decoration. RDKit 2026.03 is also excluded because of an upstream stereochemistry regression; RDKit 2024.09 through 2025.09 are covered by CI. See the [1.0 migration guide](https://safe-docs.datamol.io/migration.html) for details.
 
+Training-only packages are no longer installed for encoding and generation.
+Use `pip install "safe-mol[train]"` for `safe-train`, `safe-mol[viz]` for
+visualization, and `safe-mol[wandb]` for Weights & Biases integration.
+
 For GPU workloads, install the PyTorch build matching your CUDA driver before installing SAFE. You can verify the resulting environment with:
 
 ```python

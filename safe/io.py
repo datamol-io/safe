@@ -4,7 +4,6 @@ import tempfile
 from typing import List, Optional
 
 import fsspec
-import wandb
 from transformers import PreTrainedModel
 
 
@@ -31,6 +30,13 @@ def upload_to_wandb(
         aliases (Optional[List[str]]): List of aliases to assign to this artifact version.
         **init_args: Additional arguments to pass into `wandb.init()`.
     """
+
+    try:
+        import wandb
+    except ImportError:
+        raise ImportError(
+            'Weights & Biases support requires: python -m pip install "safe-mol[wandb]"'
+        ) from None
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         # Paths to save model and tokenizer

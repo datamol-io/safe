@@ -32,26 +32,27 @@ classifiers = [
 
 keywords = ["safe", "smiles", "de novo", "design", "molecules"]
 dependencies = [
-    "accelerate>=1.1",
     "datamol>=0.12.5",
-    "datasets>=4",
-    "evaluate>=0.4.3",
     "fsspec>=2023.9.2",
-    "huggingface-hub>=0.34,<1",
     "loguru>=0.7",
     "networkx>=3.2",
     "numpy>=1.26",
-    "packaging>=23.2",
     "rdkit>=2024.9.1,!=2026.3.*",
     "tokenizers>=0.22,<0.23",
     "torch>=2.5",
     "tqdm>=4.66",
     "transformers>=4.57,<5",
-    "universal-pathlib>=0.2",
-    "wandb>=0.18",
 ]
 
 [project.optional-dependencies]
+train = [
+    "accelerate>=1.1",
+    "datasets>=4",
+    "evaluate>=0.4.3",
+    "universal-pathlib>=0.2",
+]
+viz = ["datamol[viz]>=0.12.5", "matplotlib>=3.8"]
+wandb = ["wandb>=0.18"]
 test = [
     "ipykernel>=6.29",
     "ipywidgets>=8.1",

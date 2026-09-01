@@ -31,7 +31,7 @@ jobs:
           cache: pip
 
       - name: Install documentation dependencies
-        run: python -m pip install --upgrade ".[docs]"
+        run: python -m pip install --upgrade ".[docs,train]"
 
       - name: Build documentation
         run: mkdocs build --strict
@@ -56,7 +56,7 @@ jobs:
           cache: pip
 
       - name: Install documentation dependencies
-        run: python -m pip install --upgrade ".[docs]"
+        run: python -m pip install --upgrade ".[docs,train]"
 
       - name: Configure Git
         run: |
