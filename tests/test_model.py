@@ -14,6 +14,8 @@ from safe.trainer.trainer_utils import SAFETrainer
 from safe.sample import SAFEDesign
 from safe._pattern import PatternConstraint, PatternSampler
 
+pytestmark = pytest.mark.integration
+
 
 def tiny_config():
     return GPT2Config(
