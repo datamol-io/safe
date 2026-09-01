@@ -1,5 +1,6 @@
 from collections import Counter
 import os
+import re
 import subprocess
 import sys
 from types import SimpleNamespace
@@ -185,7 +186,7 @@ def test_stereochemistry_issue():
         output_string = converter.encoder(mol, canonical=True, allow_empty=True)
         assert dm.same_mol(mol, output_string)
 
-    # Stereogenic or directional bonds are not cut: SAFE must preserve E/Z.
+    # Stereogenic bonds are not cut: SAFE must preserve E/Z.
     converter = safe.SAFEConverter(slicer="brics", ignore_stereo=False)
     output = converter.encoder(STEREO_MOL_LIST[0], canonical=True, allow_empty=True)
     assert dm.same_mol(STEREO_MOL_LIST[0], safe.decode(output))
@@ -200,6 +201,10 @@ def test_stereochemistry_issue():
     [
         "F/C=C/F",
         "F/C=C\\F",
+        "F/C=C/C=C/F",
+        r"C=C1/C(=C\C=C2/CCC[C@]3(C)[C@@H]([C@H](C)/C=C/[C@@H](O)C4CC4)CC[C@@H]23)C[C@@H](O)C[C@@H]1O",
+        r"CC1=C(/C=C/C(C)=C\C=C\C(C)=C\C(=O)O)C(C)(C)CCC1",
+        r"COc1cc(C)c(/C=C/C(C)=C/C=C/C(C)=C/C(=O)O)c(C)c1C",
         "N[C@@H](C)C(=O)O",
         "C[C@H](O)[C@@H](N)C(=O)O",
         r"C(=C/c1ccccc1)\CCc1ccccc1",
@@ -208,6 +213,72 @@ def test_stereochemistry_issue():
 @pytest.mark.parametrize("slicer", ["brics", "hr", "recap", "mmpa", "rotatable"])
 def test_stereochemistry_round_trip_across_slicers(smiles, slicer):
     converter = safe.SAFEConverter(slicer=slicer, ignore_stereo=False)
+    encoded = converter.encoder(smiles, canonical=True, allow_empty=True)
+
+    assert dm.same_mol(smiles, converter.decoder(encoded))
+
+
+def test_directional_single_bonds_can_be_cut_around_one_stereogenic_double_bond():
+    smiles = "F/C=C/F"
+
+    def directional_single_bonds(mol):
+        return [
+            (bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
+            for bond in mol.GetBonds()
+            if bond.GetBondType() == Chem.BondType.SINGLE and bond.GetBondDir() != Chem.BondDir.NONE
+        ]
+
+    converter = safe.SAFEConverter(slicer=directional_single_bonds, ignore_stereo=False)
+    encoded = converter.encoder(smiles, canonical=True)
+
+    assert encoded.count(".") == 2
+    assert dm.same_mol(smiles, converter.decoder(encoded))
+
+
+def test_single_bond_shared_by_two_stereogenic_double_bonds_is_not_cut():
+    smiles = "F/C=C/C=C/F"
+
+    def shared_single_bond(mol):
+        return [
+            (bond.GetBeginAtomIdx(), bond.GetEndAtomIdx())
+            for bond in mol.GetBonds()
+            if bond.GetBondType() == Chem.BondType.SINGLE
+            and all(
+                any(
+                    adjacent.GetBondType() == Chem.BondType.DOUBLE
+                    and adjacent.GetStereo()
+                    not in (Chem.BondStereo.STEREONONE, Chem.BondStereo.STEREOANY)
+                    for adjacent in atom.GetBonds()
+                )
+                for atom in (bond.GetBeginAtom(), bond.GetEndAtom())
+            )
+        ]
+
+    converter = safe.SAFEConverter(slicer=shared_single_bond, ignore_stereo=False)
+    encoded = converter.encoder(smiles, canonical=True, allow_empty=True)
+
+    assert "." not in encoded
+    assert dm.same_mol(smiles, converter.decoder(encoded))
+
+
+def test_attach_cuts_heavy_references_but_keeps_explicit_stereo_hydrogens():
+    smiles = "F/C=C/F"
+    converter = safe.SAFEConverter(slicer="attach", ignore_stereo=False)
+    encoded = converter.encoder(smiles, canonical=True, allow_empty=True)
+
+    assert encoded.count(".") == 2
+    assert dm.same_mol(smiles, converter.decoder(encoded))
+
+
+@pytest.mark.parametrize(
+    "smiles",
+    [
+        r"C/C=C(/C)C(=O)O[C@H]1C(C)=C[C@]23C(=O)[C@@H](C=C(CO)[C@@H](O)[C@]12O)[C@H]1[C@@H](C[C@H]3C)C1(C)C",
+        r"C1=C/COCc2cc(ccc2OCCN2CCCC2)Nc2nccc(n2)-c2cccc(c2)COC/1.O=C(O)CC(O)(CC(=O)O)C(=O)O",
+    ],
+)
+def test_attach_preserves_ez_with_explicit_hydrogen_fragmentation(smiles):
+    converter = safe.SAFEConverter(slicer="attach", ignore_stereo=False)
     encoded = converter.encoder(smiles, canonical=True, allow_empty=True)
 
     assert dm.same_mol(smiles, converter.decoder(encoded))
@@ -294,6 +365,18 @@ def test_extended_ring_closure_decoding():
     decoded_fragments = [safe.decode(fragment, fix=True) for fragment in encoded.split(".")]
     assert all(x is not None for x in decoded_fragments)
     assert safe.decode(encoded, as_mol=True) is not None
+
+
+def test_directional_extended_ring_closures_are_standardized():
+    component = r"CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC(=O)O"
+    smiles = ".".join([component] * 7)
+
+    converter = safe.SAFEConverter("hr", ignore_stereo=False)
+    encoded = converter.encoder(smiles, canonical=True, allow_empty=True)
+
+    assert re.search(r"[/\\]%\(\d+\)", encoded)
+    assert not re.search(r"\([/\\]%\(\d+\)\)", encoded)
+    assert dm.same_mol(smiles, converter.decoder(encoded))
 
 
 def test_extended_ring_closure_tokenization():

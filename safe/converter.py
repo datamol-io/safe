@@ -244,17 +244,44 @@ class SAFEConverter:
             )
 
         if not self.ignore_stereo:
-            # RDKit cannot retain E/Z direction when the stereogenic double
-            # bond, or one of the directional single bonds that defines it, is
-            # replaced by dummy atoms and later serialized as a SAFE closure.
+            specified_double_bonds = {
+                bond.GetIdx()
+                for bond in mol.GetBonds()
+                if bond.GetBondType() == Chem.BondType.DOUBLE
+                and bond.GetStereo() not in (Chem.BondStereo.STEREONONE, Chem.BondStereo.STEREOANY)
+            }
+
+            # Cutting a specified double bond loses its E/Z metadata. A single
+            # bond shared by two specified double bonds is unsafe for a subtler
+            # reason: its SMILES direction participates in both local stereo
+            # definitions, but the fragments are serialized independently
+            # before their dummy atoms become one SAFE ring closure. Directional
+            # single bonds belonging to only one double bond round-trip safely,
+            # except for newly explicit hydrogen bonds: unlike the directional
+            # heavy-atom reference, they carry no slash direction of their own.
             stereo_safe_bonds = []
             for atom_pair in matching_bonds:
                 bond = mol.GetBondBetweenAtoms(*atom_pair)
-                if (
-                    bond.GetStereo() == Chem.BondStereo.STEREONONE
-                    and bond.GetBondDir() == Chem.BondDir.NONE
+                if bond.GetStereo() != Chem.BondStereo.STEREONONE:
+                    continue
+                adjacent_stereo_bonds = {
+                    adjacent_bond.GetIdx()
+                    for atom_idx in atom_pair
+                    for adjacent_bond in mol.GetAtomWithIdx(atom_idx).GetBonds()
+                    if adjacent_bond.GetIdx() in specified_double_bonds
+                }
+                cuts_explicit_stereo_hydrogen = (
+                    self.require_hs
+                    and bool(adjacent_stereo_bonds)
+                    and any(
+                        mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 1 for atom_idx in atom_pair
+                    )
+                )
+                if bond.GetBondType() == Chem.BondType.SINGLE and (
+                    len(adjacent_stereo_bonds) > 1 or cuts_explicit_stereo_hydrogen
                 ):
-                    stereo_safe_bonds.append(atom_pair)
+                    continue
+                stereo_safe_bonds.append(atom_pair)
             matching_bonds = stereo_safe_bonds
 
         if not matching_bonds and not allow_empty:
@@ -432,7 +459,7 @@ class SAFEConverter:
         scaffold_str = wrong_attach.sub(r"\g<1>", scaffold_str)
         # furthermore, we autoapply rdkit-compatible digit standardization.
         if rdkit_safe:
-            pattern = r"\(([=-@#\/\\]{0,2})(%?\d{1,2})\)"
+            pattern = r"\(([=-@#\/\\]{0,2})(%\(\d+\)|%?\d{1,2})\)"
             replacement = r"\g<1>\g<2>"
             scaffold_str = re.sub(pattern, replacement, scaffold_str)
         if not self.ignore_stereo and has_specified_stereo and not dm.same_mol(scaffold_str, inp):
