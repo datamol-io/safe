@@ -93,7 +93,7 @@ class SAFEDesign:
         model.eval()
         self.model = model
         self.tokenizer = tokenizer
-        if isinstance(generation_config, os.PathLike):
+        if isinstance(generation_config, (str, os.PathLike)):
             generation_config = GenerationConfig.from_pretrained(generation_config)
         if generation_config is None:
             generation_config = GenerationConfig.from_model_config(model.config)

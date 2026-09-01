@@ -8,7 +8,7 @@ from loguru import logger
 class SAFESplitter:
     """Split a SAFE string into notation tokens."""
 
-    REGEX_PATTERN = r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%\([0-9]{3,5}\)|\%[0-9]{2}|[0-9])"""
+    REGEX_PATTERN = r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%\([0-9]{1,5}\)|\%[0-9]{2}|[0-9])"""
 
     name = "safe"
 

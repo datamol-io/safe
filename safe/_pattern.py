@@ -112,6 +112,8 @@ class PatternConstraint:
         # Normalize probs so that the sum of non-masked probabilities is 1
         probs = probs * mask  # Zero out masked elements
         probs_sum = probs.sum(dim=-1, keepdim=True)  # Sum only the non-masked elements
+        if torch.any(probs_sum == 0):
+            raise ValueError("Pattern constraint masks every token in the vocabulary")
         return probs / probs_sum  # Normalize
 
     @classmethod

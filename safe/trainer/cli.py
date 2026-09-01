@@ -56,7 +56,7 @@ class ModelArguments:
     )
 
     wandb_project: Optional[str] = field(
-        default="safe-gpt2",
+        default=None,
         metadata={"help": "Name of the wandb project to use to log the SAFE model parameter"},
     )
     wandb_watch: Optional[Literal["gradients", "all"]] = field(

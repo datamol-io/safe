@@ -293,6 +293,49 @@ def test_noncarbon_stereocenter_bonds_are_not_cut():
     assert dm.same_mol(smiles, converter.decoder(encoded))
 
 
+@pytest.mark.parametrize(
+    "smiles",
+    [
+        "C[S@+](CC)[O-]",
+        "CO[P@@]1OCC2CCC[C@@H]2O1",
+    ],
+)
+def test_public_encode_falls_back_when_every_cut_is_stereo_unsafe(smiles):
+    encoded = safe.encode(smiles, slicer="rotatable")
+
+    assert "." not in encoded
+    assert dm.same_mol(smiles, safe.decode(encoded))
+
+
+@pytest.mark.parametrize(
+    "smiles",
+    [
+        "S[As@TB1](F)(Cl)(Br)N",
+        "O=[Co@OH1](Cl)(F)(I)(Br)S",
+        "Cl[Pt@SP1](Cl)(N)N",
+    ],
+)
+def test_non_tetrahedral_stereo_is_not_fragmented_or_changed(smiles):
+    converter = safe.SAFEConverter("hr", ignore_stereo=False)
+    encoded = converter.encoder(smiles, canonical=True)
+    decoded = converter.decoder(encoded, canonical=True)
+    expected = Chem.MolToSmiles(Chem.MolFromSmiles(smiles), canonical=True, isomericSmiles=True)
+
+    assert "." not in encoded
+    assert decoded == expected
+
+
+@pytest.mark.parametrize("group", ["&1", "o1", "a"])
+def test_enhanced_stereo_groups_are_rejected_instead_of_silently_lost(group):
+    smiles = f"C[C@H](O)[C@H](F)Cl |{group}:1,3|"
+
+    with pytest.raises(safe.SAFEEncodeError, match="Enhanced CXSMILES stereo groups"):
+        safe.encode(smiles)
+
+    converter = safe.SAFEConverter(slicer=None, ignore_stereo=True)
+    assert converter.encoder(smiles, allow_empty=True)
+
+
 def test_attach_keeps_hydrogen_cuts_away_from_stereocenters():
     smiles = (
         "CC(=O)O[C@@H]1C[C@@H]2C[C@]3(CC[C@]2(C)[C@H]2CC[C@]4(C)"
@@ -303,6 +346,26 @@ def test_attach_keeps_hydrogen_cuts_away_from_stereocenters():
 
     assert "." in encoded
     assert dm.same_mol(smiles, converter.decoder(encoded))
+
+
+@pytest.mark.parametrize("canonical", [True, False])
+def test_attach_falls_back_before_changing_constrained_peroxide_stereo(canonical):
+    smiles = (
+        "CC[C@H]1CCC2(CC1)OO[C@]1(CC[C@@]3(C)[C@H](C[C@@H](OC(C)=O)"
+        "[C@@H]4[C@@H]3CC[C@]3(C)[C@@H]([C@H](C)CCC(=O)OC)CC[C@@H]43)C1)OO2"
+    )
+    converter = safe.SAFEConverter(slicer="attach", ignore_stereo=False)
+    encoded = converter.encoder(
+        smiles,
+        canonical=canonical,
+        randomize=not canonical,
+        seed=0,
+        allow_empty=True,
+    )
+
+    assert converter._canonical_isomeric_graph(
+        converter.decoder(encoded)
+    ) == converter._canonical_isomeric_graph(smiles)
 
 
 def test_attach_preserves_ez_while_cutting_remote_bonds():
@@ -410,7 +473,19 @@ def test_directional_extended_ring_closures_are_standardized():
 
 
 def test_extended_ring_closure_tokenization():
-    assert safe.split("C%(100).N%99") == ["C", "%(100)", ".", "N", "%99"]
+    assert safe.split("C%(1).N%(12).O%(100).S%99") == [
+        "C",
+        "%(1)",
+        ".",
+        "N",
+        "%(12)",
+        ".",
+        "O",
+        "%(100)",
+        ".",
+        "S",
+        "%99",
+    ]
 
 
 def test_explicit_attachment_points_remain_open():
@@ -427,6 +502,34 @@ def test_explicit_attachment_points_remain_open():
         assert "*" not in encoded
         decoded = converter.decoder(encoded, remove_dummies=False, canonical=True)
         assert decoded.count("*") == 2
+
+
+@pytest.mark.parametrize("wildcard", ["C[*:1]C", "C[1*]C"])
+def test_internal_wildcards_keep_their_topology(wildcard):
+    converter = safe.SAFEConverter(slicer=None)
+    encoded = converter.encoder(wildcard, canonical=True, allow_empty=True)
+    decoded = converter.decoder(encoded, remove_dummies=False, canonical=True)
+
+    assert "*" in encoded
+    assert decoded == "C*C"
+
+
+@pytest.mark.parametrize("wildcard", ["[*:1]", "[1*]"])
+def test_lone_wildcards_do_not_crash_encoding(wildcard):
+    converter = safe.SAFEConverter(slicer=None)
+    encoded = converter.encoder(wildcard, canonical=True, allow_empty=True)
+
+    assert encoded == "*"
+    assert converter.decoder(encoded, remove_dummies=False, canonical=True) == "*"
+
+
+def test_legacy_fragment_override_keeps_working():
+    class LegacyConverter(safe.SAFEConverter):
+        def _fragment(self, mol, allow_empty=False):
+            del mol, allow_empty
+            return []
+
+    assert LegacyConverter().encoder("CC", allow_empty=True) == "CC"
 
 
 @pytest.mark.parametrize(

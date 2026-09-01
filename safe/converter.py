@@ -198,31 +198,57 @@ class SAFEConverter:
             raise ValueError("SAFE string could not be parsed into a molecule")
         if remove_dummies:
             dummy_query = dm.from_smarts("[$([#0]!-!:*);$([#0;D1])]")
-            replacements = Chem.ReplaceSubstructs(mol, dummy_query, dm.to_mol("C"), True)
-            if replacements:
+            if any(atom.GetAtomicNum() == 0 for atom in mol.GetAtoms()):
+                replacements = Chem.ReplaceSubstructs(
+                    mol,
+                    dummy_query,
+                    dm.to_mol("C"),
+                    True,
+                )
                 mol = dm.remove_dummies(replacements[0])
         if as_mol:
             if remove_added_hs:
                 mol = dm.remove_hs(mol, update_explicit_count=True)
             return mol
         out = dm.to_smiles(mol, canonical=canonical, explicit_hs=(not remove_added_hs))
+        has_stereo = any(
+            atom.GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED for atom in mol.GetAtoms()
+        ) or any(bond.GetStereo() != Chem.BondStereo.STEREONONE for bond in mol.GetBonds())
+        mol_graph = self._canonical_isomeric_graph(mol)
+        if has_stereo and self._canonical_isomeric_graph(out) != mol_graph:
+            # RDKit's non-canonical writer can choose an inconsistent parity
+            # for rare symmetry-dependent stereocentres. Canonical writing is
+            # deterministic and preserves the graph in those cases.
+            canonical_out = dm.to_smiles(
+                mol,
+                canonical=True,
+                explicit_hs=(not remove_added_hs),
+            )
+            out = (
+                canonical_out if self._canonical_isomeric_graph(canonical_out) == mol_graph else inp
+            )
         return out
 
-    def _fragment(
-        self,
-        mol: dm.Mol,
-        allow_empty: bool = False,
-        potential_stereos=None,
-    ):
+    @staticmethod
+    def _canonical_isomeric_graph(inp: Union[str, dm.Mol]):
+        """Return a map-independent, dummy-aware isomeric graph identity."""
+        mol = dm.to_mol(inp, remove_hs=False)
+        if mol is None:
+            return None
+        mol = dm.remove_hs(mol, update_explicit_count=True)
+        for atom in mol.GetAtoms():
+            atom.SetAtomMapNum(0)
+            if atom.GetAtomicNum() == 0:
+                atom.SetIsotope(0)
+        return Chem.MolToSmiles(mol, canonical=True, isomericSmiles=True)
+
+    def _fragment(self, mol: dm.Mol, allow_empty: bool = False):
         """
         Perform bond cutting in place for the input molecule, given the slicing algorithm
 
         Args:
             mol: input molecule to split
             allow_empty: whether to allow the slicing algorithm to return empty bonds
-            potential_stereos: optional stereo information computed before explicit
-                hydrogens were added. Atom and bond indices remain stable when RDKit
-                appends those hydrogens.
         Raises:
             SAFEFragmentationError: if the slicing algorithm return empty bonds
         """
@@ -252,11 +278,9 @@ class SAFEConverter:
             )
 
         if not self.ignore_stereo:
-            if potential_stereos is None:
-                potential_stereos = Chem.FindPotentialStereo(mol)
             specified_stereos = [
                 stereo
-                for stereo in potential_stereos
+                for stereo in Chem.FindPotentialStereo(mol)
                 if stereo.specified == Chem.StereoSpecified.Specified
             ]
             specified_double_bonds = {
@@ -267,7 +291,13 @@ class SAFEConverter:
             specified_atom_centers = {
                 stereo.centeredOn
                 for stereo in specified_stereos
-                if stereo.type == Chem.StereoType.Atom_Tetrahedral
+                if stereo.type
+                in {
+                    Chem.StereoType.Atom_Tetrahedral,
+                    Chem.StereoType.Atom_SquarePlanar,
+                    Chem.StereoType.Atom_TrigonalBipyramidal,
+                    Chem.StereoType.Atom_Octahedral,
+                }
             }
 
             # Explicit H cuts can alter rooted-fragment parity near an atom
@@ -340,10 +370,9 @@ class SAFEConverter:
                 stereo_safe_bonds.append(atom_pair)
             matching_bonds = stereo_safe_bonds
 
-        if not matching_bonds and not allow_empty:
-            raise SAFEFragmentationError(
-                "All candidate cuts would alter specified double-bond stereochemistry"
-            )
+        # A slicer did find bonds, but every cut was unsafe for the specified
+        # stereochemistry. Returning the molecule unfragmented is exact and is
+        # preferable to rejecting an otherwise valid public ``safe.encode`` call.
         return matching_bonds or []
 
     def encoder(
@@ -371,12 +400,21 @@ class SAFEConverter:
             allow_empty: whether to allow the slicing algorithm to return empty bonds
             rdkit_safe: whether to apply rdkit-safe digit standardization to the output SAFE string.
         """
+        source_text = inp if isinstance(inp, str) else None
+        source_mol = dm.to_mol(inp, remove_hs=False)
+        if source_mol is None:
+            raise ValueError("Input could not be parsed into a molecule")
+        if not self.ignore_stereo and source_mol.GetStereoGroups():
+            raise SAFEEncodeError(
+                "Enhanced CXSMILES stereo groups are not representable in SAFE 1.0; "
+                "resolve them to a single stereoisomer or set ignore_stereo=True explicitly"
+            )
+
         rng = None
         should_randomize = bool(randomize and not canonical)
         if should_randomize:
             rng = np.random.default_rng(seed)
-            inp = dm.to_mol(inp, remove_hs=False)
-            inp = self.randomize(inp, rng)
+            inp = self.randomize(source_mol, rng)
 
         if isinstance(inp, dm.Mol):
             inp = dm.to_smiles(inp, canonical=canonical, randomize=False, ordered=False)
@@ -384,10 +422,7 @@ class SAFEConverter:
             # Canonical SAFE must not depend on which equivalent SMILES spelling
             # the caller supplied. Molecule inputs already followed this path;
             # normalize string inputs before choosing rooted fragment atoms.
-            canonical_mol = dm.to_mol(inp, remove_hs=False)
-            if canonical_mol is None:
-                raise ValueError("Input could not be parsed into a molecule")
-            inp = dm.to_smiles(canonical_mol, canonical=True, randomize=False, ordered=False)
+            inp = dm.to_smiles(source_mol, canonical=True, randomize=False, ordered=False)
 
         # EN: we first normalize the attachment if the molecule is a query:
         # inp = dm.reactions.convert_attach_to_isotope(inp, as_smiles=True)
@@ -400,10 +435,12 @@ class SAFEConverter:
         mol = dm.to_mol(inp, remove_hs=False)
         if mol is None:
             raise ValueError("Input could not be parsed into a molecule")
-        potential_stereos = Chem.FindPotentialStereo(mol)
+        # Inspect explicit tags on the original graph. FindPotentialStereo can
+        # omit symmetry-dependent tags in constrained peroxide systems, and
+        # atom renumbering must never disable the final identity guard.
         has_specified_stereo = any(
-            stereo.specified == Chem.StereoSpecified.Specified for stereo in potential_stereos
-        )
+            atom.GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED for atom in source_mol.GetAtoms()
+        ) or any(bond.GetStereo() != Chem.BondStereo.STEREONONE for bond in source_mol.GetBonds())
         if self.ignore_stereo:
             mol = dm.remove_stereochemistry(mol)
 
@@ -418,7 +455,7 @@ class SAFEConverter:
                 # so fragment labels remain unique, but only attachment points
                 # must survive as unmatched SAFE ring closures for constrained
                 # generation.
-                if atom.GetIsotope() or atom.GetAtomMapNum() or atom.GetDegree() == 1:
+                if atom.GetDegree() == 1:
                     open_attachment_ids.add(bond_map_id)
                 atom.SetAtomMapNum(0)
                 atom.SetIsotope(bond_map_id)
@@ -426,11 +463,7 @@ class SAFEConverter:
 
         if self.require_hs:
             mol = dm.add_hs(mol)
-        matching_bonds = self._fragment(
-            mol,
-            allow_empty=allow_empty,
-            potential_stereos=potential_stereos,
-        )
+        matching_bonds = self._fragment(mol, allow_empty=allow_empty)
         substructed_ignored = []
         if constraints is not None:
             substructed_ignored = list(
@@ -479,7 +512,7 @@ class SAFEConverter:
                     frag,
                     isomericSmiles=True,
                     canonical=True,  # needs to always be true
-                    rootedAtAtom=non_map_atom_idxs[0],
+                    rootedAtAtom=non_map_atom_idxs[0] if non_map_atom_idxs else -1,
                 )
             )
 
@@ -522,11 +555,26 @@ class SAFEConverter:
             pattern = r"\(([=-@#\/\\]{0,2})(%\(\d+\)|%?\d{1,2})\)"
             replacement = r"\g<1>\g<2>"
             scaffold_str = re.sub(pattern, replacement, scaffold_str)
-        if not self.ignore_stereo and has_specified_stereo and not dm.same_mol(scaffold_str, inp):
-            raise SAFEEncodeError(
-                "SAFE encoding would alter specified stereochemistry; choose a slicer that does "
-                "not cut the stereogenic bond or set ignore_stereo=True explicitly"
+        if not self.ignore_stereo and has_specified_stereo:
+            source_graph = self._canonical_isomeric_graph(source_mol)
+            encoded_graph = self._canonical_isomeric_graph(
+                self.decoder(
+                    scaffold_str,
+                    canonical=True,
+                    remove_dummies=False,
+                )
             )
+            if source_graph is None or source_graph != encoded_graph:
+                # Some constrained stereochemical systems can change their
+                # RDKit assignment after fragmentation even when no directly
+                # stereogenic bond was cut. Preserve the valid input intact.
+                if source_text is not None:
+                    return source_text
+                return Chem.MolToSmiles(
+                    source_mol,
+                    canonical=True,
+                    isomericSmiles=True,
+                )
         return scaffold_str
 
 

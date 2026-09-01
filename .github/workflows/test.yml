@@ -17,6 +17,29 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  minimal-install:
+    name: Minimal core dependency boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.8"
+          python-version: "3.13"
+          activate-environment: true
+          enable-cache: true
+
+      - name: Install core package only
+        run: uv pip install --editable .
+
+      - name: Verify core imports and conversion
+        run: |
+          python -c "from safe import *; import sys; assert 'torch' not in sys.modules; assert decode(encode('CCOC(=O)N'), canonical=True) == 'CCOC(N)=O'"
+
   core:
     name: ${{ matrix.os }} / Python ${{ matrix.python-version }} / RDKit ${{ matrix.rdkit-version }}
     runs-on: ${{ matrix.os }}

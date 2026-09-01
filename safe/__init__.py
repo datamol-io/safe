@@ -52,18 +52,14 @@ def __dir__():
 
 
 __all__ = [
+    "__version__",
     "SAFEConverter",
     "SAFEDecodeError",
-    "SAFEDesign",
     "SAFEEncodeError",
     "SAFEFragmentationError",
     "SAFESplitter",
-    "SAFETokenizer",
     "decode",
     "encode",
     "split",
-    "to_image",
-    "trainer",
-    "upload_to_wandb",
     "utils",
 ]

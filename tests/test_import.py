@@ -19,3 +19,17 @@ def test_import():
         text=True,
     )
     assert result.stdout.strip()
+
+    star_import = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from safe import *; import sys; "
+            "assert 'torch' not in sys.modules; "
+            "assert callable(encode) and split('C.C') == ['C', '.', 'C']",
+        ],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert star_import.stderr == ""

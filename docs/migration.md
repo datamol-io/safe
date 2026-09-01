@@ -44,16 +44,19 @@ For GPU installations, install the PyTorch build appropriate for the CUDA driver
 - Canonical SAFE encoding is now invariant to equivalent input SMILES spellings.
   Passing `randomize=True` with `canonical=True` is explicitly a no-op, as the
   public API has always documented.
-- Encoding with `ignore_stereo=False` no longer cuts stereogenic double bonds or
-  the directional single bonds that define E/Z geometry. It also protects cuts
-  incident to specified non-carbon atom stereocentres, explicit hydrogen cuts
-  within two bonds of an atom stereocentre, and non-single cuts in molecules
-  with specified bond stereo. These local rules avoid RDKit parity changes while
-  retaining the other available fragmentations. SAFE still verifies the complete
-  isomeric graph before returning an encoding. If a custom slicer changes
-  specified stereochemistry, encoding raises `SAFEEncodeError` instead of
-  returning a silently different stereoisomer. Set `ignore_stereo=True` only when
-  dropping stereochemistry is intentional.
+- Encoding with `ignore_stereo=False` no longer cuts stereogenic double bonds,
+  directional single bonds shared by multiple E/Z definitions, or bonds incident
+  to specified non-tetrahedral atom stereocentres. It also protects unsafe
+  explicit-hydrogen cuts near atom stereocentres. Directional single bonds local
+  to one double bond remain cuttable when the exact isomeric graph round-trips.
+  When every candidate cut is unsafe, or the final fragmented graph changes the
+  stereo assignment, SAFE returns the exact molecule unfragmented rather than
+  rejecting a valid `safe.encode()` call. A final dummy-aware isomeric graph
+  comparison catches changes that standard InChI identity can miss. Enhanced
+  CXSMILES stereo groups are rejected explicitly in
+  SAFE 1.0 because plain SAFE/SMILES cannot retain their AND, OR or absolute-group
+  semantics; resolve the group to one stereoisomer, or set `ignore_stereo=True`
+  only when dropping that information is intentional.
 - `decode(..., canonical=True)` now means canonical SMILES serialization only.
   It no longer standardizes charges or selects a canonical tautomer, operations
   which could change the molecular graph represented by an otherwise valid SAFE
@@ -61,8 +64,8 @@ For GPU installations, install the PyTorch build appropriate for the CUDA driver
 - Decode failures now follow the documented contract: strict decoding raises
   `SAFEDecodeError`, while `ignore_errors=True` remains the permissive batch path
   and returns `None` for an invalid item.
-- Wildcard-containing molecules no longer turn a structural wildcard into an invalid ring closure. Explicitly labelled and terminal wildcard attachment points remain open for linker generation and scaffold morphing. Their SAFE form is an unmatched ring-closure token rather than a literal `*`; decode with `remove_dummies=False` when the attachment points must be visible again as wildcard atoms.
-- Molecules with 100 or more attachment bonds use RDKit's extended `%(nnn)` ring-closure notation. The SAFE tokenizer now treats that notation as one token.
+- Wildcard-containing molecules no longer turn a structural wildcard into an invalid ring closure. Terminal wildcard attachment points remain open for linker generation and scaffold morphing, while degree-two and lone wildcards keep their original topology. An open attachment's SAFE form is an unmatched ring-closure token rather than a literal `*`; decode with `remove_dummies=False` when attachment points must be visible again as wildcard atoms.
+- Molecules with 100 or more attachment bonds use RDKit's extended `%(nnn)` ring-closure notation. The SAFE tokenizer accepts every RDKit extended form from `%(1)` through five digits as one token.
 - A one-item batch keeps its batch dimension in the property head.
 - `SAFETrainer.compute_loss` accepts the current Transformers trainer call signature.
 - `SAFETokenizer.save_pretrained()` now writes a loadable `tokenizer.json` instead of calling a method that does not exist on the underlying Rust tokenizer.

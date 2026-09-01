@@ -84,6 +84,12 @@ def test_tokenizer_decodes_empty_input():
     assert tokenizer.decode([]) == ""
 
 
+def test_tokenizer_decodes_sequences_containing_only_stop_tokens():
+    tokenizer = SAFETokenizer(tokenizer_type="wordlevel")
+
+    assert tokenizer.decode([tokenizer.eos_token_id] * 3) == ""
+
+
 def test_pattern_randomization_is_local_and_reproducible():
     first = PatternConstraint.randomize("c1cc([*])ccc1[*]", n=5, seed=7)
     second = PatternConstraint.randomize("c1cc([*])ccc1[*]", n=5, seed=7)
@@ -102,8 +108,36 @@ def test_pattern_loss_uses_input_device_and_dtype():
     assert torch.equal(loss, torch.tensor([0.1, 0.4], dtype=torch.float64))
 
 
+def test_pattern_constraint_rejects_an_empty_vocabulary_mask():
+    constraint = PatternConstraint.__new__(PatternConstraint)
+    constraint.temperature = 1.0
+    constraint.force_constraint_sample = True
+
+    with pytest.raises(ValueError, match="masks every token"):
+        constraint._logprobs_to_probs(
+            torch.tensor([0.1, 0.2]),
+            mask=torch.tensor([False, False]),
+        )
+
+
 def test_cli_tokenizer_default_is_not_a_tuple():
     assert ModelArguments().tokenizer is None
+    assert ModelArguments().wandb_project is None
+
+
+def test_design_loads_string_generation_config(monkeypatch):
+    model = MagicMock(spec=SAFEDoubleHeadsModel)
+    tokenizer = MagicMock(spec=SAFETokenizer)
+    tokenizer.bos_token_id = 1
+    tokenizer.eos_token_id = 2
+    tokenizer.pad_token_id = 0
+    generation_config = SimpleNamespace(bos_token_id=1, eos_token_id=2, pad_token_id=0)
+    loader = MagicMock(return_value=generation_config)
+    monkeypatch.setattr(GenerationConfig, "from_pretrained", loader)
+
+    SAFEDesign(model, tokenizer, generation_config="local-generation-config")
+
+    loader.assert_called_once_with("local-generation-config")
 
 
 def test_random_generation_does_not_set_beam_only_early_stopping():

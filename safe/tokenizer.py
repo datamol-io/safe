@@ -322,7 +322,7 @@ class SAFETokenizer(PushToHubMixin):
                 # this is because of bart essentially
                 pos = 0
                 if len(ids) > 1:
-                    while ids[pos] in stop_token_ids:
+                    while pos < len(ids) and ids[pos] in stop_token_ids:
                         pos += 1
                 # we only ignore when there is a list of tokens
                 ids = ids[pos:]
