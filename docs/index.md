@@ -87,9 +87,9 @@ Use `safe-mol[model]` for `SAFETokenizer` and `SAFEDesign`,
 `safe-mol[all]` for every maintained feature. Model APIs remain available from
 the top-level module and load their dependencies only when used.
 
-The optional model stack currently uses Transformers 4.57.x because
-Transformers 5 removed the constrained-generation API used by linker generation
-and scaffold decoration. RDKit 2026.03 is excluded because of an upstream
+The optional model stack uses Transformers 5. Contrastive, constrained and diverse beam
+search are loaded lazily from reviewed, commit-pinned Hugging Face generation
+backends because those algorithms moved out of the main package. RDKit 2026.03 is excluded because of an upstream
 stereochemistry regression; RDKit 2024.09 through 2025.09 are covered by CI.
 Read [Migrating to SAFE 1.0](migration.md) before upgrading an existing
 environment. Visualization and Weights & Biases remain independently available

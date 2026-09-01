@@ -92,9 +92,10 @@ uv add "safe-mol[model]"
 ```
 
 Visualization and Weights & Biases remain independently available through
-`safe-mol[viz]` and `safe-mol[wandb]`. SAFE's optional model stack currently
-uses Transformers 4.57.x because Transformers 5 removed the constrained-generation
-API used by linker generation and scaffold decoration. RDKit 2026.03 is also
+`safe-mol[viz]` and `safe-mol[wandb]`. SAFE's optional model stack uses
+Transformers 5. Contrastive, constrained and diverse beam search are loaded lazily from
+reviewed, commit-pinned Hugging Face generation backends because those
+algorithms moved out of the Transformers package. RDKit 2026.03 is
 excluded because of an upstream stereochemistry regression; RDKit 2024.09
 through 2025.09 are covered by CI. See the
 [1.0 migration guide](https://safe-docs.datamol.io/migration.html) for details.

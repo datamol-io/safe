@@ -1,6 +1,6 @@
 # Model-training CLI
 
-`safe-train` trains or fine-tunes a SAFE generative model using the supported Transformers 4.57 stack.
+`safe-train` trains or fine-tunes a SAFE generative model using the supported Transformers 5 stack.
 
 The tokenizer and dataset are required for training. The output directory is managed by the Transformers trainer:
 
@@ -37,4 +37,4 @@ All standard `transformers.TrainingArguments` are also available. Run the instal
 safe-train --help
 ```
 
-Transformers 5 is not supported because it removed the constrained-generation API used elsewhere in SAFE. See [Migrating to SAFE 1.0](migration.md) for the compatibility rationale.
+Contrastive, constrained and diverse beam search use reviewed, commit-pinned custom generation backends because those algorithms moved out of the main Transformers package. See [Migrating to SAFE 1.0](migration.md) for details and offline configuration.

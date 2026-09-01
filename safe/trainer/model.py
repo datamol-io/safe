@@ -106,7 +106,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
-        past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+        past_key_values: Optional[Any] = None,
         attention_mask: Optional[torch.FloatTensor] = None,
         token_type_ids: Optional[torch.LongTensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
@@ -121,6 +121,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
         return_dict: Optional[bool] = None,
         inputs: Optional[Any] = None,  # do not remove because of trainer
         encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_attention_mask: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> Union[Tuple, GPT2DoubleHeadsModelOutput]:
         r"""
@@ -137,7 +138,8 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
                 Labels for computing the supervized loss for regularization.
             inputs: List of inputs, put here because the trainer removes information not in signature
         """
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        del inputs
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
         transformer_outputs = self.transformer(
             input_ids,
             past_key_values=past_key_values,
@@ -151,6 +153,8 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             encoder_hidden_states=encoder_hidden_states,
+            encoder_attention_mask=encoder_attention_mask,
+            **kwargs,
         )
 
         hidden_states = transformer_outputs[0]
@@ -162,7 +166,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
             )
 
         # Set device for model parallelism
-        if self.model_parallel:
+        if getattr(self, "model_parallel", False):
             torch.cuda.set_device(self.transformer.first_device)
             hidden_states = hidden_states.to(self.lm_head.weight.device)
 

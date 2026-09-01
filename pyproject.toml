@@ -45,20 +45,22 @@ dependencies = [
 [project.optional-dependencies]
 model = [
     "fsspec>=2023.9.2",
-    "tokenizers>=0.22,<0.23",
+    "huggingface-hub>=1.5,<2",
+    "tokenizers>=0.23.1,<0.24",
     "torch>=2.5",
     "tqdm>=4.66",
-    "transformers>=4.57,<5",
+    "transformers>=5,<6",
 ]
 train = [
     "accelerate>=1.1",
     "datasets>=4",
     "evaluate>=0.4.3",
     "fsspec>=2023.9.2",
-    "tokenizers>=0.22,<0.23",
+    "huggingface-hub>=1.5,<2",
+    "tokenizers>=0.23.1,<0.24",
     "torch>=2.5",
     "tqdm>=4.66",
-    "transformers>=4.57,<5",
+    "transformers>=5,<6",
     "universal-pathlib>=0.2",
 ]
 viz = ["matplotlib>=3.8", "pillow>=10"]
@@ -68,12 +70,13 @@ all = [
     "datasets>=4",
     "evaluate>=0.4.3",
     "fsspec>=2023.9.2",
+    "huggingface-hub>=1.5,<2",
     "matplotlib>=3.8",
     "pillow>=10",
-    "tokenizers>=0.22,<0.23",
+    "tokenizers>=0.23.1,<0.24",
     "torch>=2.5",
     "tqdm>=4.66",
-    "transformers>=4.57,<5",
+    "transformers>=5,<6",
     "universal-pathlib>=0.2",
     "wandb>=0.18",
 ]

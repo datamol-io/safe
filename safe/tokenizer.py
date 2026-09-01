@@ -1,29 +1,24 @@
-import contextlib
 import copy
 import json
 import os
+import tempfile
 import warnings
+from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Union
+from urllib.parse import urlparse
+from urllib.request import urlopen
 
 import fsspec
 import numpy as np
 import torch
-from loguru import logger
+from huggingface_hub import HfApi, hf_hub_download
 from tokenizers import Tokenizer, decoders
 from tokenizers.models import BPE, WordLevel
 from tokenizers.pre_tokenizers import PreTokenizer, Whitespace
 from tokenizers.processors import TemplateProcessing
 from tokenizers.trainers import BpeTrainer, WordLevelTrainer
 from transformers import PreTrainedTokenizerFast
-from transformers.utils import (
-    PushToHubMixin,
-    cached_file,
-    download_url,
-    extract_commit_hash,
-    is_offline_mode,
-    is_remote_url,
-    working_or_temp_dir,
-)
+from transformers.utils import PushToHubMixin
 
 from ._tokenizer_utils import SAFESplitter, split as _split
 from .utils import attr_as
@@ -421,55 +416,36 @@ class SAFETokenizer(PushToHubMixin):
 
         repo_path_or_name = deprecated_kwargs.pop("repo_path_or_name", None)
         if repo_path_or_name is not None:
-            # Should use `repo_id` instead of `repo_path_or_name`. When using `repo_path_or_name`, we try to infer
-            # repo_id from the folder path, if it exists.
             warnings.warn(
-                "The `repo_path_or_name` argument is deprecated and will be removed in v5 of Transformers. Use "
-                "`repo_id` instead.",
+                "`repo_path_or_name` is no longer supported; pass `repo_id` instead.",
                 FutureWarning,
+                stacklevel=2,
             )
-            if repo_id is not None:
-                raise ValueError(
-                    "`repo_id` and `repo_path_or_name` are both specified. Please set only the argument `repo_id`."
+            raise ValueError("Pass `repo_id` directly.")
+
+        for removed_name in ("repo_url", "organization"):
+            if deprecated_kwargs.pop(removed_name, None) is not None:
+                warnings.warn(
+                    f"`{removed_name}` is no longer supported; include the namespace in `repo_id`.",
+                    FutureWarning,
+                    stacklevel=2,
                 )
-            if os.path.isdir(repo_path_or_name):
-                # repo_path: infer repo_id from the path
-                repo_id = repo_id.split(os.path.sep)[-1]
-                working_dir = repo_id
-            else:
-                # repo_name: use it as repo_id
-                repo_id = repo_path_or_name
-                working_dir = repo_id.split("/")[-1]
-        else:
-            # Repo_id is passed correctly: infer working_dir from it
-            working_dir = repo_id.split("/")[-1]
+        if deprecated_kwargs:
+            unknown = ", ".join(sorted(deprecated_kwargs))
+            raise TypeError(f"Unexpected keyword argument(s): {unknown}")
 
-        # Deprecation warning will be sent after for repo_url and organization
-        repo_url = deprecated_kwargs.pop("repo_url", None)
-        organization = deprecated_kwargs.pop("organization", None)
-
-        repo_id = self._create_repo(
-            repo_id, private, token, repo_url=repo_url, organization=organization
-        )
-
-        if use_temp_dir is None:
-            use_temp_dir = not os.path.isdir(working_dir)
-
-        with working_or_temp_dir(working_dir=working_dir, use_temp_dir=use_temp_dir) as work_dir:
-            files_timestamps = self._get_files_timestamps(work_dir)
-
-            # Save all files.
-            with contextlib.suppress(Exception):
-                self.save_pretrained(
-                    work_dir, max_shard_size=max_shard_size, safe_serialization=safe_serialization
-                )
-
-            self.save(os.path.join(work_dir, self.vocab_files_names))
-
-            return self._upload_modified_files(
-                work_dir,
-                repo_id,
-                files_timestamps,
+        # Transformers 5 removed the temporary-directory upload helpers that
+        # this class historically called. The public Hub API is stable and
+        # avoids coupling SAFE to those private Transformers internals.
+        del use_temp_dir, max_shard_size, safe_serialization
+        api = HfApi(token=token)
+        api.create_repo(repo_id=repo_id, private=private, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="safe-tokenizer-") as work_dir:
+            tokenizer_path = self.save_pretrained(work_dir)[0]
+            return api.upload_file(
+                path_or_fileobj=tokenizer_path,
+                path_in_repo=self.vocab_files_names,
+                repo_id=repo_id,
                 commit_message=commit_message,
                 token=token,
                 create_pr=create_pr,
@@ -532,7 +508,8 @@ class SAFETokenizer(PushToHubMixin):
         subfolder = kwargs.pop("subfolder", None)
         from_pipeline = kwargs.pop("_from_pipeline", None)
         from_auto_class = kwargs.pop("_from_auto", False)
-        commit_hash = kwargs.pop("_commit_hash", None)
+        kwargs.pop("_commit_hash", None)
+        revision = kwargs.pop("revision", None)
 
         if use_auth_token is not None:
             warnings.warn(
@@ -553,37 +530,48 @@ class SAFETokenizer(PushToHubMixin):
         if from_pipeline is not None:
             user_agent["using_pipeline"] = from_pipeline
 
-        if is_offline_mode() and not local_files_only:
-            logger.info("Offline mode: forcing local_files_only=True")
-            local_files_only = True
-
         pretrained_model_name_or_path = str(pretrained_model_name_or_path)
 
-        os.path.isdir(pretrained_model_name_or_path)
-        file_path = None
+        file_path: Optional[Union[str, os.PathLike]] = None
         if os.path.isfile(pretrained_model_name_or_path):
             file_path = pretrained_model_name_or_path
-        elif is_remote_url(pretrained_model_name_or_path):
-            file_path = download_url(pretrained_model_name_or_path, proxies=proxies)
-
+        elif os.path.isdir(pretrained_model_name_or_path):
+            file_path = Path(pretrained_model_name_or_path)
+            if subfolder:
+                file_path /= subfolder
+            file_path /= cls.vocab_files_names
+        elif urlparse(pretrained_model_name_or_path).scheme in {"http", "https"}:
+            if proxies:
+                warnings.warn(
+                    "Per-call proxies are not supported by Hugging Face Hub 1.x; "
+                    "set HTTP_PROXY or HTTPS_PROXY instead.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            with urlopen(pretrained_model_name_or_path) as response:
+                tokenizer = cls.from_dict(json.loads(response.read().decode("utf-8")))
+            return tokenizer.get_pretrained() if return_fast_tokenizer else tokenizer
         else:
-            # Try to get the tokenizer config to see if there are versioned tokenizer files.
-            resolved_vocab_files = cached_file(
-                pretrained_model_name_or_path,
-                cls.vocab_files_names,
+            if proxies:
+                warnings.warn(
+                    "Per-call proxies are not supported by Hugging Face Hub 1.x; "
+                    "set HTTP_PROXY or HTTPS_PROXY instead.",
+                    UserWarning,
+                    stacklevel=2,
+                )
+            filename = cls.vocab_files_names
+            if subfolder:
+                filename = f"{subfolder.strip('/')}/{filename}"
+            file_path = hf_hub_download(
+                repo_id=pretrained_model_name_or_path,
+                filename=filename,
                 cache_dir=cache_dir,
                 force_download=force_download,
-                proxies=proxies,
                 local_files_only=local_files_only,
-                subfolder=subfolder,
                 user_agent=user_agent,
-                _raise_exceptions_for_missing_entries=False,
-                _raise_exceptions_for_connection_errors=False,
-                _commit_hash=commit_hash,
+                revision=revision,
                 token=token,
             )
-            commit_hash = extract_commit_hash(resolved_vocab_files, commit_hash)
-            file_path = resolved_vocab_files
 
         if file_path is None or not os.path.isfile(file_path):
             raise OSError(

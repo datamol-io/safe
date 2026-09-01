@@ -1,3 +1,4 @@
+import copy
 import itertools
 import os
 import random
@@ -13,7 +14,6 @@ from loguru import logger
 from pathlib import Path
 from tqdm.auto import tqdm
 from transformers import GenerationConfig
-from transformers.generation import DisjunctiveConstraint
 
 import safe as sf
 from safe.tokenizer import SAFETokenizer
@@ -28,6 +28,23 @@ class SAFEDesign:
 
     _DEFAULT_MAX_LENGTH = 1024  # default max length used during training
     _DEFAULT_MODEL_PATH = "datamol-io/safe-gpt"
+    _GENERATION_BACKENDS = {
+        "contrastive": (
+            "transformers-community/contrastive-search",
+            "89ece6d21c47e6187e86d45d98fd495feadb33cb",
+            "SAFE_CONTRASTIVE_GENERATION_BACKEND",
+        ),
+        "constrained": (
+            "transformers-community/constrained-beam-search",
+            "07b2f120b7db38f1d7bac617ad65ea130508f297",
+            "SAFE_CONSTRAINED_GENERATION_BACKEND",
+        ),
+        "group_beam": (
+            "transformers-community/group-beam-search",
+            "56d0e48dadff53cb8b8653981b10534c50707fb1",
+            "SAFE_GROUP_BEAM_GENERATION_BACKEND",
+        ),
+    }
 
     def __init__(
         self,
@@ -86,6 +103,29 @@ class SAFEDesign:
 
         self.verbose = verbose
         self.safe_encoder = safe_encoder or sf.SAFEConverter()
+        self._custom_generators = {}
+
+    def _load_generation_backend(self, name: str):
+        """Load a reviewed Transformers custom-generation backend.
+
+        The current Transformers stack moved contrastive, constrained and group
+        beam search out of the library. SAFE pins the reviewed upstream revisions so these sampling
+        modes do not silently change when the remote repository advances. An
+        environment variable can point to a local checkout for offline use.
+        """
+        if not hasattr(self, "_custom_generators"):
+            self._custom_generators = {}
+        if name in self._custom_generators:
+            return self._custom_generators[name]
+
+        repo_id, revision, env_name = self._GENERATION_BACKENDS[name]
+        backend = os.getenv(env_name, repo_id)
+        load_kwargs = {"trust_remote_code": True}
+        if not os.path.isdir(backend):
+            load_kwargs["revision"] = revision
+        generator = self.model.load_custom_generate(backend, **load_kwargs)
+        self._custom_generators[name] = generator
+        return generator
 
     @classmethod
     def load_from_wandb(
@@ -420,11 +460,14 @@ class SAFEDesign:
                 + ["."]
             )
 
-            constraints_ids = []
-            for permutation in itertools.permutations(missing_closure + ["."]):
-                constraints_ids.append(
-                    self.tokenizer.encode(list(permutation), add_special_tokens=False)
-                )
+            # Each permutation is one complete alternative phrase. The old
+            # batch encoding produced a list of one-token alternatives and
+            # made a dot sufficient to satisfy the constraint, so the required
+            # ring closure could silently be absent.
+            constraint_alternatives = [
+                self.tokenizer.encode("".join(permutation), add_special_tokens=False)
+                for permutation in sorted(set(itertools.permutations(missing_closure + ["."])))
+            ]
 
             prefix_kwargs = kwargs.copy()
             suffix_kwargs = prefix_kwargs.copy()
@@ -435,19 +478,13 @@ class SAFEDesign:
                     _kwargs.setdefault("num_beams", n_samples_per_trial)
                     _kwargs.setdefault("do_sample", False)
 
-                prefix_kwargs["constraints"] = []
-                suffix_kwargs["constraints"] = []
-                # prefix_kwargs["constraints"] = [PhrasalConstraint(tkl) for tkl in suffix_constraints_ids]
-                # suffix_kwargs["constraints"] = [PhrasalConstraint(tkl) for tkl in prefix_constraints_ids]
-
-                # we first generate a part of the fragment with for unique constraint that it should contain
-                # the closure required to join something to the suffix.
-                prefix_kwargs["constraints"] += [
-                    DisjunctiveConstraint(tkl) for tkl in constraints_ids
-                ]
-                suffix_kwargs["constraints"] += [
-                    DisjunctiveConstraint(tkl) for tkl in constraints_ids
-                ]
+                # We first generate a fragment that contains one complete
+                # closure phrase. ``force_words_ids`` is the stable serialized
+                # representation understood by the pinned constrained-beam
+                # backend; it also avoids importing constraint classes removed
+                # from Transformers 5.
+                prefix_kwargs["force_words_ids"] = [constraint_alternatives]
+                suffix_kwargs["force_words_ids"] = [constraint_alternatives]
 
                 prefix_sequences = self._generate(
                     n_samples=n_samples_per_trial, safe_prefix=prefix, **prefix_kwargs
@@ -467,7 +504,10 @@ class SAFEDesign:
 
                 linkers = [x for x in set(prefix_sequences + suffix_sequences) if x]
                 sequences = [f"{prefix}.{linker}.{suffixes}" for linker in linkers]
-                sequences += self._decode_safe(sequences, canonical=True, remove_invalid=sanitize)
+                # Public design methods return decoded SMILES. The previous
+                # ``+=`` leaked the intermediate SAFE strings alongside their
+                # decoded molecules and doubled the apparent sample count.
+                sequences = self._decode_safe(sequences, canonical=True, remove_invalid=sanitize)
 
             else:
                 mol_linker_slicer = sf.utils.MolSlicer(
@@ -1071,15 +1111,32 @@ class SAFEDesign:
         # we remove the token_type_ids to support more model type than just GPT2
         input_ids.pop("token_type_ids", None)
 
+        custom_generator = None
+        if kwargs.get("constraints") is not None or kwargs.get("force_words_ids") is not None:
+            custom_generator = self._load_generation_backend("constrained")
+        elif num_beam_groups is not None and num_beam_groups > 1:
+            custom_generator = self._load_generation_backend("group_beam")
+        elif kwargs.get("penalty_alpha", 0) > 0 and kwargs.get("top_k", 0) > 1:
+            custom_generator = self._load_generation_backend("contrastive")
+
+        def generate(**generation_kwargs):
+            active_generation_config = self.generation_config
+            if active_generation_config is not None:
+                active_generation_config = copy.deepcopy(active_generation_config)
+                generation_kwargs = active_generation_config.update(**generation_kwargs)
+                generation_kwargs["generation_config"] = active_generation_config
+            if custom_generator is None:
+                return self.model.generate(**generation_kwargs)
+            return custom_generator(model=self.model, **generation_kwargs)
+
         if is_greedy:
             kwargs["num_return_sequences"] = 1
             if num_beams is not None and num_beams > 1:
                 raise ValueError("Cannot set num_beams|num_beam_groups > 1 for greedy")
             # under greedy decoding there can only be a single solution
             # we just duplicate the solution several time for efficiency
-            outputs = self.model.generate(
+            outputs = generate(
                 **input_ids,
-                generation_config=self.generation_config,
                 **kwargs,
             )
             sequences = [
@@ -1087,9 +1144,8 @@ class SAFEDesign:
             ] * n_samples
 
         else:
-            outputs = self.model.generate(
+            outputs = generate(
                 **input_ids,
-                generation_config=self.generation_config,
                 **kwargs,
             )
             sequences = pretrained_tk.batch_decode(outputs.sequences, skip_special_tokens=True)

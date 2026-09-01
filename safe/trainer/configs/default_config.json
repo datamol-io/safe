@@ -22,7 +22,7 @@
   "summary_hidden_size": 64,
   "summary_type": "cls_index",
   "summary_use_proj": true,
-  "transformers_version": "4.57.6",
+  "transformers_version": "5.16.1",
   "use_cache": true,
   "vocab_size": 10000,
   "num_labels": 18

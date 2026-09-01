@@ -7,8 +7,17 @@ SAFE 1.0 is a maintenance-focused major release. It keeps the established encodi
 - Python 3.11 through 3.14 is supported. Python 3.9 and 3.10 are no longer tested.
 - The minimum RDKit release is 2024.09. RDKit 2026.03 is deliberately excluded because that series changes double-bond direction handling during fragmentation and can silently lose stereochemistry in an otherwise valid SAFE round trip. The compatibility matrix uses RDKit 2024.09, 2025.03, and 2025.09.
 - PyTorch 2.5 or newer is supported.
-- Transformers 4.57 is the supported generation stack. Transformers 5 is intentionally excluded because it removed `PhrasalConstraint` and `DisjunctiveConstraint`, which SAFE uses for constrained linker generation and scaffold decoration. Upgrading prematurely would remove existing behaviour rather than modernize it.
-- Datasets 4+, Accelerate 1.1+, Tokenizers 0.22, and current NumPy and NetworkX releases are supported.
+- Transformers 5 is the supported generation stack. Regression oracles cover greedy, multinomial, beam, beam-sampling, diverse-beam, constrained-beam, contrastive and prompt-lookup-assisted decoding. SAFE-GPT keeps identical logits and seeded outputs for the six established decoding paths compared with Transformers 4.57.6; contrastive search is restored through its pinned backend and matches that backend under both releases.
+- Datasets 4+, Accelerate 1.1+, Tokenizers 0.23, and current NumPy and NetworkX releases are supported.
+
+The current Transformers generation stack moved contrastive, constrained and
+diverse beam search into custom generation
+repositories. SAFE loads those algorithms only when requested, pins the exact
+reviewed upstream commits, and allows offline mirrors through
+`SAFE_CONTRASTIVE_GENERATION_BACKEND`,
+`SAFE_CONSTRAINED_GENERATION_BACKEND` and
+`SAFE_GROUP_BEAM_GENERATION_BACKEND`. Standard sampling does not download or
+execute any of these backends.
 
 The default installation is now the molecular notation core: encoding,
 decoding and `safe.split`. PyTorch, Transformers, Tokenizers, tqdm and fsspec
@@ -37,6 +46,7 @@ For GPU installations, install the PyTorch build appropriate for the CUDA driver
 - A one-item batch keeps its batch dimension in the property head.
 - `SAFETrainer.compute_loss` accepts the current Transformers trainer call signature.
 - `SAFETokenizer.save_pretrained()` now writes a loadable `tokenizer.json` instead of calling a method that does not exist on the underlying Rust tokenizer.
+- Model-only linker constraints now encode each ring-closure permutation as a complete phrase. Previously, a dot token alone could satisfy the disjunctive constraint, and intermediate SAFE strings leaked into the returned SMILES list.
 - The training CLI now reports a clear error when `--tokenizer` is missing.
 
 ## CI and releases
