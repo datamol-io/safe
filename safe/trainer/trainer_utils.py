@@ -22,8 +22,7 @@ class SAFETrainer(Trainer):
             inputs.pop("labels") if self.label_smoother is not None and "labels" in inputs else None
         )
         outputs = model(**inputs)
-        # Save past state if it exists
-        # TODO: this needs to be fixed and made cleaner later.
+        # Preserve the past state when the Trainer is configured to retain it.
         past_index = getattr(self.args, "past_index", -1)
         if past_index >= 0:
             self._past = outputs[past_index]

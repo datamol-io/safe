@@ -292,7 +292,7 @@ def train(model_args, data_args, training_args):
             # Depending on the model and config, logits may contain extra tensors,
             # like past_key_values, but logits always come first
             if len(logits) > 1:
-                # we could have the loss twice
+                # Some model outputs include a scalar loss before the token logits.
                 base_ind = 0
                 if logits[base_ind].ndim < 2:
                     base_ind = 1
@@ -339,7 +339,8 @@ def train(model_args, data_args, training_args):
 
     trainer = SAFETrainer(
         model=model,
-        tokenizer=None,  # we don't deal with the tokenizer at all, https://github.com/huggingface/tokenizers/issues/581 -_-
+        # SAFE serializes its custom tokenizer explicitly after training.
+        tokenizer=None,
         train_dataset=train_dataset.shuffle(seed=(training_args.seed or 42)),
         eval_dataset=dataset.get(eval_dataset_key_name, None),
         args=training_args,
@@ -359,9 +360,9 @@ def train(model_args, data_args, training_args):
             checkpoint = last_checkpoint
         train_result = trainer.train(resume_from_checkpoint=checkpoint)
         try:
-            # we were unable to save the model because of the tokenizer
             trainer.save_model()  # Saves the tokenizer too for easy upload
         except Exception:
+            # Preserve the trained weights if Trainer-level serialization fails.
             model.save_pretrained(os.path.join(training_args.output_dir, "safe-model"))
 
         if training_args.push_to_hub and model_args.model_hub_name:
@@ -373,8 +374,7 @@ def train(model_args, data_args, training_args):
         trainer.save_metrics("train", metrics)
         trainer.save_state()
 
-        # For convenience, we also re-save the tokenizer to the same directory,
-        # so that you can share your model easily on huggingface.co/models =)
+        # Save the tokenizer alongside the model for a self-contained artifact.
         if trainer.is_world_process_zero():
             tokenizer.save(os.path.join(training_args.output_dir, "tokenizer.json"))
 

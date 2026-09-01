@@ -21,11 +21,9 @@ from safe.tokenizer import SAFETokenizer
 from safe.trainer.model import SAFEDoubleHeadsModel
 from safe._pattern import PatternConstraint, PatternSampler
 
-# modify this code to allow loading the model from wandb
-
 
 class SAFEDesign:
-    """Molecular generation using SAFE pretrained model"""
+    """Design molecules with a pretrained SAFE language model."""
 
     _DEFAULT_MAX_LENGTH = 1024  # default max length used during training
     _DEFAULT_MODEL_PATH = "datamol-io/safe-gpt"
@@ -127,8 +125,10 @@ class SAFEDesign:
     def load_from_wandb(
         cls, artifact_path: str, device: Optional[str] = None, verbose: bool = True, **kwargs: Any
     ) -> "SAFEDesign":
-        """
-        Load SAFE model and tokenizer from a Weights and Biases (wandb) artifact. By default, the model will be downloaded into SAFE_MODEL_ROOT.
+        """Load a SAFE model and tokenizer from a Weights & Biases artifact.
+
+        When ``SAFE_MODEL_ROOT`` is set, the artifact is downloaded into that
+        directory.
 
         Args:
             artifact_path: The path to the wandb artifact in the format `entity/project/artifact:version`.
@@ -138,7 +138,6 @@ class SAFEDesign:
         Returns:
             SAFEDesign: An instance of SAFEDesign class with the model, tokenizer, and generation config loaded from wandb.
         """
-        # EN: potentially remove wandb scheme
         import wandb
 
         artifact_path = artifact_path.replace("wandb://", "")
@@ -851,7 +850,6 @@ class SAFEDesign:
             try_hard: oversample, validate and deduplicate candidates before returning.
             kwargs: any argument to provide to the underlying generation function
         """
-        # EN: lazy programming much ?
         kwargs.setdefault("how", "random")
         if kwargs["how"] != "random" and not kwargs.get("do_sample"):
             logger.warning(
@@ -1110,7 +1108,6 @@ class SAFEDesign:
 
         input_ids = safe_prefix
         if isinstance(safe_prefix, str):
-            # EN: should we address the special token issues
             input_ids = pretrained_tk(
                 safe_prefix,
                 return_tensors="pt",
@@ -1163,8 +1160,7 @@ class SAFEDesign:
         if not isinstance(input_ids, Mapping):
             input_ids = {"inputs": None}
         else:
-            # EN: we remove the EOS token added before running the prediction
-            # because the model output nonsense when we keep it.
+            # Drop the tokenizer-appended EOS so generation continues from the prefix.
             for k in input_ids:
                 input_ids[k] = input_ids[k][:, :-1]
 
@@ -1172,7 +1168,7 @@ class SAFEDesign:
             if torch.is_tensor(v):
                 input_ids[k] = v.to(self.model.device)
 
-        # we remove the token_type_ids to support more model type than just GPT2
+        # Remove token type IDs to support model families beyond GPT-2.
         input_ids.pop("token_type_ids", None)
 
         custom_generator = None
@@ -1193,8 +1189,7 @@ class SAFEDesign:
             kwargs["num_return_sequences"] = 1
             if num_beams is not None and num_beams > 1:
                 raise ValueError("Cannot set num_beams > 1 for greedy")
-            # under greedy decoding there can only be a single solution
-            # we just duplicate the solution several time for efficiency
+            # Greedy decoding has one solution; duplicate it instead of recomputing it.
             outputs = generate(
                 **input_ids,
                 **kwargs,
