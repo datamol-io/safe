@@ -45,11 +45,15 @@ For GPU installations, install the PyTorch build appropriate for the CUDA driver
   Passing `randomize=True` with `canonical=True` is explicitly a no-op, as the
   public API has always documented.
 - Encoding with `ignore_stereo=False` no longer cuts stereogenic double bonds or
-  the directional single bonds that define E/Z geometry. SAFE now verifies the
-  complete isomeric graph before returning an encoding. If a custom slicer still
-  changes specified stereochemistry, encoding raises `SAFEEncodeError` instead
-  of returning a silently different stereoisomer. Set `ignore_stereo=True` only
-  when dropping stereochemistry is intentional.
+  the directional single bonds that define E/Z geometry. It also protects cuts
+  incident to specified non-carbon atom stereocentres, explicit hydrogen cuts
+  within two bonds of an atom stereocentre, and non-single cuts in molecules
+  with specified bond stereo. These local rules avoid RDKit parity changes while
+  retaining the other available fragmentations. SAFE still verifies the complete
+  isomeric graph before returning an encoding. If a custom slicer changes
+  specified stereochemistry, encoding raises `SAFEEncodeError` instead of
+  returning a silently different stereoisomer. Set `ignore_stereo=True` only when
+  dropping stereochemistry is intentional.
 - `decode(..., canonical=True)` now means canonical SMILES serialization only.
   It no longer standardizes charges or selects a canonical tautomer, operations
   which could change the molecular graph represented by an otherwise valid SAFE

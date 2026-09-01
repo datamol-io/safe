@@ -284,6 +284,36 @@ def test_attach_preserves_ez_with_explicit_hydrogen_fragmentation(smiles):
     assert dm.same_mol(smiles, converter.decoder(encoded))
 
 
+def test_noncarbon_stereocenter_bonds_are_not_cut():
+    smiles = "C[S@+](CC)[O-]"
+    converter = safe.SAFEConverter(slicer="rotatable", ignore_stereo=False)
+    encoded = converter.encoder(smiles, canonical=True, allow_empty=True)
+
+    assert "." not in encoded
+    assert dm.same_mol(smiles, converter.decoder(encoded))
+
+
+def test_attach_keeps_hydrogen_cuts_away_from_stereocenters():
+    smiles = (
+        "CC(=O)O[C@@H]1C[C@@H]2C[C@]3(CC[C@]2(C)[C@H]2CC[C@]4(C)"
+        "[C@@H]([C@H](C)CCC(=O)O)CC[C@H]4[C@H]12)OOC1(CC[C@@H](C)CC1)OO3"
+    )
+    converter = safe.SAFEConverter(slicer="attach", ignore_stereo=False)
+    encoded = converter.encoder(smiles, canonical=True, allow_empty=True)
+
+    assert "." in encoded
+    assert dm.same_mol(smiles, converter.decoder(encoded))
+
+
+def test_attach_preserves_ez_while_cutting_remote_bonds():
+    smiles = r"Cn1c2c(c(=O)n(C)c1=O)/N=N\c1c(c(=O)n(C)c(=O)n1C)/N=N\2"
+    converter = safe.SAFEConverter(slicer="attach", ignore_stereo=False)
+    encoded = converter.encoder(smiles, canonical=True, allow_empty=True)
+
+    assert "." in encoded
+    assert dm.same_mol(smiles, converter.decoder(encoded))
+
+
 def test_canonical_decode_does_not_standardize_charge_or_tautomer():
     smiles = "CCOC(=O)[N-]c1c[n+](N2CCOCC2)no1"
     encoded = safe.SAFEConverter("brics").encoder(smiles, canonical=True, allow_empty=True)

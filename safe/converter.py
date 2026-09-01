@@ -208,13 +208,21 @@ class SAFEConverter:
         out = dm.to_smiles(mol, canonical=canonical, explicit_hs=(not remove_added_hs))
         return out
 
-    def _fragment(self, mol: dm.Mol, allow_empty: bool = False):
+    def _fragment(
+        self,
+        mol: dm.Mol,
+        allow_empty: bool = False,
+        potential_stereos=None,
+    ):
         """
         Perform bond cutting in place for the input molecule, given the slicing algorithm
 
         Args:
             mol: input molecule to split
             allow_empty: whether to allow the slicing algorithm to return empty bonds
+            potential_stereos: optional stereo information computed before explicit
+                hydrogens were added. Atom and bond indices remain stable when RDKit
+                appends those hydrogens.
         Raises:
             SAFEFragmentationError: if the slicing algorithm return empty bonds
         """
@@ -244,12 +252,40 @@ class SAFEConverter:
             )
 
         if not self.ignore_stereo:
+            if potential_stereos is None:
+                potential_stereos = Chem.FindPotentialStereo(mol)
+            specified_stereos = [
+                stereo
+                for stereo in potential_stereos
+                if stereo.specified == Chem.StereoSpecified.Specified
+            ]
             specified_double_bonds = {
-                bond.GetIdx()
-                for bond in mol.GetBonds()
-                if bond.GetBondType() == Chem.BondType.DOUBLE
-                and bond.GetStereo() not in (Chem.BondStereo.STEREONONE, Chem.BondStereo.STEREOANY)
+                stereo.centeredOn
+                for stereo in specified_stereos
+                if stereo.type == Chem.StereoType.Bond_Double
             }
+            specified_atom_centers = {
+                stereo.centeredOn
+                for stereo in specified_stereos
+                if stereo.type == Chem.StereoType.Atom_Tetrahedral
+            }
+
+            # Explicit H cuts can alter rooted-fragment parity near an atom
+            # stereocentre even when the cut atom itself is not stereogenic.
+            # Build the protected two-hop neighbourhood once rather than doing
+            # a shortest-path query for every candidate bond.
+            atoms_near_stereocenters = set(specified_atom_centers)
+            frontier = set(specified_atom_centers)
+            if self.require_hs:
+                for _ in range(2):
+                    frontier = {
+                        neighbor.GetIdx()
+                        for atom_idx in frontier
+                        for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors()
+                        if neighbor.GetAtomicNum() != 1
+                        and neighbor.GetIdx() not in atoms_near_stereocenters
+                    }
+                    atoms_near_stereocenters.update(frontier)
 
             # Cutting a specified double bond loses its E/Z metadata. A single
             # bond shared by two specified double bonds is unsafe for a subtler
@@ -264,6 +300,7 @@ class SAFEConverter:
                 bond = mol.GetBondBetweenAtoms(*atom_pair)
                 if bond.GetStereo() != Chem.BondStereo.STEREONONE:
                     continue
+                atoms = [mol.GetAtomWithIdx(atom_idx) for atom_idx in atom_pair]
                 adjacent_stereo_bonds = {
                     adjacent_bond.GetIdx()
                     for atom_idx in atom_pair
@@ -273,12 +310,31 @@ class SAFEConverter:
                 cuts_explicit_stereo_hydrogen = (
                     self.require_hs
                     and bool(adjacent_stereo_bonds)
+                    and any(atom.GetAtomicNum() == 1 for atom in atoms)
+                )
+                cuts_noncarbon_stereocenter = any(
+                    atom_idx in specified_atom_centers and atom.GetAtomicNum() != 6
+                    for atom_idx, atom in zip(atom_pair, atoms)
+                )
+                cuts_hydrogen_near_stereocenter = self.require_hs and any(
+                    atom.GetAtomicNum() == 1
                     and any(
-                        mol.GetAtomWithIdx(atom_idx).GetAtomicNum() == 1 for atom_idx in atom_pair
+                        neighbor.GetIdx() in atoms_near_stereocenters
+                        for neighbor in atom.GetNeighbors()
                     )
+                    for atom in atoms
+                )
+                cuts_multiple_bond_with_ez = (
+                    bool(specified_double_bonds) and bond.GetBondType() != Chem.BondType.SINGLE
                 )
                 if bond.GetBondType() == Chem.BondType.SINGLE and (
                     len(adjacent_stereo_bonds) > 1 or cuts_explicit_stereo_hydrogen
+                ):
+                    continue
+                if (
+                    cuts_noncarbon_stereocenter
+                    or cuts_hydrogen_near_stereocenter
+                    or cuts_multiple_bond_with_ez
                 ):
                     continue
                 stereo_safe_bonds.append(atom_pair)
@@ -370,7 +426,11 @@ class SAFEConverter:
 
         if self.require_hs:
             mol = dm.add_hs(mol)
-        matching_bonds = self._fragment(mol, allow_empty=allow_empty)
+        matching_bonds = self._fragment(
+            mol,
+            allow_empty=allow_empty,
+            potential_stereos=potential_stereos,
+        )
         substructed_ignored = []
         if constraints is not None:
             substructed_ignored = list(
