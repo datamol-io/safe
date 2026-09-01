@@ -67,23 +67,37 @@ The construction of a SAFE strings requires defining a molecular fragmentation a
 
 ### Installation
 
-SAFE 1.0 supports Python 3.11 through 3.14. Install it from PyPI with:
+SAFE 1.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:
+
+```bash
+uv add safe-mol
+```
+
+Pip and conda-forge remain supported:
 
 ```bash
 pip install safe-mol
-```
-
-You can use conda/mamba:
-
-```bash
 mamba install -c conda-forge safe-mol
 ```
 
-SAFE currently uses Transformers 4.57.x because Transformers 5 removed the constrained-generation API used by linker generation and scaffold decoration. RDKit 2026.03 is also excluded because of an upstream stereochemistry regression; RDKit 2024.09 through 2025.09 are covered by CI. See the [1.0 migration guide](https://safe-docs.datamol.io/migration.html) for details.
+SAFE's core install contains only encoding, decoding and notation splitting.
+Add `safe-mol[model]` for `SAFETokenizer` and `SAFEDesign`,
+`safe-mol[train]` for the model stack plus `safe-train`, or
+`safe-mol[all]` to install every maintained feature. Model APIs retain their
+top-level imports but load their dependencies only when used. For example:
 
-Training-only packages are no longer installed for encoding and generation.
-Use `pip install "safe-mol[train]"` for `safe-train`, `safe-mol[viz]` for
-visualization, and `safe-mol[wandb]` for Weights & Biases integration.
+```bash
+uv add "safe-mol[model]"
+# or: python -m pip install "safe-mol[model]"
+```
+
+Visualization and Weights & Biases remain independently available through
+`safe-mol[viz]` and `safe-mol[wandb]`. SAFE's optional model stack currently
+uses Transformers 4.57.x because Transformers 5 removed the constrained-generation
+API used by linker generation and scaffold decoration. RDKit 2026.03 is also
+excluded because of an upstream stereochemistry regression; RDKit 2024.09
+through 2025.09 are covered by CI. See the
+[1.0 migration guide](https://safe-docs.datamol.io/migration.html) for details.
 
 For GPU workloads, install the PyTorch build matching your CUDA driver before installing SAFE. You can verify the resulting environment with:
 
@@ -183,16 +197,22 @@ Note that the model weights of **SAFE-GPT** are exclusively licensed for researc
 ### Setup dev environment
 
 ```bash
-micromamba create -f env.yml
-mamba activate safe
+uv sync --all-extras
 ```
+
+This creates an isolated `.venv` with the training, visualisation, reporting,
+test, documentation and development extras. `env.yml` remains available when a
+Conda environment is required.
 
 ### Tests
 
 You can run tests locally with:
 
 ```bash
-pytest -m "not integration and not notebook"
-pytest -m integration
-pytest -m notebook
+uv run python -m pytest -m "not integration"
+uv run python -m pytest -m integration --no-cov
 ```
+
+The integration command validates the published SAFE-GPT model and executes
+the maintained tutorials. GitHub Actions runs the same command. Use
+`uv run python -m pytest -m notebook --no-cov` when iterating on tutorials only.

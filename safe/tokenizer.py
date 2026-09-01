@@ -2,7 +2,6 @@ import contextlib
 import copy
 import json
 import os
-import re
 import warnings
 from typing import Any, Dict, Iterator, List, Optional, Union
 
@@ -26,6 +25,7 @@ from transformers.utils import (
     working_or_temp_dir,
 )
 
+from ._tokenizer_utils import SAFESplitter, split as _split
 from .utils import attr_as
 
 SPECIAL_TOKENS = ["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
@@ -40,49 +40,6 @@ TEMPLATE_SPECIAL_TOKENS = [
     ("[CLS]", 1),
     ("[SEP]", 2),
 ]
-
-
-class SAFESplitter:
-    """Standard Splitter for SAFE string"""
-
-    REGEX_PATTERN = r"""(\[[^\]]+]|Br?|Cl?|N|O|S|P|F|I|b|c|n|o|s|p|\(|\)|\.|=|#|-|\+|\\|\/|:|~|@|\?|>>?|\*|\$|\%\([0-9]{3,5}\)|\%[0-9]{2}|[0-9])"""
-
-    name = "safe"
-
-    def __init__(self, pattern: Optional[str] = None):
-        # do not use this as raw strings (not r before)
-        if pattern is None:
-            pattern = self.REGEX_PATTERN
-        self.regex = re.compile(pattern)
-
-    def tokenize(self, line):
-        """Tokenize a safe string into characters."""
-        if isinstance(line, str):
-            tokens = list(self.regex.findall(line))
-            reconstruction = "".join(tokens)
-            if line != reconstruction:
-                logger.error(
-                    f"Tokens different from sample:\ntokens {reconstruction}\nsample {line}."
-                )
-                raise ValueError(line)
-        else:
-            idxs = re.finditer(self.regex, str(line))
-            tokens = [line[m.start(0) : m.end(0)] for m in idxs]
-        return tokens
-
-    def detokenize(self, chars):
-        """Detokenize SAFE notation"""
-        if isinstance(chars, str):
-            chars = chars.split(" ")
-        return "".join([x.strip() for x in chars])
-
-    def split(self, n, normalized):
-        """Perform splitting for pretokenization"""
-        return self.tokenize(normalized)
-
-    def pre_tokenize(self, pretok):
-        """Pretokenize using an input pretokenizer object from the tokenizer library"""
-        pretok.split(self.split)
 
 
 class SAFETokenizer(PushToHubMixin):
@@ -641,14 +598,5 @@ class SAFETokenizer(PushToHubMixin):
 
 
 def split(safe_str: str):
-    """Split a safe string into a list of character.
-
-    !!! note
-        It's recommended to use a trained tokenizer (e.g `SAFETokenizer`) when building deeplearning models
-
-    Args:
-        safe_str: input safe string to split
-    """
-
-    splitter = SAFESplitter()
-    return splitter.tokenize(safe_str)
+    """Split a SAFE string into notation tokens without loading a model."""
+    return _split(safe_str)

@@ -10,21 +10,23 @@ SAFE 1.0 is a maintenance-focused major release. It keeps the established encodi
 - Transformers 4.57 is the supported generation stack. Transformers 5 is intentionally excluded because it removed `PhrasalConstraint` and `DisjunctiveConstraint`, which SAFE uses for constrained linker generation and scaffold decoration. Upgrading prematurely would remove existing behaviour rather than modernize it.
 - Datasets 4+, Accelerate 1.1+, Tokenizers 0.22, and current NumPy and NetworkX releases are supported.
 
-Datasets, Evaluate, Accelerate and universal-pathlib now belong to the `train`
-extra instead of the default installation. Matplotlib and Weights & Biases are
-likewise isolated in `viz` and `wandb` extras. The model-generation stack stays
-in the default installation to preserve `SAFEDesign` and `SAFETokenizer`
-behaviour.
+The default installation is now the molecular notation core: encoding,
+decoding and `safe.split`. PyTorch, Transformers, Tokenizers, tqdm and fsspec
+move to the `model` extra. `SAFEDesign` and `SAFETokenizer` keep their public
+top-level names and load that stack only when used. The `train` extra includes
+the model stack plus Datasets, Evaluate, Accelerate and universal-pathlib.
+Matplotlib and Weights & Biases remain isolated in `viz` and `wandb`; `all`
+installs every maintained feature.
 
 Recreate the environment rather than upgrading it in place:
 
 ```bash
-micromamba create -f env.yml
-micromamba activate safe
+uv sync --all-extras
 ```
 
-For a pip training environment, install `safe-mol[train]` (and
-`safe-mol[wandb]` only if experiment reporting is required).
+`env.yml` remains a supported Conda alternative. For a pip training
+environment, install `safe-mol[train]` (or `safe-mol[train,wandb]` if
+experiment reporting is required).
 
 For GPU installations, install the PyTorch build appropriate for the CUDA driver before installing SAFE.
 
@@ -39,6 +41,16 @@ For GPU installations, install the PyTorch build appropriate for the CUDA driver
 
 ## CI and releases
 
-Pull requests and pushes to `dev` and `main` now run the supported Python/RDKit matrix on Linux, with additional macOS and Windows lanes. The published SAFE-GPT checkpoint and executable tutorials have a separate integration lane. Documentation is built in strict mode.
+Pull requests and pushes to `dev` and `main` now run the supported Python/RDKit
+matrix with `safe-mol[all]` on Linux x86-64, Windows x86-64, macOS Apple
+Silicon and macOS Intel.
+The published SAFE-GPT checkpoint and executable tutorials have a separate
+Linux integration lane because they download external model artifacts.
+Documentation is built in strict mode.
 
-Releases are built once from a published GitHub Release, smoke-tested from the wheel, and uploaded to PyPI with Trusted Publishing. The release workflow no longer creates tags or pushes directly to `main`.
+Releases are built once from a published GitHub Release, smoke-tested from both
+the wheel and source distribution, supplied with PEP 740 attestations, and
+uploaded to PyPI with Trusted Publishing. The release workflow no longer
+creates tags or pushes directly to `main`. The conda-forge feedstock remains a
+supported downstream channel; its update bot proposes each PyPI version and
+maintainers review the resulting dependency and test changes there.

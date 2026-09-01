@@ -1,14 +1,16 @@
 import contextlib
 import os
 import tempfile
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 
 import fsspec
-from transformers import PreTrainedModel
+
+if TYPE_CHECKING:
+    from transformers import PreTrainedModel
 
 
 def upload_to_wandb(
-    model: PreTrainedModel,
+    model: "PreTrainedModel",
     tokenizer,
     artifact_name: str,
     wandb_project_name: Optional[str] = "safe-models",

@@ -2,6 +2,9 @@
 requires = ["setuptools>=77", "setuptools-scm>=8"]
 build-backend = "setuptools.build_meta"
 
+[tool.uv]
+required-version = ">=0.12.8"
+
 [project]
 name = "safe-mol"
 description = "Implementation of the 'Gotta be SAFE: a new framework for molecular design' paper"
@@ -33,26 +36,47 @@ classifiers = [
 keywords = ["safe", "smiles", "de novo", "design", "molecules"]
 dependencies = [
     "datamol>=0.12.5",
-    "fsspec>=2023.9.2",
     "loguru>=0.7",
     "networkx>=3.2",
     "numpy>=1.26",
     "rdkit>=2024.9.1,!=2026.3.*",
+]
+
+[project.optional-dependencies]
+model = [
+    "fsspec>=2023.9.2",
     "tokenizers>=0.22,<0.23",
     "torch>=2.5",
     "tqdm>=4.66",
     "transformers>=4.57,<5",
 ]
-
-[project.optional-dependencies]
 train = [
     "accelerate>=1.1",
     "datasets>=4",
     "evaluate>=0.4.3",
+    "fsspec>=2023.9.2",
+    "tokenizers>=0.22,<0.23",
+    "torch>=2.5",
+    "tqdm>=4.66",
+    "transformers>=4.57,<5",
     "universal-pathlib>=0.2",
 ]
-viz = ["datamol[viz]>=0.12.5", "matplotlib>=3.8"]
-wandb = ["wandb>=0.18"]
+viz = ["matplotlib>=3.8", "pillow>=10"]
+wandb = ["fsspec>=2023.9.2", "wandb>=0.18"]
+all = [
+    "accelerate>=1.1",
+    "datasets>=4",
+    "evaluate>=0.4.3",
+    "fsspec>=2023.9.2",
+    "matplotlib>=3.8",
+    "pillow>=10",
+    "tokenizers>=0.22,<0.23",
+    "torch>=2.5",
+    "tqdm>=4.66",
+    "transformers>=4.57,<5",
+    "universal-pathlib>=0.2",
+    "wandb>=0.18",
+]
 test = [
     "ipykernel>=6.29",
     "ipywidgets>=8.1",
@@ -117,7 +141,7 @@ minversion = "8.0"
 addopts = "--verbose --color=yes --durations=10 --cov=safe --cov-report=xml:cov.xml --cov-report=term"
 testpaths = ["tests"]
 markers = [
-    "integration: accesses the published SAFE-GPT model on Hugging Face",
+    "integration: accesses the published SAFE-GPT model and executes maintained tutorials",
     "notebook: executes a tutorial notebook",
 ]
 filterwarnings = ["ignore::DeprecationWarning:jupyter_client"]

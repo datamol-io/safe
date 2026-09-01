@@ -6,7 +6,7 @@ from nbconvert.preprocessors.execute import ExecutePreprocessor
 
 ROOT_DIR = pathlib.Path(__file__).parent.resolve()
 
-pytestmark = pytest.mark.notebook
+pytestmark = [pytest.mark.integration, pytest.mark.notebook]
 
 TUTORIALS_DIR = ROOT_DIR.parent / "docs" / "tutorials"
 DISABLE_NOTEBOOKS = []
