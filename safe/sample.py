@@ -1050,7 +1050,11 @@ class SAFEDesign:
         kwargs["return_dict_in_generate"] = True
         kwargs["num_return_sequences"] = n_samples
         kwargs["max_length"] = max_length
-        kwargs.setdefault("early_stopping", True)
+        # ``early_stopping`` only has a meaning for beam search. Passing it to
+        # multinomial or greedy generation is ignored by Transformers and
+        # emits a warning for every call.
+        if num_beams is not None and num_beams > 1:
+            kwargs.setdefault("early_stopping", True)
         # EN we don't do anything with the score that the model might return on generate ...
         if not isinstance(input_ids, Mapping):
             input_ids = {"inputs": None}

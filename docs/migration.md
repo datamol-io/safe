@@ -21,7 +21,7 @@ For GPU installations, install the PyTorch build appropriate for the CUDA driver
 
 ## Behaviour-preserving fixes
 
-- Wildcard-containing molecules no longer turn a structural wildcard into an invalid ring closure. Explicitly labelled and terminal wildcard attachment points remain open for linker generation and scaffold morphing.
+- Wildcard-containing molecules no longer turn a structural wildcard into an invalid ring closure. Explicitly labelled and terminal wildcard attachment points remain open for linker generation and scaffold morphing. Their SAFE form is an unmatched ring-closure token rather than a literal `*`; decode with `remove_dummies=False` when the attachment points must be visible again as wildcard atoms.
 - Molecules with 100 or more attachment bonds use RDKit's extended `%(nnn)` ring-closure notation. The SAFE tokenizer now treats that notation as one token.
 - A one-item batch keeps its batch dimension in the property head.
 - `SAFETrainer.compute_loss` accepts the current Transformers trainer call signature.

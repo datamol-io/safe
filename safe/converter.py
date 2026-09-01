@@ -184,7 +184,9 @@ class SAFEConverter:
             as_mol: whether to return a molecule object or a smiles string
             canonical: whether to return a canonical
             fix: whether to fix the SAFE representation to take into account non-connected attachment points
-            remove_dummies: whether to remove dummy atoms from the SAFE representation. Note that removing_dummies is incompatible with
+            remove_dummies: whether to remove dummy atoms from the SAFE representation. Set this to
+                ``False`` when decoding an open SAFE fragment or scaffold if attachment points
+                must be preserved.
             remove_added_hs: whether to remove all the added hydrogen atoms after applying dummy removal for recovery
         """
 

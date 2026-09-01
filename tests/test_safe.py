@@ -206,3 +206,23 @@ def test_explicit_attachment_points_remain_open():
         branch_counts = Counter(converter._find_branch_number(encoded))
         assert len([label for label, count in branch_counts.items() if count % 2]) == 2
         assert "*" not in encoded
+        decoded = converter.decoder(encoded, remove_dummies=False, canonical=True)
+        assert decoded.count("*") == 2
+
+
+@pytest.mark.parametrize(
+    "scaffold,n_attachments",
+    [
+        ("O=c1[nH]cnc2nc([*])ccc12", 1),
+        ("c1ccc([*])cc1", 1),
+        ("c1cc([*])ccc1[*]", 2),
+    ],
+)
+def test_scaffold_attachment_points_survive_round_trip(scaffold, n_attachments):
+    """Regression test for https://github.com/datamol-io/safe/issues/67."""
+    converter = safe.SAFEConverter(slicer=None)
+    encoded = converter.encoder(scaffold, canonical=True, allow_empty=True)
+    decoded = converter.decoder(encoded, remove_dummies=False, canonical=True)
+
+    assert encoded.count("*") == 0
+    assert decoded.count("*") == n_attachments

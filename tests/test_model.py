@@ -1,3 +1,6 @@
+from types import SimpleNamespace
+from unittest.mock import MagicMock
+
 import torch
 from transformers import GPT2Config, TrainingArguments
 
@@ -5,6 +8,7 @@ from safe.tokenizer import SAFETokenizer
 from safe.trainer.cli import ModelArguments
 from safe.trainer.model import PropertyHead, SAFEDoubleHeadsModel
 from safe.trainer.trainer_utils import SAFETrainer
+from safe.sample import SAFEDesign
 
 
 def tiny_config():
@@ -63,3 +67,29 @@ def test_tokenizer_save_pretrained_round_trip(tmp_path):
 
 def test_cli_tokenizer_default_is_not_a_tuple():
     assert ModelArguments().tokenizer is None
+
+
+def test_random_generation_does_not_set_beam_only_early_stopping():
+    pretrained_tokenizer = MagicMock()
+    pretrained_tokenizer.model_max_length = 32
+    pretrained_tokenizer.return_value = {
+        "input_ids": torch.tensor([[1, 4, 2]]),
+        "attention_mask": torch.tensor([[1, 1, 1]]),
+    }
+    pretrained_tokenizer.decode.return_value = "CC"
+    pretrained_tokenizer.batch_decode.return_value = ["CC"]
+
+    designer = SAFEDesign.__new__(SAFEDesign)
+    designer.tokenizer = MagicMock()
+    designer.tokenizer.get_pretrained.return_value = pretrained_tokenizer
+    designer.model = MagicMock()
+    designer.model.device = torch.device("cpu")
+    designer.model.generate.return_value = SimpleNamespace(sequences=torch.tensor([[1, 4, 2]]))
+    designer.generation_config = None
+
+    assert designer._generate(n_samples=1, safe_prefix="C", how="random") == ["CC"]
+    assert "early_stopping" not in designer.model.generate.call_args.kwargs
+
+    designer.model.generate.reset_mock()
+    designer._generate(n_samples=2, safe_prefix="C", how="beam")
+    assert designer.model.generate.call_args.kwargs["early_stopping"] is True
