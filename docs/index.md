@@ -95,6 +95,20 @@ Read [Migrating to SAFE 1.0](migration.md) before upgrading an existing
 environment. Visualization and Weights & Biases remain independently available
 through `safe-mol[viz]` and `safe-mol[wandb]`.
 
+For constrained design, `try_hard=True` is the opt-in quality mode. It
+oversamples, validates the molecular and substructure constraints, and removes
+duplicates while preserving generation order. Use `max_new_tokens` to set a
+prompt-independent generation budget:
+
+```python
+designer.scaffold_decoration(
+    scaffold,
+    n_samples_per_trial=20,
+    max_new_tokens=80,
+    try_hard=True,
+)
+```
+
 ### Datasets and Models
 
 | Type                   | Name                                                                           | Infos      | Size  | Comment              |

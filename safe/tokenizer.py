@@ -166,6 +166,7 @@ class SAFETokenizer(PushToHubMixin):
         """Getting state to allow pickling"""
         with attr_as(self.tokenizer, "pre_tokenizer", Whitespace()):
             d = copy.deepcopy(self.__dict__)
+        d["custom_pre_tokenizer"] = self.splitter is not None
         # copy back tokenizer level attribute
         d["tokenizer_attrs"] = self.tokenizer.__dict__.copy()
         d["tokenizer"].pre_tokenizer = Whitespace()
@@ -304,6 +305,8 @@ class SAFETokenizer(PushToHubMixin):
         Returns:
             sequence: str representation of molecule
         """
+        if len(ids) == 0:
+            return ""
         old_id_list = ids
         if not isinstance(ids[0], (list, np.ndarray)) and not torch.is_tensor(ids[0]):
             old_id_list = [ids]

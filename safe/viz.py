@@ -1,5 +1,5 @@
 import itertools
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Sequence, Tuple, Union
 
 import datamol as dm
 
@@ -8,7 +8,7 @@ import safe as sf
 
 def to_image(
     safe_str: str,
-    fragments: Optional[Union[str, dm.Mol]] = None,
+    fragments: Optional[Union[str, dm.Mol, Sequence[Union[str, dm.Mol]]]] = None,
     legend: Union[str, None] = None,
     mol_size: Union[Tuple[int, int], int] = (300, 300),
     use_svg: Optional[bool] = True,
@@ -31,6 +31,11 @@ def to_image(
             https://www.rdkit.org/docs/source/rdkit.Chem.Draw.rdMolDraw2D.html.
 
     """
+
+    valid_highlight_modes = {None, "lasso", "fill", "color"}
+    if highlight_mode not in valid_highlight_modes:
+        choices = ", ".join(repr(mode) for mode in ("lasso", "fill", "color", None))
+        raise ValueError(f"Unknown highlight_mode {highlight_mode!r}; expected one of {choices}")
 
     try:
         import matplotlib.pyplot as plt

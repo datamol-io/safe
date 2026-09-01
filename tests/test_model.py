@@ -1,14 +1,18 @@
+import pickle
+import random
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+import pytest
 import torch
-from transformers import GPT2Config, TrainingArguments
+from transformers import GenerationConfig, GPT2Config, TrainingArguments
 
 from safe.tokenizer import SAFETokenizer
 from safe.trainer.cli import ModelArguments
 from safe.trainer.model import PropertyHead, SAFEDoubleHeadsModel
 from safe.trainer.trainer_utils import SAFETrainer
 from safe.sample import SAFEDesign
+from safe._pattern import PatternConstraint, PatternSampler
 
 
 def tiny_config():
@@ -65,6 +69,39 @@ def test_tokenizer_save_pretrained_round_trip(tmp_path):
     assert restored.encode("C%(100).N%99") == tokenizer.encode("C%(100).N%99")
 
 
+def test_tokenizer_pickle_preserves_safe_splitter():
+    tokenizer = SAFETokenizer(tokenizer_type="wordlevel")
+    tokenizer.train_from_iterator(["C%(100).N%99"])
+
+    restored = pickle.loads(pickle.dumps(tokenizer))
+
+    assert restored.encode("C%(100).N%99") == tokenizer.encode("C%(100).N%99")
+
+
+def test_tokenizer_decodes_empty_input():
+    tokenizer = SAFETokenizer(tokenizer_type="wordlevel")
+
+    assert tokenizer.decode([]) == ""
+
+
+def test_pattern_randomization_is_local_and_reproducible():
+    first = PatternConstraint.randomize("c1cc([*])ccc1[*]", n=5, seed=7)
+    second = PatternConstraint.randomize("c1cc([*])ccc1[*]", n=5, seed=7)
+
+    assert first == second
+
+
+def test_pattern_loss_uses_input_device_and_dtype():
+    sampler = PatternSampler.__new__(PatternSampler)
+    inputs = torch.tensor([[0.1, 0.2], [0.3, 0.4]], dtype=torch.float64)
+
+    loss = sampler.nll_loss(inputs, torch.tensor([0, 1]))
+
+    assert loss.dtype == inputs.dtype
+    assert loss.device == inputs.device
+    assert torch.equal(loss, torch.tensor([0.1, 0.4], dtype=torch.float64))
+
+
 def test_cli_tokenizer_default_is_not_a_tuple():
     assert ModelArguments().tokenizer is None
 
@@ -89,7 +126,65 @@ def test_random_generation_does_not_set_beam_only_early_stopping():
 
     assert designer._generate(n_samples=1, safe_prefix="C", how="random") == ["CC"]
     assert "early_stopping" not in designer.model.generate.call_args.kwargs
+    assert designer.model.generate.call_args.kwargs["max_new_tokens"] == 100
 
     designer.model.generate.reset_mock()
     designer._generate(n_samples=2, safe_prefix="C", how="beam")
     assert designer.model.generate.call_args.kwargs["early_stopping"] is True
+
+    designer.model.generate.reset_mock()
+    with pytest.warns(FutureWarning, match="max_length"):
+        designer._generate(n_samples=1, safe_prefix="C", max_length=12)
+    assert designer.model.generate.call_args.kwargs["max_length"] == 12
+    assert "max_new_tokens" not in designer.model.generate.call_args.kwargs
+
+
+def test_try_hard_sampling_budget_and_stable_deduplication():
+    assert SAFEDesign._candidate_count(4, try_hard=False) == 4
+    assert SAFEDesign._candidate_count(4, try_hard=True) == 12
+    samples = ["CC", None, "CN", "CC", "CO"]
+
+    assert SAFEDesign._finalize_samples(samples, limit=2, try_hard=True) == ["CC", "CN"]
+    assert SAFEDesign._finalize_samples(samples, limit=2, try_hard=False) is samples
+
+
+def test_completion_uses_distinct_reproducible_seed_per_trial():
+    designer = SAFEDesign.__new__(SAFEDesign)
+    designer.verbose = False
+    designer.safe_encoder = MagicMock()
+    designer.safe_encoder.slicer = None
+    designer.safe_encoder.encoder.return_value = "CC"
+    designer._generate = MagicMock(return_value=["CC"])
+    designer._decode_safe = MagicMock(side_effect=lambda values, **_: values)
+
+    designer._completion("CC", n_samples_per_trial=1, n_trials=3, random_seed=11)
+
+    seeds = [call.kwargs["seed"] for call in designer.safe_encoder.encoder.call_args_list]
+    expected_rng = random.Random(11)
+    expected = [expected_rng.randint(1, 2**32 - 1) for _ in range(3)]
+    assert seeds == expected
+    assert len(set(seeds)) == 3
+
+
+def test_default_model_load_is_revision_pinned(monkeypatch):
+    model = MagicMock(spec=SAFEDoubleHeadsModel)
+    model.config = SimpleNamespace()
+    tokenizer = MagicMock(spec=SAFETokenizer)
+    tokenizer.bos_token_id = 1
+    tokenizer.eos_token_id = 2
+    tokenizer.pad_token_id = 0
+    generation_config = SimpleNamespace(bos_token_id=1, eos_token_id=2, pad_token_id=0)
+
+    model_loader = MagicMock(return_value=model)
+    tokenizer_loader = MagicMock(return_value=tokenizer)
+    config_loader = MagicMock(return_value=generation_config)
+    monkeypatch.setattr(SAFEDoubleHeadsModel, "from_pretrained", model_loader)
+    monkeypatch.setattr(SAFETokenizer, "from_pretrained", tokenizer_loader)
+    monkeypatch.setattr(GenerationConfig, "from_pretrained", config_loader)
+
+    SAFEDesign.load_default()
+
+    expected = {"revision": SAFEDesign._DEFAULT_MODEL_REVISION}
+    model_loader.assert_called_once_with(SAFEDesign._DEFAULT_MODEL_PATH, **expected)
+    tokenizer_loader.assert_called_once_with(SAFEDesign._DEFAULT_MODEL_PATH, **expected)
+    config_loader.assert_called_once_with(SAFEDesign._DEFAULT_MODEL_PATH, **expected)

@@ -3,6 +3,7 @@ import itertools
 import os
 import random
 import re
+import warnings
 from collections import Counter
 from collections.abc import Mapping
 from contextlib import suppress
@@ -28,6 +29,8 @@ class SAFEDesign:
 
     _DEFAULT_MAX_LENGTH = 1024  # default max length used during training
     _DEFAULT_MODEL_PATH = "datamol-io/safe-gpt"
+    _DEFAULT_MODEL_REVISION = "3d5fa0988383e898d5ac5db7cd52bf715bc37061"
+    _TRY_HARD_OVERSAMPLE_FACTOR = 3
     _GENERATION_BACKENDS = {
         "contrastive": (
             "transformers-community/contrastive-search",
@@ -104,6 +107,20 @@ class SAFEDesign:
         self.verbose = verbose
         self.safe_encoder = safe_encoder or sf.SAFEConverter()
         self._custom_generators = {}
+
+    @classmethod
+    def _candidate_count(cls, requested: int, try_hard: bool) -> int:
+        """Return the number of raw candidates to sample for a design trial."""
+        return requested * cls._TRY_HARD_OVERSAMPLE_FACTOR if try_hard else requested
+
+    @staticmethod
+    def _finalize_samples(sequences: List[Optional[str]], limit: int, try_hard: bool):
+        """Deduplicate valid samples in generation order when quality mode is enabled."""
+        if not try_hard:
+            return sequences
+        return list(dict.fromkeys(sequence for sequence in sequences if sequence is not None))[
+            :limit
+        ]
 
     def _load_generation_backend(self, name: str):
         """Load a reviewed Transformers custom-generation backend.
@@ -196,6 +213,7 @@ class SAFEDesign:
     def load_default(
         cls,
         model_dir: Optional[str] = None,
+        model_revision: Optional[str] = None,
         device: str = None,
         verbose: bool = False,
         **kwargs: Any,
@@ -206,14 +224,19 @@ class SAFEDesign:
             verbose: whether to print out logging information during generation
             model_dir: Optional path to model folder to use instead of the default one.
                 If provided the tokenizer should be in the model_dir named as `tokenizer.json`
+            model_revision: Hugging Face revision to load. The reviewed default
+                model revision is pinned when `model_dir` is omitted.
             device: optional device where to move the model
             kwargs: any additional argument to pass to the init function
         """
-        if model_dir is None or not model_dir:
+        use_default_model = model_dir is None or not model_dir
+        if use_default_model:
             model_dir = cls._DEFAULT_MODEL_PATH
-        model = SAFEDoubleHeadsModel.from_pretrained(model_dir)
-        tokenizer = SAFETokenizer.from_pretrained(model_dir)
-        gen_config = GenerationConfig.from_pretrained(model_dir)
+            model_revision = model_revision or cls._DEFAULT_MODEL_REVISION
+        load_kwargs = {"revision": model_revision} if model_revision is not None else {}
+        model = SAFEDoubleHeadsModel.from_pretrained(model_dir, **load_kwargs)
+        tokenizer = SAFETokenizer.from_pretrained(model_dir, **load_kwargs)
+        gen_config = GenerationConfig.from_pretrained(model_dir, **load_kwargs)
         if device is not None:
             model = model.to(device)
         return cls(
@@ -233,6 +256,7 @@ class SAFEDesign:
         do_not_fragment_further: Optional[bool] = True,
         random_seed: Optional[int] = None,
         model_only: Optional[bool] = False,
+        try_hard: bool = False,
         **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform linker generation using the pretrained SAFE model.
@@ -246,6 +270,7 @@ class SAFEDesign:
             sanitize: whether to sanitize the generated molecules
             random_seed: random seed to use
             model_only: whether to use the model only ability and nothing more.
+            try_hard: oversample, validate and deduplicate candidates before returning.
             kwargs: any argument to provide to the underlying generation function
         """
         side_chains = list(groups)
@@ -264,6 +289,7 @@ class SAFEDesign:
             random_seed=random_seed,
             is_linking=True,
             model_only=model_only,
+            try_hard=try_hard,
             **kwargs,
         )
 
@@ -277,6 +303,7 @@ class SAFEDesign:
         sanitize: bool = False,
         do_not_fragment_further: Optional[bool] = True,
         random_seed: Optional[int] = None,
+        try_hard: bool = False,
         **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform scaffold morphing decoration using the pretrained SAFE model
@@ -299,6 +326,7 @@ class SAFEDesign:
             do_not_fragment_further: whether to fragment the scaffold further or not
             sanitize: whether to sanitize the generated molecules
             random_seed: random seed to use
+            try_hard: oversample, validate and deduplicate candidates before returning.
             kwargs: any argument to provide to the underlying generation function
         """
 
@@ -312,6 +340,7 @@ class SAFEDesign:
             do_not_fragment_further=do_not_fragment_further,
             random_seed=random_seed,
             is_linking=False,
+            try_hard=try_hard,
             **kwargs,
         )
 
@@ -327,6 +356,7 @@ class SAFEDesign:
         random_seed: Optional[int] = None,
         is_linking: Optional[bool] = False,
         model_only: Optional[bool] = False,
+        try_hard: bool = False,
         **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform scaffold morphing decoration using the pretrained SAFE model
@@ -352,6 +382,7 @@ class SAFEDesign:
             is_linking: whether it's a linking task or not.
                 For linking tasks, we use a different custom strategy of completing up to the attachment signal
             model_only: whether to use the model only ability and nothing more. Only relevant when doing linker generation
+            try_hard: oversample, validate and deduplicate candidates before returning.
             kwargs: any argument to provide to the underlying generation function
         """
         if side_chains is None:
@@ -374,18 +405,19 @@ class SAFEDesign:
             )
 
         rng = random.Random(random_seed)
-        new_seed = rng.randint(1, 1000)
 
         total_sequences = []
         n_trials = n_trials or 1
+        candidates_per_trial = self._candidate_count(n_samples_per_trial, try_hard)
+        validate = sanitize or try_hard
         for _ in tqdm(range(n_trials), disable=(not self.verbose), leave=False):
+            new_seed = rng.randint(1, 2**32 - 1)
             with dm.without_rdkit_log():
                 context_mng = (
                     sf.utils.attr_as(self.safe_encoder, "slicer", None)
                     if do_not_fragment_further
                     else suppress()
                 )
-                old_slicer = getattr(self.safe_encoder, "slicer", None)
                 with context_mng:
                     try:
                         encoded_fragment = self.safe_encoder.encoder(
@@ -401,9 +433,6 @@ class SAFEDesign:
                         if self.verbose:
                             logger.error(e)
                         raise sf.SAFEEncodeError(f"Failed to encode {side_chains}") from e
-                    finally:
-                        if old_slicer is not None:
-                            self.safe_encoder.slicer = old_slicer
 
             fragments = encoded_fragment.split(".")
             branch_positions = self.safe_encoder._find_branch_number_positions(encoded_fragment)
@@ -473,9 +502,13 @@ class SAFEDesign:
             suffix_kwargs = prefix_kwargs.copy()
 
             if is_linking and model_only:
+                if len(missing_prefix_closure) < 3 or len(missing_suffix_closure) < 3:
+                    raise ValueError(
+                        "Each linker side must expose at least one unmatched attachment label"
+                    )
                 for _kwargs in [prefix_kwargs, suffix_kwargs]:
                     _kwargs.setdefault("how", "beam")
-                    _kwargs.setdefault("num_beams", n_samples_per_trial)
+                    _kwargs.setdefault("num_beams", candidates_per_trial)
                     _kwargs.setdefault("do_sample", False)
 
                 # We first generate a fragment that contains one complete
@@ -487,10 +520,10 @@ class SAFEDesign:
                 suffix_kwargs["force_words_ids"] = [constraint_alternatives]
 
                 prefix_sequences = self._generate(
-                    n_samples=n_samples_per_trial, safe_prefix=prefix, **prefix_kwargs
+                    n_samples=candidates_per_trial, safe_prefix=prefix, **prefix_kwargs
                 )
                 suffix_sequences = self._generate(
-                    n_samples=n_samples_per_trial, safe_prefix=suffixes, **suffix_kwargs
+                    n_samples=candidates_per_trial, safe_prefix=suffixes, **suffix_kwargs
                 )
 
                 prefix_sequences = [
@@ -502,12 +535,15 @@ class SAFEDesign:
                     for x in suffix_sequences
                 ]
 
-                linkers = [x for x in set(prefix_sequences + suffix_sequences) if x]
+                linkers = sorted(
+                    set(x for x in prefix_sequences + suffix_sequences if x),
+                    reverse=True,
+                )
                 sequences = [f"{prefix}.{linker}.{suffixes}" for linker in linkers]
                 # Public design methods return decoded SMILES. The previous
                 # ``+=`` leaked the intermediate SAFE strings alongside their
                 # decoded molecules and doubled the apparent sample count.
-                sequences = self._decode_safe(sequences, canonical=True, remove_invalid=sanitize)
+                sequences = self._decode_safe(sequences, canonical=True, remove_invalid=validate)
 
             else:
                 mol_linker_slicer = sf.utils.MolSlicer(
@@ -517,10 +553,10 @@ class SAFEDesign:
                 suffix_smiles = sf.decode(suffixes, remove_dummies=False, as_mol=False)
 
                 prefix_sequences = self._generate(
-                    n_samples=n_samples_per_trial, safe_prefix=prefix + ".", **prefix_kwargs
+                    n_samples=candidates_per_trial, safe_prefix=prefix + ".", **prefix_kwargs
                 )
                 suffix_sequences = self._generate(
-                    n_samples=n_samples_per_trial, safe_prefix=suffixes + ".", **suffix_kwargs
+                    n_samples=candidates_per_trial, safe_prefix=suffixes + ".", **suffix_kwargs
                 )
 
                 prefix_sequences = self._decode_safe(
@@ -534,14 +570,14 @@ class SAFEDesign:
                     suffix_sequences,
                     prefix_smiles,
                     suffix_smiles,
-                    n_samples_per_trial,
+                    candidates_per_trial,
                     mol_linker_slicer,
                 )
 
             total_sequences.extend(sequences)
 
         # then we should filter out molecules that do not match the requested
-        if sanitize:
+        if validate:
             total_sequences = sf.utils.filter_by_substructure_constraints(
                 total_sequences, side_chains
             )
@@ -549,7 +585,11 @@ class SAFEDesign:
                 logger.info(
                     f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %)  generated molecules are valid !"
                 )
-        return total_sequences
+        return self._finalize_samples(
+            total_sequences,
+            n_samples_per_trial * n_trials,
+            try_hard,
+        )
 
     def motif_extension(
         self,
@@ -559,6 +599,7 @@ class SAFEDesign:
         sanitize: bool = False,
         do_not_fragment_further: Optional[bool] = True,
         random_seed: Optional[int] = None,
+        try_hard: bool = False,
         **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform motif extension using the pretrained SAFE model.
@@ -571,6 +612,7 @@ class SAFEDesign:
             do_not_fragment_further: whether to fragment the scaffold further or not
             sanitize: whether to sanitize the generated molecules and check
             random_seed: random seed to use
+            try_hard: oversample, validate and deduplicate candidates before returning.
             kwargs: any argument to provide to the underlying generation function
         """
         return self.scaffold_decoration(
@@ -581,6 +623,7 @@ class SAFEDesign:
             do_not_fragment_further=do_not_fragment_further,
             random_seed=random_seed,
             add_dot=True,
+            try_hard=try_hard,
             **kwargs,
         )
 
@@ -593,6 +636,7 @@ class SAFEDesign:
         do_not_fragment_further: Optional[bool] = True,
         random_seed: Optional[int] = None,
         attachment_point_depth: Optional[int] = None,
+        try_hard: bool = False,
         **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform super structure generation using the pretrained SAFE model.
@@ -609,6 +653,7 @@ class SAFEDesign:
             random_seed: random seed to use
             attachment_point_depth: depth of opening the attachment points.
                 Increasing this, means you increase the number of substitution point to consider.
+            try_hard: oversample, validate and deduplicate candidates before returning.
             kwargs: any argument to provide to the underlying generation function
         """
 
@@ -616,7 +661,7 @@ class SAFEDesign:
         cores = sf.utils.list_individual_attach_points(core, depth=attachment_point_depth)
         # get the fully open mol, everytime too.
         cores.append(dm.to_smiles(dm.reactions.open_attach_points(core)))
-        cores = list(set(cores))
+        cores = list(dict.fromkeys(cores))
         rng = random.Random(random_seed)
         rng.shuffle(cores)
         # now also get the single openining of an attachment point
@@ -624,7 +669,6 @@ class SAFEDesign:
         n_trials = n_trials or 1
         for _ in tqdm(range(n_trials), disable=(not self.verbose), leave=False):
             core = cores[_ % len(cores)]
-            old_verbose = self.verbose
             try:
                 with sf.utils.attr_as(self, "verbose", False):
                     out = self._completion(
@@ -632,23 +676,25 @@ class SAFEDesign:
                         n_samples_per_trial=n_samples_per_trial,
                         n_trials=1,
                         do_not_fragment_further=do_not_fragment_further,
-                        sanitize=sanitize,
-                        random_seed=random_seed,
+                        sanitize=sanitize or try_hard,
+                        random_seed=rng.randint(1, 2**32 - 1),
+                        try_hard=try_hard,
                         **kwargs,
                     )
                     total_sequences.extend(out)
-            except Exception as e:
-                if old_verbose:
+            except (sf.SAFEEncodeError, ValueError) as e:
+                if self.verbose:
                     logger.error(e)
-
-            finally:
-                self.verbose = old_verbose
 
         if sanitize and self.verbose:
             logger.info(
                 f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %)  generated molecules are valid !"
             )
-        return total_sequences
+        return self._finalize_samples(
+            total_sequences,
+            n_samples_per_trial * n_trials,
+            try_hard,
+        )
 
     def scaffold_decoration(
         self,
@@ -659,6 +705,7 @@ class SAFEDesign:
         sanitize: bool = False,
         random_seed: Optional[int] = None,
         add_dot: Optional[bool] = True,
+        try_hard: bool = False,
         **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform scaffold decoration using the pretrained SAFE model
@@ -673,6 +720,7 @@ class SAFEDesign:
             do_not_fragment_further: whether to fragment the scaffold further or not
             sanitize: whether to sanitize the generated molecules and check if the scaffold is still present
             random_seed: random seed to use
+            try_hard: oversample, validate and deduplicate candidates before returning.
             kwargs: any argument to provide to the underlying generation function
         """
 
@@ -681,20 +729,25 @@ class SAFEDesign:
             n_samples_per_trial=n_samples_per_trial,
             n_trials=n_trials,
             do_not_fragment_further=do_not_fragment_further,
-            sanitize=sanitize,
+            sanitize=sanitize or try_hard,
             random_seed=random_seed,
             add_dot=add_dot,
+            try_hard=try_hard,
             **kwargs,
         )
         # if we require sanitization
         # then we should filter out molecules that do not match the requested
-        if sanitize:
+        if sanitize or try_hard:
             total_sequences = sf.utils.filter_by_substructure_constraints(total_sequences, scaffold)
             if self.verbose:
                 logger.info(
                     f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %)  generated molecules are valid !"
                 )
-        return total_sequences
+        return self._finalize_samples(
+            total_sequences,
+            n_samples_per_trial * (n_trials or 1),
+            try_hard,
+        )
 
     def pattern_decoration(
         self,
@@ -708,6 +761,7 @@ class SAFEDesign:
         n_scaff_random: Optional[int] = 3,
         n_scaff_samples: Optional[int] = 10,
         scaff_temperature: float = 1.0,
+        try_hard: bool = False,
         **kwargs: Optional[Dict[Any, Any]],
     ) -> List[str]:
         """
@@ -732,61 +786,85 @@ class SAFEDesign:
             n_scaff_samples: Maximum number of samples to sample for a given scaffold from the pattern.
                 Increasing this will make sure you have more diversity in the scaffold coming from the pattern
             scaff_temperature: Temperature to use when sampling valid scaffolds from the pattern. Higher temperature means more diverse scaffold
+            try_hard: oversample, validate and deduplicate candidates before returning.
             kwargs: Additional arguments for the underlying generation function.
 
         Returns:
             List of decorated molecule sequences.
         """
 
+        rng = random.Random(random_seed)
         smarts_scaffolds = [scaffold]
         if n_scaff_random and n_scaff_random > 0:
-            smarts_scaffolds = PatternConstraint.randomize(scaffold, n_scaff_random)
+            smarts_scaffolds = PatternConstraint.randomize(
+                scaffold,
+                n_scaff_random,
+                seed=random_seed,
+            )
 
-        all_scaffolds = set()
+        all_scaffolds = {}
+        scaffold_sample_count = (
+            n_samples_per_trial
+            if n_scaff_samples is None
+            else min(n_samples_per_trial, n_scaff_samples)
+        )
         for sm in smarts_scaffolds:
             cur_dec_pattern = PatternConstraint(sm, self.tokenizer, temperature=scaff_temperature)
             decorator = PatternSampler(self.model, cur_dec_pattern)
             cur_scaffolds = decorator.sample_scaffolds(
-                n_samples=min(n_samples_per_trial, n_scaff_samples),
+                n_samples=scaffold_sample_count,
                 n_trials=1,
-                random_seed=random_seed,
+                random_seed=rng.randint(1, 2**32 - 1),
             )
-            all_scaffolds.update(cur_scaffolds)
+            all_scaffolds.update(dict.fromkeys(cur_scaffolds))
 
-        if sanitize:
-            all_scaffolds = [x for x in all_scaffolds if dm.from_smarts(x) is not None]
+        # Pattern sampling resolves atom queries to concrete tokens. Parse the
+        # result as a molecule rather than preserving it as a query molecule:
+        # completion requires a chemically valid molecular graph.
+        parsed_scaffolds = []
+        for sampled_scaffold in all_scaffolds:
+            scaffold_mol = dm.to_mol(sampled_scaffold, remove_hs=False)
+            if scaffold_mol is not None:
+                parsed_scaffolds.append(scaffold_mol)
+
         total_sequences = []
-        for scaff in all_scaffolds:
-            with suppress(Exception), dm.without_rdkit_log():
+        for scaffold_mol in parsed_scaffolds:
+            with dm.without_rdkit_log():
                 cur_sequences = self._completion(
-                    fragment=dm.from_smarts(scaff),
-                    n_samples_per_trial=int(n_samples_per_trial / max(len(all_scaffolds), 1)) + 1,
+                    fragment=scaffold_mol,
+                    n_samples_per_trial=int(n_samples_per_trial / max(len(parsed_scaffolds), 1))
+                    + 1,
                     n_trials=n_trials,
                     do_not_fragment_further=do_not_fragment_further,
-                    sanitize=sanitize,
-                    random_seed=random_seed,
+                    sanitize=sanitize or try_hard,
+                    random_seed=rng.randint(1, 2**32 - 1),
                     add_dot=add_dot,
+                    try_hard=try_hard,
                     **kwargs,
                 )
                 total_sequences.extend(cur_sequences)
 
-        random.shuffle(total_sequences)
-        if sanitize:
+        rng.shuffle(total_sequences)
+        if sanitize or try_hard:
             total_sequences = sf.utils.filter_by_substructure_constraints(total_sequences, scaffold)
-            total_sequences = total_sequences[:n_samples_per_trial]
             if self.verbose:
                 logger.info(
                     f"After sanitization, {len(total_sequences)} / {n_samples_per_trial * n_trials} "
                     f"({len(total_sequences) * 100 / (n_samples_per_trial * n_trials):.2f}%) generated molecules are valid!"
                 )
 
-        return total_sequences[:n_samples_per_trial]
+        return self._finalize_samples(
+            total_sequences,
+            n_samples_per_trial * n_trials,
+            try_hard,
+        )[: n_samples_per_trial * n_trials]
 
     def de_novo_generation(
         self,
         n_samples_per_trial: int = 10,
         sanitize: bool = False,
         n_trials: Optional[int] = None,
+        try_hard: bool = False,
         **kwargs: Optional[Dict[Any, Any]],
     ):
         """Perform de novo generation using the pretrained SAFE model.
@@ -797,29 +875,36 @@ class SAFEDesign:
             n_samples_per_trial: number of new molecules to generate
             sanitize: whether to perform sanitization, aka, perform control to ensure what is asked is what is returned
             n_trials: number of randomization to perform
+            try_hard: oversample, validate and deduplicate candidates before returning.
             kwargs: any argument to provide to the underlying generation function
         """
         # EN: lazy programming much ?
         kwargs.setdefault("how", "random")
         if kwargs["how"] != "random" and not kwargs.get("do_sample"):
             logger.warning(
-                "I don't think you know what you are doing ... for de novo generation `do_sample=True` or `how='random'` is expected !"
+                "Deterministic decoding can return repeated de novo samples; use "
+                "do_sample=True or how='random' when diversity is required"
             )
 
         total_sequences = []
         n_trials = n_trials or 1
+        candidates_per_trial = self._candidate_count(n_samples_per_trial, try_hard)
         for _ in tqdm(range(n_trials), disable=(not self.verbose), leave=False):
-            sequences = self._generate(n_samples=n_samples_per_trial, **kwargs)
+            sequences = self._generate(n_samples=candidates_per_trial, **kwargs)
             total_sequences.extend(sequences)
         total_sequences = self._decode_safe(
-            total_sequences, canonical=True, remove_invalid=sanitize
+            total_sequences, canonical=True, remove_invalid=sanitize or try_hard
         )
 
         if sanitize and self.verbose:
             logger.info(
                 f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %) generated molecules are valid !"
             )
-        return total_sequences
+        return self._finalize_samples(
+            total_sequences,
+            n_samples_per_trial * n_trials,
+            try_hard,
+        )
 
     def _find_fragment_cut(self, fragment: str, prefix_constraint: str, branching_id: str):
         """
@@ -869,24 +954,22 @@ class SAFEDesign:
         suffix_query = dm.from_smarts(suffix)
 
         for x in prefix_sequences:
-            with suppress(Exception):
-                x = dm.to_mol(x)
-                out = mol_linker_slicer(x, prefix_query)
-                prefix_linkers.append(out[1])
+            molecule = dm.to_mol(x)
+            if molecule is not None:
+                prefix_linkers.append(mol_linker_slicer(molecule, prefix_query)[1])
         for x in suffix_sequences:
-            with suppress(Exception):
-                x = dm.to_mol(x)
-                out = mol_linker_slicer(x, suffix_query)
-                suffix_linkers.append(out[1])
-        n_linked = 0
+            molecule = dm.to_mol(x)
+            if molecule is not None:
+                suffix_linkers.append(mol_linker_slicer(molecule, suffix_query)[1])
         linked = []
-        linkers = prefix_linkers + suffix_linkers
-        linkers = [x for x in linkers if x is not None]
-        for n_linked, linker in enumerate(linkers):
+        linkers = dict.fromkeys(
+            linker for linker in prefix_linkers + suffix_linkers if linker is not None
+        )
+        for linker in linkers:
             linked.extend(mol_linker_slicer.link_fragments(linker, prefix, suffix))
-            if n_linked > n_samples:
+            linked = list(dict.fromkeys(x for x in linked if x))
+            if len(linked) >= n_samples:
                 break
-            linked = [x for x in linked if x]
         return linked[:n_samples]
 
     def _decode_safe(
@@ -930,6 +1013,7 @@ class SAFEDesign:
         random_seed: Optional[int] = None,
         add_dot: Optional[bool] = False,
         is_safe: Optional[bool] = False,
+        try_hard: bool = False,
         **kwargs,
     ):
         """Perform sentence completion using a prefix fragment
@@ -943,6 +1027,7 @@ class SAFEDesign:
             random_seed: random seed to use
             is_safe: whether the smiles is already encoded as a safe string
             add_dot: whether to add a dot at the end of the fragments to signal to the model that we want to generate a distinct fragment.
+            try_hard: oversample, validate and deduplicate candidates before returning.
             kwargs: any argument to provide to the underlying generation function
         """
 
@@ -950,18 +1035,20 @@ class SAFEDesign:
         kwargs.setdefault("how", "random")
         if kwargs["how"] != "random" and not kwargs.get("do_sample"):
             logger.warning(
-                "I don't think you know what you are doing ... for de novo generation `do_sample=True` or `how='random'` is expected !"
+                "Deterministic completion can return repeated samples; use do_sample=True or "
+                "how='random' when diversity is required"
             )
 
-        # Step 1: we conver the fragment into the relevant safe string format
+        # Step 1: convert the fragment into the relevant SAFE string format.
         # we use the provided safe encoder with the slicer that was expected
 
         rng = random.Random(random_seed)
-        new_seed = rng.randint(1, 1000)
 
         total_sequences = []
         n_trials = n_trials or 1
+        candidates_per_trial = self._candidate_count(n_samples_per_trial, try_hard)
         for _ in tqdm(range(n_trials), disable=(not self.verbose), leave=False):
+            new_seed = rng.randint(1, 2**32 - 1)
             if is_safe:
                 encoded_fragment = fragment
             else:
@@ -971,7 +1058,6 @@ class SAFEDesign:
                         if do_not_fragment_further
                         else suppress()
                     )
-                    old_slicer = getattr(self.safe_encoder, "slicer", None)
                     with context_mng:
                         try:
                             encoded_fragment = self.safe_encoder.encoder(
@@ -987,27 +1073,33 @@ class SAFEDesign:
                             if self.verbose:
                                 logger.error(e)
                             raise sf.SAFEEncodeError(f"Failed to encode {fragment}") from e
-                        finally:
-                            if old_slicer is not None:
-                                self.safe_encoder.slicer = old_slicer
 
             if add_dot and encoded_fragment.count("(") == encoded_fragment.count(")"):
                 encoded_fragment = encoded_fragment.rstrip(".") + "."
 
             sequences = self._generate(
-                n_samples=n_samples_per_trial, safe_prefix=encoded_fragment, **kwargs
+                n_samples=candidates_per_trial, safe_prefix=encoded_fragment, **kwargs
             )
 
-            sequences = self._decode_safe(sequences, canonical=True, remove_invalid=sanitize)
+            sequences = self._decode_safe(
+                sequences,
+                canonical=True,
+                remove_invalid=sanitize or try_hard,
+            )
             total_sequences.extend(sequences)
 
-        return total_sequences
+        return self._finalize_samples(
+            total_sequences,
+            candidates_per_trial * n_trials,
+            try_hard,
+        )
 
     def _generate(
         self,
         n_samples: int = 1,
         safe_prefix: Optional[str] = None,
-        max_length: Optional[int] = 100,
+        max_length: Optional[int] = None,
+        max_new_tokens: Optional[int] = None,
         how: Optional[str] = "random",
         num_beams: Optional[int] = None,
         num_beam_groups: Optional[int] = None,
@@ -1043,7 +1135,8 @@ class SAFEDesign:
         Args:
             n_samples: number of sequences to return
             safe_prefix: Prefix to use in sampling, should correspond to a safe fragment
-            max_length : maximum length of sampled sequence
+            max_length: deprecated total sequence-length limit, including the prompt.
+            max_new_tokens: maximum number of tokens generated after the prompt. Defaults to 100.
             how: which sampling method to use: "beam", "greedy" or "random". Can be used to control other parameters by setting defaults
             num_beams: number of beams for beam search. 1 means no beam search, unless beam is specified then max(n_samples, num_beams) is used
             num_beam_groups: number of beam groups for diverse beam search
@@ -1059,7 +1152,7 @@ class SAFEDesign:
             setattr(
                 pretrained_tk,
                 "model_max_length",
-                self._DEFAULT_MAX_LENGTH,  # this was the defaul
+                self._DEFAULT_MAX_LENGTH,
             )
 
         input_ids = safe_prefix
@@ -1089,7 +1182,18 @@ class SAFEDesign:
         kwargs["output_scores"] = True
         kwargs["return_dict_in_generate"] = True
         kwargs["num_return_sequences"] = n_samples
-        kwargs["max_length"] = max_length
+        if max_length is not None and max_new_tokens is not None:
+            raise ValueError("Pass only one of max_length or max_new_tokens")
+        if max_length is not None:
+            warnings.warn(
+                "max_length keeps the legacy total-length semantics and will be removed in "
+                "SAFE 2.0; use max_new_tokens for a prompt-independent generation budget.",
+                FutureWarning,
+                stacklevel=2,
+            )
+            kwargs["max_length"] = max_length
+        else:
+            kwargs["max_new_tokens"] = 100 if max_new_tokens is None else max_new_tokens
         # ``early_stopping`` only has a meaning for beam search. Passing it to
         # multinomial or greedy generation is ignored by Transformers and
         # emits a warning for every call.

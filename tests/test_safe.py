@@ -1,8 +1,13 @@
 from collections import Counter
+import os
+import subprocess
+import sys
+from types import SimpleNamespace
 
 import datamol as dm
 import numpy as np
 import pytest
+from rdkit import Chem
 
 import safe
 
@@ -37,6 +42,39 @@ def test_randomized_encoder():
     assert len(output) > 1
 
 
+def test_canonical_encoder_is_invariant_to_equivalent_smiles_and_randomize_flag():
+    smiles = "Cc1ccc(-c2cc(C(F)(F)F)nn2-c2ccc(S(N)(=O)=O)cc2)cc1"
+    mol = dm.to_mol(smiles)
+    equivalent_smiles = [Chem.MolToSmiles(mol, canonical=False, doRandom=True) for _ in range(10)]
+
+    encodings = {safe.encode(item, canonical=True) for item in equivalent_smiles}
+
+    assert len(encodings) == 1
+    assert safe.encode(smiles, canonical=True, randomize=True, seed=42) in encodings
+
+
+def test_noncanonical_encoding_does_not_depend_on_python_hash_seed():
+    code = (
+        "import safe; "
+        "print(safe.SAFEConverter(slicer=None).encoder("
+        "'[*]CC.[*]N', canonical=False, allow_empty=True))"
+    )
+    outputs = []
+    for hash_seed in ("0", "2"):
+        env = os.environ.copy()
+        env["PYTHONHASHSEED"] = hash_seed
+        result = subprocess.run(
+            [sys.executable, "-c", code],
+            check=True,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
+        outputs.append(result.stdout.strip())
+
+    assert outputs[0] == outputs[1]
+
+
 def test_custom_encoder():
     smart_slicer = ["[r]-;!@[r]"]
     celecoxib = "Cc1ccc(-c2cc(C(F)(F)F)nn2-c2ccc(S(N)(=O)=O)cc2)cc1"
@@ -51,6 +89,14 @@ def test_safe_decoder():
     decoded_fragments = [safe.decode(x, fix=True) for x in fragments]
     assert [dm.to_mol(x) for x in fragments] == [None] * len(fragments)
     assert all(x is not None for x in decoded_fragments)
+
+
+def test_safe_decoder_has_explicit_strict_and_permissive_paths():
+    invalid_safe = "C(=2)c1ccccc1.c13ccccc1.C(=2)CC3"
+
+    assert safe.decode(invalid_safe, ignore_errors=True) is None
+    with pytest.raises(safe.SAFEDecodeError):
+        safe.decode(invalid_safe, ignore_errors=False)
 
 
 def test_rdkit_smiles_parser_issues():
@@ -71,12 +117,10 @@ def test_rdkit_smiles_parser_issues():
             randomize=False,
             rdkit_safe=True,
         )
-    working_decoded = safe.decode(working_encoded)
-    working_no_stero = dm.remove_stereochemistry(dm.to_mol(input_sm))
-    input_mol = dm.remove_stereochemistry(dm.to_mol(working_decoded))
-    assert safe.decode(failing_encoded) is None
-    assert working_decoded is not None
-    assert dm.same_mol(working_no_stero, input_mol)
+    # Stereo-sensitive double bonds are no longer cut, so both serialization
+    # modes remain parseable and preserve the complete isomer.
+    assert dm.same_mol(input_sm, safe.decode(failing_encoded))
+    assert dm.same_mol(input_sm, safe.decode(working_encoded))
 
 
 @pytest.mark.parametrize(
@@ -137,18 +181,80 @@ def test_stereochemistry_issue():
         "Cc1ccc(-n2c(C)cc(/C=N\\Nc3ccc([N+](=O)[O-])cn3)c2C)c(C)c1",
     ]
     for mol in STEREO_MOL_LIST:
-        output_string = safe.encode(mol, ignore_stereo=False, slicer="rotatable")
+        converter = safe.SAFEConverter(slicer="rotatable", ignore_stereo=False)
+        output_string = converter.encoder(mol, canonical=True, allow_empty=True)
         assert dm.same_mol(mol, output_string)
 
-    # now let's test failure case where we fail because we split on a double bond
-    output = safe.encode(STEREO_MOL_LIST[0], ignore_stereo=False, slicer="brics")
-    assert dm.same_mol(STEREO_MOL_LIST[0], output) is False
-    same_stereo = [dm.remove_stereochemistry(dm.to_mol(x)) for x in [output, STEREO_MOL_LIST[0]]]
-    assert dm.same_mol(same_stereo[0], same_stereo[1])
+    # Stereogenic or directional bonds are not cut: SAFE must preserve E/Z.
+    converter = safe.SAFEConverter(slicer="brics", ignore_stereo=False)
+    output = converter.encoder(STEREO_MOL_LIST[0], canonical=True, allow_empty=True)
+    assert dm.same_mol(STEREO_MOL_LIST[0], safe.decode(output))
 
     # check if we ignore the stereo
     output = safe.encode(STEREO_MOL_LIST[0], ignore_stereo=True, slicer="brics")
     assert dm.same_mol(dm.remove_stereochemistry(dm.to_mol(STEREO_MOL_LIST[0])), output)
+
+
+@pytest.mark.parametrize(
+    "smiles",
+    [
+        "F/C=C/F",
+        "F/C=C\\F",
+        "N[C@@H](C)C(=O)O",
+        "C[C@H](O)[C@@H](N)C(=O)O",
+        r"C(=C/c1ccccc1)\CCc1ccccc1",
+    ],
+)
+@pytest.mark.parametrize("slicer", ["brics", "hr", "recap", "mmpa", "rotatable"])
+def test_stereochemistry_round_trip_across_slicers(smiles, slicer):
+    converter = safe.SAFEConverter(slicer=slicer, ignore_stereo=False)
+    encoded = converter.encoder(smiles, canonical=True, allow_empty=True)
+
+    assert dm.same_mol(smiles, converter.decoder(encoded))
+
+
+def test_canonical_decode_does_not_standardize_charge_or_tautomer():
+    smiles = "CCOC(=O)[N-]c1c[n+](N2CCOCC2)no1"
+    encoded = safe.SAFEConverter("brics").encoder(smiles, canonical=True, allow_empty=True)
+
+    assert dm.same_mol(smiles, safe.decode(encoded, canonical=True))
+
+
+def test_attr_as_restores_value_after_exception():
+    obj = SimpleNamespace(value="before")
+
+    with pytest.raises(RuntimeError), safe.utils.attr_as(obj, "value", "during"):
+        assert obj.value == "during"
+        raise RuntimeError("test")
+
+    assert obj.value == "before"
+
+
+def test_mol_slicer_returns_no_linker_when_minimum_size_cannot_be_met():
+    mol = dm.to_mol("c1ccccc1CCc1ccccc1")
+    head, linker, tail = safe.utils.MolSlicer(
+        min_linker_size=100,
+        require_ring_system=False,
+    )(mol)
+
+    assert dm.same_mol(head, mol)
+    assert linker is None
+    assert tail is None
+
+
+def test_convert_to_safe_accepts_molecule_without_string_membership_check():
+    mol = dm.to_mol("CC")
+
+    result = safe.utils.convert_to_safe(mol, split_fragment=True)
+
+    assert result is None or isinstance(result, str)
+
+
+def test_substructure_filter_skips_invalid_molecules_and_rejects_invalid_query():
+    assert safe.utils.filter_by_substructure_constraints(["CC", "not-smiles"], "C") == ["CC"]
+
+    with pytest.raises(ValueError, match="Substructure constraint"):
+        safe.utils.filter_by_substructure_constraints(["CC"], "[invalid")
 
 
 def test_large_molecule_ring_closures():

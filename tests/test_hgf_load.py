@@ -1,3 +1,4 @@
+import datamol as dm
 import pytest
 import torch
 import transformers
@@ -175,3 +176,41 @@ def test_model_only_linker_uses_complete_constraints_and_returns_only_smiles(des
     # Regression oracle produced by both Transformers 4.57.6 and 5.16.1.
     # Intermediate SAFE strings must not leak into the public result list.
     assert generated == ["CCC1CN1.N", "CCCCCN"]
+
+
+def test_try_hard_across_public_design_methods(designer):
+    common = {
+        "n_samples_per_trial": 2,
+        "n_trials": 1,
+        "try_hard": True,
+        "random_seed": 123,
+    }
+    transformers.set_seed(123)
+    generated_by_method = {
+        "de_novo": designer.de_novo_generation(
+            n_samples_per_trial=2,
+            n_trials=1,
+            try_hard=True,
+        ),
+        "scaffold_decoration": designer.scaffold_decoration("c1ccccc1[*]", **common),
+        "motif_extension": designer.motif_extension("c1ccccc1[*]", **common),
+        "super_structure": designer.super_structure("CC(=O)N", **common),
+        "scaffold_morphing": designer.scaffold_morphing(
+            "[1*]C(=O)C#CCN1CCCCC1.[2*]c1cccc(Br)c1",
+            **common,
+        ),
+        "linker_generation": designer.linker_generation("[*]CC", "[*]N", **common),
+        "pattern_decoration": designer.pattern_decoration(
+            "FC(F)(F)C(*)[N,#8]C(=O)c1[c,n]cc[c,n]c1",
+            n_scaff_random=2,
+            n_scaff_samples=3,
+            **common,
+        ),
+    }
+
+    for method, generated in generated_by_method.items():
+        assert generated, f"{method} returned no molecules"
+        assert len(generated) == len(set(generated)), f"{method} returned duplicates"
+        assert all(
+            dm.to_mol(smiles) is not None for smiles in generated
+        ), f"{method} returned invalid SMILES"

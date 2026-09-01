@@ -41,13 +41,76 @@ For GPU installations, install the PyTorch build appropriate for the CUDA driver
 
 ## Behaviour-preserving fixes
 
+- Canonical SAFE encoding is now invariant to equivalent input SMILES spellings.
+  Passing `randomize=True` with `canonical=True` is explicitly a no-op, as the
+  public API has always documented.
+- Encoding with `ignore_stereo=False` no longer cuts stereogenic double bonds or
+  the directional single bonds that define E/Z geometry. SAFE now verifies the
+  complete isomeric graph before returning an encoding. If a custom slicer still
+  changes specified stereochemistry, encoding raises `SAFEEncodeError` instead
+  of returning a silently different stereoisomer. Set `ignore_stereo=True` only
+  when dropping stereochemistry is intentional.
+- `decode(..., canonical=True)` now means canonical SMILES serialization only.
+  It no longer standardizes charges or selects a canonical tautomer, operations
+  which could change the molecular graph represented by an otherwise valid SAFE
+  string.
+- Decode failures now follow the documented contract: strict decoding raises
+  `SAFEDecodeError`, while `ignore_errors=True` remains the permissive batch path
+  and returns `None` for an invalid item.
 - Wildcard-containing molecules no longer turn a structural wildcard into an invalid ring closure. Explicitly labelled and terminal wildcard attachment points remain open for linker generation and scaffold morphing. Their SAFE form is an unmatched ring-closure token rather than a literal `*`; decode with `remove_dummies=False` when the attachment points must be visible again as wildcard atoms.
 - Molecules with 100 or more attachment bonds use RDKit's extended `%(nnn)` ring-closure notation. The SAFE tokenizer now treats that notation as one token.
 - A one-item batch keeps its batch dimension in the property head.
 - `SAFETrainer.compute_loss` accepts the current Transformers trainer call signature.
 - `SAFETokenizer.save_pretrained()` now writes a loadable `tokenizer.json` instead of calling a method that does not exist on the underlying Rust tokenizer.
+- Pickling a `SAFETokenizer` now restores its SAFE-aware pre-tokenizer, including
+  extended ring-closure tokens such as `%(100)`.
 - Model-only linker constraints now encode each ring-closure permutation as a complete phrase. Previously, a dot token alone could satisfy the disjunctive constraint, and intermediate SAFE strings leaked into the returned SMILES list.
+- Model-only linker candidates use a stable sorted order instead of iterating an
+  unordered set, so results no longer depend on `PYTHONHASHSEED`.
+- Pattern sampling allocates tensors on the model device (CPU, CUDA or Apple
+  Silicon MPS) and uses operation-local random generators. Each generation trial
+  also receives a distinct, reproducible SAFE randomization seed.
+- Pattern decoration now converts sampled concrete scaffolds to sanitized
+  molecules before completion and skips invalid exemplars, instead of passing a
+  SMARTS query molecule into the SAFE encoder.
+- Linker extraction reports an unavailable linker as `(molecule, None, None)`
+  when the requested minimum size cannot be met. Visualization accepts an
+  explicit fragment sequence and rejects unknown highlight modes with a clear
+  error.
 - The training CLI now reports a clear error when `--tokenizer` is missing.
+
+## Sampling transition
+
+`max_new_tokens` is now the default generation-length control because it gives
+the completion the same budget regardless of prompt length:
+
+```python
+designer.scaffold_decoration(scaffold, max_new_tokens=80)
+```
+
+`max_length` retains its previous total-length semantics for this release and
+emits a `FutureWarning`; it is scheduled for removal in SAFE 2.0. Passing both
+length controls is an error.
+
+All public design methods accept `try_hard=False`. Enabling it performs a
+transparent quality pass: SAFE samples three times the requested candidates,
+decodes and validates them, preserves any requested fragment or scaffold
+constraint, removes duplicates in generation order, and returns at most the
+requested count. It does not change model logits or apply medicinal-chemistry
+heuristics:
+
+```python
+designer.linker_generation(
+    "[*]c1ccccc1",
+    "[*]N1CCCCC1",
+    n_samples_per_trial=20,
+    try_hard=True,
+)
+```
+
+The published `datamol-io/safe-gpt` checkpoint is loaded at a reviewed pinned
+revision by default. Pass `model_revision=` explicitly to test another Hub
+revision, or `model_dir=` to load a local model.
 
 ## CI and releases
 
