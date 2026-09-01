@@ -31,23 +31,11 @@ class SAFEDesign:
     _DEFAULT_MODEL_PATH = "datamol-io/safe-gpt"
     _DEFAULT_MODEL_REVISION = "3d5fa0988383e898d5ac5db7cd52bf715bc37061"
     _TRY_HARD_OVERSAMPLE_FACTOR = 3
-    _GENERATION_BACKENDS = {
-        "contrastive": (
-            "transformers-community/contrastive-search",
-            "89ece6d21c47e6187e86d45d98fd495feadb33cb",
-            "SAFE_CONTRASTIVE_GENERATION_BACKEND",
-        ),
-        "constrained": (
-            "transformers-community/constrained-beam-search",
-            "07b2f120b7db38f1d7bac617ad65ea130508f297",
-            "SAFE_CONSTRAINED_GENERATION_BACKEND",
-        ),
-        "group_beam": (
-            "transformers-community/group-beam-search",
-            "56d0e48dadff53cb8b8653981b10534c50707fb1",
-            "SAFE_GROUP_BEAM_GENERATION_BACKEND",
-        ),
-    }
+    _CONSTRAINED_GENERATION_BACKEND = (
+        "transformers-community/constrained-beam-search",
+        "07b2f120b7db38f1d7bac617ad65ea130508f297",
+        "SAFE_CONSTRAINED_GENERATION_BACKEND",
+    )
 
     def __init__(
         self,
@@ -106,7 +94,7 @@ class SAFEDesign:
 
         self.verbose = verbose
         self.safe_encoder = safe_encoder or sf.SAFEConverter()
-        self._custom_generators = {}
+        self._constrained_generator = None
 
     @classmethod
     def _candidate_count(cls, requested: int, try_hard: bool) -> int:
@@ -122,27 +110,18 @@ class SAFEDesign:
             :limit
         ]
 
-    def _load_generation_backend(self, name: str):
-        """Load a reviewed Transformers custom-generation backend.
+    def _load_constrained_generation_backend(self):
+        """Load the pinned backend required by model-only linker generation."""
+        if getattr(self, "_constrained_generator", None) is not None:
+            return self._constrained_generator
 
-        The current Transformers stack moved contrastive, constrained and group
-        beam search out of the library. SAFE pins the reviewed upstream revisions so these sampling
-        modes do not silently change when the remote repository advances. An
-        environment variable can point to a local checkout for offline use.
-        """
-        if not hasattr(self, "_custom_generators"):
-            self._custom_generators = {}
-        if name in self._custom_generators:
-            return self._custom_generators[name]
-
-        repo_id, revision, env_name = self._GENERATION_BACKENDS[name]
+        repo_id, revision, env_name = self._CONSTRAINED_GENERATION_BACKEND
         backend = os.getenv(env_name, repo_id)
         load_kwargs = {"trust_remote_code": True}
         if not os.path.isdir(backend):
             load_kwargs["revision"] = revision
-        generator = self.model.load_custom_generate(backend, **load_kwargs)
-        self._custom_generators[name] = generator
-        return generator
+        self._constrained_generator = self.model.load_custom_generate(backend, **load_kwargs)
+        return self._constrained_generator
 
     @classmethod
     def load_from_wandb(
@@ -602,19 +581,13 @@ class SAFEDesign:
         try_hard: bool = False,
         **kwargs: Optional[Dict[Any, Any]],
     ):
-        """Perform motif extension using the pretrained SAFE model.
-        Motif extension is really just scaffold decoration underlying.
-
-        Args:
-            motif: scaffold (with attachment points) to decorate
-            n_samples_per_trial: number of new molecules to generate for each randomization
-            n_trials: number of randomization to perform
-            do_not_fragment_further: whether to fragment the scaffold further or not
-            sanitize: whether to sanitize the generated molecules and check
-            random_seed: random seed to use
-            try_hard: oversample, validate and deduplicate candidates before returning.
-            kwargs: any argument to provide to the underlying generation function
-        """
+        """Deprecated alias for :meth:`scaffold_decoration`."""
+        warnings.warn(
+            "motif_extension() is an alias of scaffold_decoration() and will be removed in "
+            "SAFE 2.0; call scaffold_decoration() directly.",
+            FutureWarning,
+            stacklevel=2,
+        )
         return self.scaffold_decoration(
             motif,
             n_samples_per_trial=n_samples_per_trial,
@@ -1102,35 +1075,16 @@ class SAFEDesign:
         max_new_tokens: Optional[int] = None,
         how: Optional[str] = "random",
         num_beams: Optional[int] = None,
-        num_beam_groups: Optional[int] = None,
         do_sample: Optional[bool] = None,
         **kwargs,
     ):
-        """Sample a new sequence using the underlying hugging face model.
-        This emulates the izanagi sampling models, if you wish to retain the hugging face generation
-        behaviour, either call the hugging face functions directly or overwrite this function
+        """Sample a SAFE sequence with the maintained Transformers generation paths.
 
         ??? note "Generation Parameters"
-            From the hugging face documentation:
-
-            * `greedy decoding` if how="greedy" and num_beams=1 and do_sample=False.
-            * `multinomial sampling` if num_beams=1 and do_sample=True.
-            * `beam-search decoding` if how="beam" and num_beams>1 and do_sample=False.
-            * `beam-search multinomial` sampling by calling if beam=True, num_beams>1 and do_sample=True or how="random" and num_beams>1
-            * `diverse beam-search decoding` if num_beams>1 and num_beam_groups>1
-
-            It's also possible to ignore the 'how' shortcut and directly call the underlying generation methods using the proper arguments.
-            Learn more here: https://huggingface.co/docs/transformers/v4.32.0/en/main_classes/text_generation#transformers.GenerationConfig
-            Under the hood, the following will be applied depending on the arguments:
-
-            * greedy decoding by calling greedy_search() if num_beams=1 and do_sample=False
-            * contrastive search by calling contrastive_search() if penalty_alpha>0. and top_k>1
-            * multinomial sampling by calling sample() if num_beams=1 and do_sample=True
-            * beam-search decoding by calling beam_search() if num_beams>1 and do_sample=False
-            * beam-search multinomial sampling by calling beam_sample() if num_beams>1 and do_sample=True
-            * diverse beam-search decoding by calling group_beam_search(), if num_beams>1 and num_beam_groups>1
-            * constrained beam-search decoding by calling constrained_beam_search(), if constraints!=None or force_words_ids!=None
-            * assisted decoding by calling assisted_decoding(), if assistant_model is passed to .generate()
+            SAFE maintains multinomial sampling, greedy decoding, beam search,
+            beam sampling and the constrained beam path required by model-only
+            linker generation. For other experimental Transformers strategies,
+            call the underlying model directly.
 
         Args:
             n_samples: number of sequences to return
@@ -1139,7 +1093,6 @@ class SAFEDesign:
             max_new_tokens: maximum number of tokens generated after the prompt. Defaults to 100.
             how: which sampling method to use: "beam", "greedy" or "random". Can be used to control other parameters by setting defaults
             num_beams: number of beams for beam search. 1 means no beam search, unless beam is specified then max(n_samples, num_beams) is used
-            num_beam_groups: number of beam groups for diverse beam search
             do_sample: whether to perform random sampling or not, equivalent to setting random to True
             kwargs: any additional keyword argument to pass to the underlying sampling `generate`  from hugging face transformer
 
@@ -1163,13 +1116,24 @@ class SAFEDesign:
                 return_tensors="pt",
             )
 
+        if how not in {None, "random", "greedy", "beam"}:
+            raise ValueError("how must be one of: 'random', 'greedy', 'beam' or None")
+        if kwargs.get("num_beam_groups", 1) > 1:
+            raise ValueError(
+                "Diverse beam search is not maintained by SAFE; call model.generate() directly"
+            )
+        if kwargs.get("penalty_alpha", 0) > 0:
+            raise ValueError(
+                "Contrastive search is not maintained by SAFE; call model.generate() directly"
+            )
+
         num_beams = num_beams or None
         do_sample = do_sample or False
 
         if how == "random":
             do_sample = True
 
-        elif how is not None and "beam" in how:
+        elif how == "beam":
             num_beams = max((num_beams or 0), n_samples)
 
         is_greedy = how == "greedy" or (num_beams in [0, 1, None]) and do_sample is False
@@ -1177,9 +1141,6 @@ class SAFEDesign:
         kwargs["do_sample"] = do_sample
         if num_beams is not None:
             kwargs["num_beams"] = num_beams
-        if num_beam_groups is not None:
-            kwargs["num_beam_groups"] = num_beam_groups
-        kwargs["output_scores"] = True
         kwargs["return_dict_in_generate"] = True
         kwargs["num_return_sequences"] = n_samples
         if max_length is not None and max_new_tokens is not None:
@@ -1199,7 +1160,6 @@ class SAFEDesign:
         # emits a warning for every call.
         if num_beams is not None and num_beams > 1:
             kwargs.setdefault("early_stopping", True)
-        # EN we don't do anything with the score that the model might return on generate ...
         if not isinstance(input_ids, Mapping):
             input_ids = {"inputs": None}
         else:
@@ -1217,11 +1177,7 @@ class SAFEDesign:
 
         custom_generator = None
         if kwargs.get("constraints") is not None or kwargs.get("force_words_ids") is not None:
-            custom_generator = self._load_generation_backend("constrained")
-        elif num_beam_groups is not None and num_beam_groups > 1:
-            custom_generator = self._load_generation_backend("group_beam")
-        elif kwargs.get("penalty_alpha", 0) > 0 and kwargs.get("top_k", 0) > 1:
-            custom_generator = self._load_generation_backend("contrastive")
+            custom_generator = self._load_constrained_generation_backend()
 
         def generate(**generation_kwargs):
             active_generation_config = self.generation_config
@@ -1236,7 +1192,7 @@ class SAFEDesign:
         if is_greedy:
             kwargs["num_return_sequences"] = 1
             if num_beams is not None and num_beams > 1:
-                raise ValueError("Cannot set num_beams|num_beam_groups > 1 for greedy")
+                raise ValueError("Cannot set num_beams > 1 for greedy")
             # under greedy decoding there can only be a single solution
             # we just duplicate the solution several time for efficiency
             outputs = generate(

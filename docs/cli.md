@@ -37,4 +37,4 @@ All standard `transformers.TrainingArguments` are also available. Run the instal
 safe-train --help
 ```
 
-Contrastive, constrained and diverse beam search use reviewed, commit-pinned custom generation backends because those algorithms moved out of the main Transformers package. See [Migrating to SAFE 1.0](migration.md) for details and offline configuration.
+Model-only linker generation uses a reviewed, commit-pinned constrained-beam backend because that algorithm moved out of the main Transformers package. See [Migrating to SAFE 1.0](migration.md) for details and offline configuration.

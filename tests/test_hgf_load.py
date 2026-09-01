@@ -77,16 +77,6 @@ def test_safe_gpt_logits_are_unchanged(designer):
             ["CCCCCCCCCCCCCCC", "Cc1ccc5cc1.C5CC"],
         ),
         (
-            "diverse beam",
-            {
-                "how": "beam",
-                "num_beams": 4,
-                "num_beam_groups": 2,
-                "diversity_penalty": 1.0,
-            },
-            ["Cc1ccc(C)c5c1.C", "Cc1ccc(C)c5c1.N"],
-        ),
-        (
             "constrained beam",
             {
                 "how": "beam",
@@ -117,50 +107,6 @@ def test_sampling_matches_transformers_4_baseline_with_and_without_cache(
     assert outputs == [expected, expected]
 
 
-def test_contrastive_search_is_reproducible(designer):
-    """Contrastive search requires its cache and a pinned custom backend."""
-    outputs = []
-    for _ in range(2):
-        transformers.set_seed(123)
-        outputs.append(
-            designer._generate(
-                n_samples=2,
-                safe_prefix="C",
-                max_length=16,
-                how=None,
-                top_k=4,
-                penalty_alpha=0.6,
-                use_cache=True,
-            )
-        )
-
-    assert outputs[0] == outputs[1]
-    assert outputs[0] == ["C[C@@H]46.c16ccc(F)c", "C[C@@H]46.c16ccc(F)c"]
-
-
-def test_prompt_lookup_assisted_sampling_requires_cache(designer):
-    transformers.set_seed(123)
-    generated = designer._generate(
-        n_samples=2,
-        safe_prefix="C",
-        max_length=16,
-        how="greedy",
-        prompt_lookup_num_tokens=3,
-        use_cache=True,
-    )
-    assert generated == ["CCCCCCCCCCCCCCC", "CCCCCCCCCCCCCCC"]
-
-    with pytest.raises(ValueError, match="requires `use_cache=True`"):
-        designer._generate(
-            n_samples=2,
-            safe_prefix="C",
-            max_length=16,
-            how="greedy",
-            prompt_lookup_num_tokens=3,
-            use_cache=False,
-        )
-
-
 def test_model_only_linker_uses_complete_constraints_and_returns_only_smiles(designer):
     transformers.set_seed(123)
     generated = designer.linker_generation(
@@ -178,7 +124,7 @@ def test_model_only_linker_uses_complete_constraints_and_returns_only_smiles(des
     assert generated == ["CCC1CN1.N", "CCCCCN"]
 
 
-def test_try_hard_across_public_design_methods(designer):
+def test_try_hard_across_distinct_public_design_workflows(designer):
     common = {
         "n_samples_per_trial": 2,
         "n_trials": 1,
@@ -193,7 +139,6 @@ def test_try_hard_across_public_design_methods(designer):
             try_hard=True,
         ),
         "scaffold_decoration": designer.scaffold_decoration("c1ccccc1[*]", **common),
-        "motif_extension": designer.motif_extension("c1ccccc1[*]", **common),
         "super_structure": designer.super_structure("CC(=O)N", **common),
         "scaffold_morphing": designer.scaffold_morphing(
             "[1*]C(=O)C#CCN1CCCCC1.[2*]c1cccc(Br)c1",

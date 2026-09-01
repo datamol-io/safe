@@ -160,6 +160,7 @@ def test_random_generation_does_not_set_beam_only_early_stopping():
 
     assert designer._generate(n_samples=1, safe_prefix="C", how="random") == ["CC"]
     assert "early_stopping" not in designer.model.generate.call_args.kwargs
+    assert "output_scores" not in designer.model.generate.call_args.kwargs
     assert designer.model.generate.call_args.kwargs["max_new_tokens"] == 100
 
     designer.model.generate.reset_mock()
@@ -171,6 +172,43 @@ def test_random_generation_does_not_set_beam_only_early_stopping():
         designer._generate(n_samples=1, safe_prefix="C", max_length=12)
     assert designer.model.generate.call_args.kwargs["max_length"] == 12
     assert "max_new_tokens" not in designer.model.generate.call_args.kwargs
+
+
+@pytest.mark.parametrize(
+    "kwargs,match",
+    [
+        ({"num_beam_groups": 2}, "Diverse beam search"),
+        ({"penalty_alpha": 0.6, "top_k": 4}, "Contrastive search"),
+        ({"how": "unsupported"}, "how must be one of"),
+    ],
+)
+def test_generate_rejects_unmaintained_sampling_modes(kwargs, match):
+    designer = SAFEDesign.__new__(SAFEDesign)
+    designer.tokenizer = MagicMock()
+    designer.tokenizer.get_pretrained.return_value.model_max_length = 32
+
+    with pytest.raises(ValueError, match=match):
+        designer._generate(**kwargs)
+
+
+def test_motif_extension_is_a_deprecated_scaffold_decoration_alias():
+    designer = SAFEDesign.__new__(SAFEDesign)
+    designer.scaffold_decoration = MagicMock(return_value=["CC"])
+
+    with pytest.warns(FutureWarning, match="scaffold_decoration"):
+        result = designer.motif_extension("C[*]", n_samples_per_trial=2)
+
+    assert result == ["CC"]
+    designer.scaffold_decoration.assert_called_once_with(
+        "C[*]",
+        n_samples_per_trial=2,
+        n_trials=1,
+        sanitize=False,
+        do_not_fragment_further=True,
+        random_seed=None,
+        add_dot=True,
+        try_hard=False,
+    )
 
 
 def test_try_hard_sampling_budget_and_stable_deduplication():

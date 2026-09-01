@@ -7,17 +7,19 @@ SAFE 1.0 is a maintenance-focused major release. It keeps the established encodi
 - Python 3.11 through 3.14 is supported. Python 3.9 and 3.10 are no longer tested.
 - The minimum RDKit release is 2024.09. RDKit 2026.03 is deliberately excluded because that series changes double-bond direction handling during fragmentation and can silently lose stereochemistry in an otherwise valid SAFE round trip. The compatibility matrix uses RDKit 2024.09, 2025.03, and 2025.09.
 - PyTorch 2.5 or newer is supported.
-- Transformers 5 is the supported generation stack. Regression oracles cover greedy, multinomial, beam, beam-sampling, diverse-beam, constrained-beam, contrastive and prompt-lookup-assisted decoding. SAFE-GPT keeps identical logits and seeded outputs for the six established decoding paths compared with Transformers 4.57.6; contrastive search is restored through its pinned backend and matches that backend under both releases.
+- Transformers 5 is the supported generation stack. SAFE maintains greedy,
+  multinomial, beam, beam-sampling and the constrained-beam path required by
+  model-only linker generation. SAFE-GPT keeps identical logits and seeded
+  outputs for those established paths compared with Transformers 4.57.6.
 - Datasets 4+, Accelerate 1.1+, Tokenizers 0.23, and current NumPy and NetworkX releases are supported.
 
-The current Transformers generation stack moved contrastive, constrained and
-diverse beam search into custom generation
-repositories. SAFE loads those algorithms only when requested, pins the exact
-reviewed upstream commits, and allows offline mirrors through
-`SAFE_CONTRASTIVE_GENERATION_BACKEND`,
-`SAFE_CONSTRAINED_GENERATION_BACKEND` and
-`SAFE_GROUP_BEAM_GENERATION_BACKEND`. Standard sampling does not download or
-execute any of these backends.
+The current Transformers generation stack moved constrained beam search into a
+custom generation repository. SAFE loads it only for model-only linker
+generation, pins the reviewed upstream commit, and allows an offline mirror
+through `SAFE_CONSTRAINED_GENERATION_BACKEND`. Standard sampling does not
+download or execute this backend. Contrastive and diverse beam search are no
+longer wrapped by SAFE; advanced Transformers experiments should call the
+underlying model directly.
 
 The default installation is now the molecular notation core: encoding,
 decoding and `safe.split`. PyTorch, Transformers, Tokenizers, tqdm and fsspec
@@ -87,6 +89,10 @@ For GPU installations, install the PyTorch build appropriate for the CUDA driver
 - The training CLI now reports a clear error when `--tokenizer` is missing.
 
 ## Sampling transition
+
+`motif_extension()` was an exact wrapper around
+`scaffold_decoration(..., add_dot=True)`. It remains as a deprecated alias for
+this transition and will be removed in SAFE 2.0.
 
 `max_new_tokens` is now the default generation-length control because it gives
 the completion the same budget regardless of prompt length:
