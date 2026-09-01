@@ -51,24 +51,31 @@ jobs:
           - os: ubuntu-latest
             python-version: "3.11"
             rdkit-version: "2024.9.*"
+            pandas-version: "<3"
           - os: ubuntu-latest
             python-version: "3.12"
             rdkit-version: "2025.3.*"
+            pandas-version: "<3"
           - os: ubuntu-latest
             python-version: "3.13"
             rdkit-version: "2025.9.*"
+            pandas-version: ">=3"
           - os: ubuntu-latest
             python-version: "3.14"
             rdkit-version: "2025.9.*"
+            pandas-version: ">=3"
           - os: macos-latest
             python-version: "3.13"
             rdkit-version: "2025.9.*"
+            pandas-version: ">=3"
           - os: macos-15-intel
             python-version: "3.13"
             rdkit-version: "2025.9.*"
+            pandas-version: ">=3"
           - os: windows-latest
             python-version: "3.13"
             rdkit-version: "2025.9.*"
+            pandas-version: ">=3"
 
     steps:
       - name: Checkout
@@ -85,13 +92,11 @@ jobs:
       - name: Install dependencies
         run: |
           uv pip install "rdkit==${{ matrix.rdkit-version }}"
-          uv pip install --editable ".[test,all]"
+          uv pip install --editable ".[test]"
+          uv pip install "pandas${{ matrix.pandas-version }}"
 
       - name: Run core tests
         run: python -m pytest -m "not integration"
-
-      - name: Test CLI
-        run: safe-train --help
 
       - name: Upload coverage
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
@@ -123,6 +128,9 @@ jobs:
 
       - name: Install integration dependencies
         run: uv pip install --editable ".[test,docs,all]"
+
+      - name: Test training CLI
+        run: safe-train --help
 
       - name: Run integration tests
         run: python -m pytest -m integration --no-cov

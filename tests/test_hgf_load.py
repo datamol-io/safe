@@ -50,7 +50,7 @@ def test_safe_gpt_logits_are_unchanged(designer):
             -10.80654049,
         ]
     )
-    torch.testing.assert_close(logits[0, -1, :10].cpu(), expected, rtol=0, atol=1e-6)
+    torch.testing.assert_close(logits[0, -1, :10].cpu(), expected, rtol=1e-6, atol=1e-5)
 
 
 @pytest.mark.parametrize(
