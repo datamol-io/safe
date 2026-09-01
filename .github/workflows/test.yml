@@ -106,8 +106,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      HF_HOME: ${{ runner.temp }}/huggingface
-      MPLCONFIGDIR: ${{ runner.temp }}/matplotlib
+      HF_HOME: ${{ github.workspace }}/.cache/huggingface
+      MPLCONFIGDIR: ${{ github.workspace }}/.cache/matplotlib
       PYTHONHASHSEED: "0"
     steps:
       - name: Checkout
