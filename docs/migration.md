@@ -128,15 +128,13 @@ revision, or `model_dir=` to load a local model.
 ## CI and releases
 
 Pull requests and pushes to `dev` and `main` now run the supported Python/RDKit
-matrix with `safe-mol[all]` on Linux x86-64, Windows x86-64, macOS Apple
-Silicon and macOS Intel.
-The published SAFE-GPT checkpoint and executable tutorials have a separate
-Linux integration lane because they download external model artifacts.
+core matrix on Linux x86-64, Windows x86-64, macOS Apple Silicon and macOS
+Intel. All maintained extras, the published SAFE-GPT checkpoint and executable
+tutorials are validated in a separate Linux integration lane.
 Documentation is built in strict mode.
 
-Releases are built once from a published GitHub Release, smoke-tested from both
-the wheel and source distribution, supplied with PEP 740 attestations, and
-uploaded to PyPI with Trusted Publishing. The release workflow no longer
-creates tags or pushes directly to `main`. The conda-forge feedstock remains a
-supported downstream channel; its update bot proposes each PyPI version and
-maintainers review the resulting dependency and test changes there.
+Publication remains a manual action using `PYPI_API_TOKEN`, with full test
+validation and isolated wheel/source installation checks. The action creates
+a GitHub tag and Release at the tested commit only after PyPI succeeds; it
+never pushes code to `main`. See the [release guide](releasing.md) for dry
+runs, prereleases and the separate conda-forge recipe updates.

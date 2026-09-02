@@ -30,8 +30,8 @@
 [![Conda](https://img.shields.io/conda/v/conda-forge/safe-mol?label=conda&color=success)](https://anaconda.org/conda-forge/safe-mol)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/safe-mol)](https://pypi.org/project/safe-mol/)
 [![Conda](https://img.shields.io/conda/dn/conda-forge/safe-mol)](https://anaconda.org/conda-forge/safe-mol)
-[![Code license](https://img.shields.io/badge/Code%20License-Apache_2.0-green.svg)](https://github.com/datamol-io/safe/blob/main/LICENSE)
-[![Data License](https://img.shields.io/badge/Data%20License-CC%20BY%204.0-red.svg)](https://github.com/datamol-io/safe/blob/main/DATA_LICENSE)
+[![Code license](https://img.shields.io/badge/Code%20License-Apache_2.0-green.svg)](LICENSE)
+[![Data License](https://img.shields.io/badge/Data%20License-CC%20BY%204.0-red.svg)](DATA_LICENSE)
 [![GitHub Repo stars](https://img.shields.io/github/stars/datamol-io/safe)](https://github.com/datamol-io/safe/stargazers)
 [![GitHub Repo stars](https://img.shields.io/github/forks/datamol-io/safe)](https://github.com/datamol-io/safe/network/members)
 [![arXiv](https://img.shields.io/badge/arXiv-2310.10773-b31b1b.svg)](https://arxiv.org/pdf/2310.10773.pdf)
@@ -71,15 +71,16 @@ Weights & Biases support are independent extras. Sampling gains an optional
 constraints.
 
 See the [complete changelog](CHANGELOG.md) and the
-[1.0 migration guide](docs/migration.md). These changes are currently on the
-`dev` branch; the latest PyPI and conda-forge packages remain the stable
-releases.
+[1.0 migration guide](docs/migration.md). These notes describe the upcoming
+major release; PyPI and conda-forge still provide the published stable versions.
 
 ## News 🚀
 
 #### 💥 2024/01/15 💥
 1. [@IanAWatson](https://github.com/IanAWatson) has a C++ implementation of SAFE in [LillyMol](https://github.com/IanAWatson/LillyMol/tree/bazel_version_float) that is quite fast and use a custom fragmentation algorithm. Follow the installation instruction on the repo and checkout the docs of the CLI here: [docs/Molecule_Tools/SAFE.md](https://github.com/IanAWatson/LillyMol/blob/bazel_version_float/docs/Molecule_Tools/SAFE.md)
 
+
+Release maintainers: see the [manual release guide](docs/releasing.md).
 
 ## Installation
 
@@ -114,7 +115,7 @@ The constrained beam backend required by model-only linker generation is loaded
 lazily from a reviewed, commit-pinned Hugging Face repository. RDKit 2026.03 is
 excluded because of an upstream stereochemistry regression; RDKit 2024.09
 through 2025.09 are covered by CI. See the
-[1.0 migration guide](https://safe-docs.datamol.io/migration.html) for details.
+[1.0 migration guide](docs/migration.md) for details.
 
 For GPU workloads, install the PyTorch build matching your CUDA driver before installing SAFE. You can verify the resulting environment with:
 
@@ -205,9 +206,16 @@ If you use this repository, please cite the following related [paper](https://ar
 
 ## License
 
-The training dataset is licensed under CC BY 4.0. See [DATA_LICENSE](DATA_LICENSE) for details.  This code base is licensed under the Apache-2.0 license. See [LICENSE](LICENSE) for details. 
+The Python code is licensed under [Apache-2.0](LICENSE). The training dataset
+is separately licensed under [CC BY 4.0](DATA_LICENSE). These two files cover
+different materials; they are not alternative licences for the Python package.
 
 Note that the model weights of **SAFE-GPT** are exclusively licensed for research purposes (CC BY-NC 4.0).
+
+The [SAFE-GPT model card](https://huggingface.co/datamol-io/safe-gpt/blob/3d5fa0988383e898d5ac5db7cd52bf715bc37061/README.md)
+currently declares Apache-2.0 instead. This discrepancy needs maintainer
+clarification before release; do not infer commercial-use permission from
+the Python package licence. This repository does not redistribute the weights.
 
 ## Development lifecycle
 

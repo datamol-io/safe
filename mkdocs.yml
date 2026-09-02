@@ -13,6 +13,7 @@ strict: true
 nav:
   - Overview: index.md
   - Migrating to 1.0: migration.md
+  - Releasing: releasing.md
   - Tutorials:
       - Getting Started: tutorials/getting-started.ipynb
       - Molecular design: tutorials/design-with-safe.ipynb

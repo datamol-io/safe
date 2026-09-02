@@ -49,7 +49,7 @@ sampling, moves SAFE-GPT to Transformers 5, and separates optional model and
 training dependencies from the notation core. See the
 [changelog](https://github.com/datamol-io/safe/blob/dev/CHANGELOG.md) and
 [migration guide](migration.md) for fixes, deprecations and compatibility limits.
-This work is on `dev` and is not yet a published release.
+These changes are not yet a published release.
 
 ## Overview of SAFE
 
