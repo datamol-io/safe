@@ -533,6 +533,42 @@ def test_legacy_fragment_override_keeps_working():
 
 
 @pytest.mark.parametrize(
+    "smiles",
+    [
+        "c1ccccc1",  # aromatic ring, no BRICS bond
+        "C1CCCCC1",  # saturated ring, no BRICS bond
+        "C",  # single atom
+        "[Na+].[Cl-]",  # salt whose components cannot be cut
+        "CC(=O)[O-].[Na+]",  # carboxylate salt
+        "CCO.O",  # multi-component (solvate)
+    ],
+)
+def test_encode_unbreakable_molecule_raises_by_default(smiles):
+    with pytest.raises(safe.SAFEFragmentationError):
+        safe.encode(smiles)
+
+
+@pytest.mark.parametrize(
+    "smiles",
+    [
+        "c1ccccc1",
+        "C1CCCCC1",
+        "C",
+        "[Na+].[Cl-]",
+        "CC(=O)[O-].[Na+]",
+        "CCO.O",
+    ],
+)
+def test_encode_allow_empty_returns_unfragmented_and_round_trips(smiles):
+    encoded = safe.encode(smiles, allow_empty=True)
+    # An uncuttable input becomes a single SAFE block: no fragment separator
+    # is introduced beyond the disconnections already present in the input.
+    assert encoded.count(".") == smiles.count(".")
+    assert dm.same_mol(smiles, encoded)
+    assert dm.same_mol(smiles, safe.decode(encoded, canonical=True))
+
+
+@pytest.mark.parametrize(
     "scaffold,n_attachments",
     [
         ("O=c1[nH]cnc2nc([*])ccc12", 1),

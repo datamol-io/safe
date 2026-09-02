@@ -59,28 +59,13 @@ The construction of a SAFE strings requires defining a molecular fragmentation a
     <img src="docs/assets/safe-construction.svg" width="100%">
 </div>
 
-## Updates
-
-SAFE 1.0 is a maintenance-focused major release. It preserves E/Z and atom
-stereochemistry across fragmentation, makes strict and permissive decoding
-behaviour explicit, supports extended ring closures, and updates SAFE-GPT to
-Transformers 5 without changing the established seeded generation paths. The
-core notation package is lightweight, while model, training, visualization and
-Weights & Biases support are independent extras. Sampling gains an optional
-`try_hard` quality pass and deterministic handling of linker and pattern
-constraints.
-
-See the [complete changelog](CHANGELOG.md) and the
-[1.0 migration guide](docs/migration.md). These notes describe the upcoming
-major release; PyPI and conda-forge still provide the published stable versions.
-
 ## News 🚀
+
+#### 💥 2026/09/03 💥
+1. **SAFE 1.0 release.** A maintenance-focused major release. It preserves E/Z and atom stereochemistry across fragmentation, makes strict and permissive decoding behaviour explicit, supports extended ring closures, and updates SAFE-GPT to Transformers 5 without changing the established seeded generation paths. The core notation package is lightweight, while model, training, visualization and Weights & Biases support are independent extras. Sampling gains an optional `try_hard` quality pass and deterministic handling of linker and pattern constraints. See the [complete changelog](CHANGELOG.md) and the [1.0 migration guide](docs/migration.md).
 
 #### 💥 2024/01/15 💥
 1. [@IanAWatson](https://github.com/IanAWatson) has a C++ implementation of SAFE in [LillyMol](https://github.com/IanAWatson/LillyMol/tree/bazel_version_float) that is quite fast and use a custom fragmentation algorithm. Follow the installation instruction on the repo and checkout the docs of the CLI here: [docs/Molecule_Tools/SAFE.md](https://github.com/IanAWatson/LillyMol/blob/bazel_version_float/docs/Molecule_Tools/SAFE.md)
-
-
-Release maintainers: see the [manual release guide](docs/releasing.md).
 
 ## Installation
 
@@ -209,16 +194,14 @@ If you use this repository, please cite the following related [paper](https://ar
 
 ## License
 
-The Python code is licensed under [Apache-2.0](LICENSE). The training dataset
-is separately licensed under [CC BY 4.0](DATA_LICENSE). These two files cover
-different materials; they are not alternative licences for the Python package.
+The training dataset is licensed under CC BY 4.0. See [DATA_LICENSE](DATA_LICENSE)
+for details. This code base is licensed under the Apache-2.0 license. See
+[LICENSE](LICENSE) for details.
 
 Note that the model weights of **SAFE-GPT** are exclusively licensed for research purposes (CC BY-NC 4.0).
 
-The [SAFE-GPT model card](https://huggingface.co/datamol-io/safe-gpt/blob/3d5fa0988383e898d5ac5db7cd52bf715bc37061/README.md)
-currently declares Apache-2.0 instead. This discrepancy needs maintainer
-clarification before release; do not infer commercial-use permission from
-the Python package licence. This repository does not redistribute the weights.
+These licences apply to separate materials. The Python package does not
+redistribute the model weights.
 
 ## Development lifecycle
 
@@ -244,3 +227,7 @@ uv run python -m pytest -m integration --no-cov
 The integration command validates the published SAFE-GPT model and executes
 the maintained tutorials. GitHub Actions runs the same command. Use
 `uv run python -m pytest -m notebook --no-cov` when iterating on tutorials only.
+
+### Releasing
+
+Release maintainers: see the [manual release guide](docs/releasing.md).

@@ -587,6 +587,7 @@ def encode(
     require_hs: Optional[bool] = None,
     constraints: Optional[List[dm.Mol]] = None,
     ignore_stereo: Optional[bool] = False,
+    allow_empty: bool = False,
 ):
     """
     Convert input smiles to SAFE representation
@@ -601,6 +602,10 @@ def encode(
         constraints: List of molecules or pattern to preserve during the SAFE construction.
         ignore_stereo: whether to discard input stereochemistry explicitly. When false,
             stereochemistry-changing cuts are skipped and the encoded graph is verified.
+        allow_empty: whether to tolerate molecules the slicer cannot cut. When True,
+            an input with no breakable bonds (for example a rigid ring, a single atom,
+            or the components of a salt) is returned as a single unfragmented SAFE
+            block instead of raising ``SAFEFragmentationError``.
     """
     if slicer is None:
         slicer = "brics"
@@ -613,6 +618,7 @@ def encode(
                 randomize=randomize,
                 constraints=constraints,
                 seed=seed,
+                allow_empty=allow_empty,
             )
         except (SAFEEncodeError, SAFEFragmentationError) as e:
             raise e

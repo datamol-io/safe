@@ -19,6 +19,9 @@ for earlier release notes.
 
 - Add support for RDKit extended ring closures such as `%(100)` in encoding,
   decoding and tokenization.
+- Add `allow_empty=True` to `safe.encode`. Inputs the slicer cannot cut (rigid
+  rings, single atoms, or the components of a salt) are returned as a single
+  unfragmented SAFE block instead of raising `SAFEFragmentationError`.
 - Add `try_hard=True` to every public design workflow. It oversamples,
   validates, checks the requested structural constraint, removes duplicates in
   generation order and returns at most the requested number of candidates.
@@ -29,6 +32,9 @@ for earlier release notes.
 
 ### Changed
 
+- Clarify the existing licensing boundaries: Apache-2.0 for code, CC BY 4.0
+  for the training dataset, and research-only CC BY-NC 4.0 for SAFE-GPT weights,
+  as confirmed by the maintainer. The package does not redistribute the weights.
 - Test Python 3.11–3.14 and RDKit 2024.09, 2025.03 and 2025.09. The core
   requires Python 3.11+ and RDKit 2024.09+; model extras require PyTorch 2.5+.
   Mac Intel supports the notation core, not the model/training extras, because

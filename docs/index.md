@@ -42,15 +42,6 @@
 [![code-check](https://github.com/datamol-io/safe/actions/workflows/code-check.yml/badge.svg)](https://github.com/datamol-io/safe/actions/workflows/code-check.yml)
 [![doc](https://github.com/datamol-io/safe/actions/workflows/doc.yml/badge.svg)](https://github.com/datamol-io/safe/actions/workflows/doc.yml)
 
-## Updates
-
-The upcoming 1.0 release improves stereochemistry preservation, decoding and
-sampling, moves SAFE-GPT to Transformers 5, and separates optional model and
-training dependencies from the notation core. See the
-[changelog](https://github.com/datamol-io/safe/blob/dev/CHANGELOG.md) and
-[migration guide](migration.md) for fixes, deprecations and compatibility limits.
-These changes are not yet a published release.
-
 ## Overview of SAFE
 
 SAFE _is the_  deep learning molecular representation. It's an encoding leveraging a peculiarity in the decoding schemes of SMILES, to allow representation of molecules as a contiguous sequence of connected fragments. SAFE strings are valid SMILES strings, and thus are able to preserve the same amount of information. The intuitive representation of molecules as an ordered sequence of connected fragments greatly simplifies the following tasks often encountered in molecular design:
@@ -72,10 +63,13 @@ The construction of a SAFE strings requires defining a molecular fragmentation a
 
 ## News 🚀
 
+#### 💥 2026/09/03 💥
+1. **SAFE 1.0 release.** Improves stereochemistry preservation, decoding and sampling, moves SAFE-GPT to Transformers 5, and separates optional model and training dependencies from the notation core. See the [changelog](https://github.com/datamol-io/safe/blob/dev/CHANGELOG.md) and [migration guide](migration.md) for fixes, deprecations and compatibility limits.
+
 #### 💥 2024/01/15 💥
 1. [@IanAWatson](https://github.com/IanAWatson) has a C++ implementation of SAFE in [LillyMol](https://github.com/IanAWatson/LillyMol/tree/bazel_version_float) that is quite fast and use a custom fragmentation algorithm. Follow the installation instruction on the repo and checkout the docs of the CLI here: [docs/Molecule_Tools/SAFE.md](https://github.com/IanAWatson/LillyMol/blob/bazel_version_float/docs/Molecule_Tools/SAFE.md)
 
-### Installation
+## Installation
 
 SAFE 1.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:
 
@@ -202,9 +196,14 @@ If you use this repository, please cite the following related [paper](https://ar
 
 ## License
 
-The training dataset is licensed under CC BY 4.0, which permits reuse with attribution, including commercial reuse. See [DATA_LICENSE](data_license.md) for details. SAFE-GPT model weights are separately licensed under CC BY-NC 4.0 for non-commercial use.
+The training dataset is licensed under CC BY 4.0. See [DATA_LICENSE](data_license.md)
+for details. This code base is licensed under the Apache-2.0 license. See
+[LICENSE](license.md) for details.
 
-This code base is licensed under the Apache-2.0 license. See [LICENSE](license.md) for details.
+Note that the model weights of **SAFE-GPT** are exclusively licensed for research purposes (CC BY-NC 4.0).
+
+These licences apply to separate materials. The Python package does not
+redistribute the model weights.
 
 ## Development lifecycle
 
