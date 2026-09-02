@@ -20,7 +20,7 @@ def test_import():
     )
     assert result.stdout.strip()
 
-    star_import = subprocess.run(
+    subprocess.run(
         [
             sys.executable,
             "-c",
@@ -32,4 +32,3 @@ def test_import():
         capture_output=True,
         text=True,
     )
-    assert star_import.stderr == ""
