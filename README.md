@@ -59,13 +59,29 @@ The construction of a SAFE strings requires defining a molecular fragmentation a
     <img src="docs/assets/safe-construction.svg" width="100%">
 </div>
 
+## Updates
+
+SAFE 1.0 is a maintenance-focused major release. It preserves E/Z and atom
+stereochemistry across fragmentation, makes strict and permissive decoding
+behaviour explicit, supports extended ring closures, and updates SAFE-GPT to
+Transformers 5 without changing the established seeded generation paths. The
+core notation package is lightweight, while model, training, visualization and
+Weights & Biases support are independent extras. Sampling gains an optional
+`try_hard` quality pass and deterministic handling of linker and pattern
+constraints.
+
+See the [complete changelog](CHANGELOG.md) and the
+[1.0 migration guide](docs/migration.md). These changes are currently on the
+`dev` branch; the latest PyPI and conda-forge packages remain the stable
+releases.
+
 ## News 🚀
 
 #### 💥 2024/01/15 💥
 1. [@IanAWatson](https://github.com/IanAWatson) has a C++ implementation of SAFE in [LillyMol](https://github.com/IanAWatson/LillyMol/tree/bazel_version_float) that is quite fast and use a custom fragmentation algorithm. Follow the installation instruction on the repo and checkout the docs of the CLI here: [docs/Molecule_Tools/SAFE.md](https://github.com/IanAWatson/LillyMol/blob/bazel_version_float/docs/Molecule_Tools/SAFE.md)
 
 
-### Installation
+## Installation
 
 SAFE 1.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:
 

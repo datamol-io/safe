@@ -42,6 +42,15 @@
 [![code-check](https://github.com/datamol-io/safe/actions/workflows/code-check.yml/badge.svg)](https://github.com/datamol-io/safe/actions/workflows/code-check.yml)
 [![doc](https://github.com/datamol-io/safe/actions/workflows/doc.yml/badge.svg)](https://github.com/datamol-io/safe/actions/workflows/doc.yml)
 
+## Updates
+
+The upcoming 1.0 release improves stereochemistry preservation, decoding and
+sampling, moves SAFE-GPT to Transformers 5, and separates optional model and
+training dependencies from the notation core. See the
+[changelog](https://github.com/datamol-io/safe/blob/dev/CHANGELOG.md) and
+[migration guide](migration.md) for fixes, deprecations and compatibility limits.
+This work is on `dev` and is not yet a published release.
+
 ## Overview of SAFE
 
 SAFE _is the_  deep learning molecular representation. It's an encoding leveraging a peculiarity in the decoding schemes of SMILES, to allow representation of molecules as a contiguous sequence of connected fragments. SAFE strings are valid SMILES strings, and thus are able to preserve the same amount of information. The intuitive representation of molecules as an ordered sequence of connected fragments greatly simplifies the following tasks often encountered in molecular design:
