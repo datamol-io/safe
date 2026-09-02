@@ -31,6 +31,8 @@ for earlier release notes.
 
 - Test Python 3.11–3.14 and RDKit 2024.09, 2025.03 and 2025.09. The core
   requires Python 3.11+ and RDKit 2024.09+; model extras require PyTorch 2.5+.
+  Mac Intel supports the notation core, not the model/training extras, because
+  official PyTorch wheels for that platform stop at 2.2.
   RDKit 2026.03 is excluded because its current fragmentation direction
   handling can silently alter double-bond stereochemistry.
 - Support Transformers 5 for model and training features. The constrained-beam

@@ -98,6 +98,9 @@ mamba install -c conda-forge safe-mol
 ```
 
 SAFE's core install contains only encoding, decoding and notation splitting.
+It supports Mac Intel without PyTorch. Model and training extras require
+PyTorch 2.5+; official Mac Intel wheels stop at 2.2, so use Linux, Windows or
+Apple Silicon for that stack.
 Add `safe-mol[model]` for `SAFETokenizer` and `SAFEDesign`,
 `safe-mol[train]` for the model stack plus `safe-train`, or
 `safe-mol[all]` to install every maintained feature. Model APIs retain their

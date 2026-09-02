@@ -6,7 +6,9 @@ SAFE 1.0 is a maintenance-focused major release. It keeps the established encodi
 
 - Python 3.11 through 3.14 is supported. Python 3.9 and 3.10 are no longer tested.
 - The minimum RDKit release is 2024.09. RDKit 2026.03 is deliberately excluded because that series changes double-bond direction handling during fragmentation and can silently lose stereochemistry in an otherwise valid SAFE round trip. The compatibility matrix uses RDKit 2024.09, 2025.03, and 2025.09.
-- PyTorch 2.5 or newer is supported.
+- Model and training extras require PyTorch 2.5 or newer. Official macOS Intel
+  wheels stop at PyTorch 2.2, so those extras are not supported natively there.
+  The notation core works without PyTorch, including alongside Molfeat on Intel.
 - Transformers 5 is the supported generation stack. SAFE maintains greedy,
   multinomial, beam, beam-sampling and the constrained-beam path required by
   model-only linker generation. SAFE-GPT keeps identical logits and seeded
