@@ -124,11 +124,11 @@ def test_model_only_linker_uses_complete_constraints_and_returns_only_smiles(des
     assert generated == ["CCC1CN1.N", "CCCCCN"]
 
 
-def test_try_hard_across_distinct_public_design_workflows(designer):
+def test_refine_across_distinct_public_design_workflows(designer):
     common = {
         "n_samples_per_trial": 2,
         "n_trials": 1,
-        "try_hard": True,
+        "refine": True,
         "random_seed": 123,
     }
     transformers.set_seed(123)
@@ -136,7 +136,7 @@ def test_try_hard_across_distinct_public_design_workflows(designer):
         "de_novo": designer.de_novo_generation(
             n_samples_per_trial=2,
             n_trials=1,
-            try_hard=True,
+            refine=True,
         ),
         "scaffold_decoration": designer.scaffold_decoration("c1ccccc1[*]", **common),
         "super_structure": designer.super_structure("CC(=O)N", **common),
