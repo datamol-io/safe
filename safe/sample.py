@@ -104,9 +104,17 @@ class SAFEDesign:
         """Deduplicate valid samples in generation order when quality mode is enabled."""
         if not try_hard:
             return sequences
-        return list(dict.fromkeys(sequence for sequence in sequences if sequence is not None))[
-            :limit
-        ]
+        unique = list(dict.fromkeys(sequence for sequence in sequences if sequence is not None))
+        finalized = unique[:limit]
+        if len(finalized) < limit:
+            # try_hard cannot guarantee the requested count; surface the
+            # shortfall instead of silently returning fewer candidates.
+            logger.warning(
+                f"try_hard produced only {len(finalized)} unique valid candidate(s) "
+                f"out of the {limit} requested; consider increasing n_samples_per_trial "
+                f"or n_trials."
+            )
+        return finalized
 
     def _load_constrained_generation_backend(self):
         """Load the pinned backend required by model-only linker generation."""
@@ -630,6 +638,9 @@ class SAFEDesign:
         """
 
         core = dm.to_mol(core)
+        # Keep the original core: ``core`` is reassigned inside the trial loop
+        # below, but the requested substructure to enforce is this input.
+        requested_core = core
         cores = sf.utils.list_individual_attach_points(core, depth=attachment_point_depth)
         # get the fully open mol, everytime too.
         cores.append(dm.to_smiles(dm.reactions.open_attach_points(core)))
@@ -658,6 +669,12 @@ class SAFEDesign:
                 if self.verbose:
                     logger.error(e)
 
+        # Match the other constrained methods: verify the requested core is
+        # actually present in the generated superstructures.
+        if sanitize or try_hard:
+            total_sequences = sf.utils.filter_by_substructure_constraints(
+                total_sequences, requested_core
+            )
         if sanitize and self.verbose:
             logger.info(
                 f"After sanitization, {len(total_sequences)} / {n_samples_per_trial*n_trials} ({len(total_sequences)*100/(n_samples_per_trial*n_trials):.2f} %)  generated molecules are valid !"
@@ -696,6 +713,7 @@ class SAFEDesign:
             kwargs: any argument to provide to the underlying generation function
         """
 
+        n_trials = n_trials or 1
         total_sequences = self._completion(
             fragment=scaffold,
             n_samples_per_trial=n_samples_per_trial,
@@ -717,7 +735,7 @@ class SAFEDesign:
                 )
         return self._finalize_samples(
             total_sequences,
-            n_samples_per_trial * (n_trials or 1),
+            n_samples_per_trial * n_trials,
             try_hard,
         )
 
@@ -766,6 +784,7 @@ class SAFEDesign:
         """
 
         rng = random.Random(random_seed)
+        n_trials = n_trials or 1
         smarts_scaffolds = [scaffold]
         if n_scaff_random and n_scaff_random > 0:
             smarts_scaffolds = PatternConstraint.randomize(
@@ -829,7 +848,7 @@ class SAFEDesign:
             total_sequences,
             n_samples_per_trial * n_trials,
             try_hard,
-        )[: n_samples_per_trial * n_trials]
+        )
 
     def de_novo_generation(
         self,

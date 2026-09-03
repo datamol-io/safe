@@ -569,6 +569,12 @@ def filter_by_substructure_constraints(
 
     """
 
+    # Normalize both string and molecule queries the same way: attachment
+    # points must behave as wildcards, otherwise a ``dm.Mol`` query carrying
+    # dummy atoms would only match other dummies and silently reject every
+    # decorated molecule.
+    if isinstance(substruct, dm.Mol):
+        substruct = dm.to_smiles(substruct)
     if isinstance(substruct, str):
         substruct = standardize_attach(substruct)
         substruct = dm.from_smarts(substruct)

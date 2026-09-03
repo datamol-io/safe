@@ -460,6 +460,20 @@ def test_extended_ring_closure_decoding():
     assert safe.decode(encoded, as_mol=True) is not None
 
 
+def test_large_polymer_round_trip_uses_extended_ring_closures():
+    # A synthetic polymer (nylon-6 oligomer) is fragmented at every amide bond,
+    # producing far more than 99 SAFE fragments. Their attachment bonds must use
+    # the %(nnn) extended ring-closure form and still round-trip exactly.
+    n_units = 130
+    polymer = "NCCCCC" + "C(=O)NCCCCC" * (n_units - 1) + "C(=O)O"
+
+    encoded = safe.encode(polymer, canonical=True)
+
+    assert encoded.count(".") + 1 > 99  # many fragments
+    assert "%(" in encoded  # uses extended ring closures
+    assert dm.same_mol(polymer, safe.decode(encoded, canonical=True))
+
+
 def test_directional_extended_ring_closures_are_standardized():
     component = r"CC/C=C\C/C=C\C/C=C\C/C=C\C/C=C\C/C=C\CCC(=O)O"
     smiles = ".".join([component] * 7)

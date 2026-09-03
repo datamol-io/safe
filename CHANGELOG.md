@@ -97,6 +97,12 @@ for earlier release notes.
 - Sanitize pattern exemplars before completion, report unavailable linkers
   consistently, validate visualization modes and require an explicit tokenizer
   in the training CLI.
+- Make the design workflows behave consistently: `super_structure` now verifies
+  the requested core is present when sanitizing (like the other constrained
+  methods), `filter_by_substructure_constraints` normalizes `dm.Mol` queries the
+  same way as strings so attachment points act as wildcards, every workflow
+  guards `n_trials` and finalizes through the same code path, and `try_hard`
+  warns instead of silently returning fewer candidates than requested.
 
 ### Compatibility and delivery
 
