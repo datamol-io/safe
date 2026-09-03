@@ -9,9 +9,9 @@ GitHub Release does not upload a package to PyPI.
    for example `## 1.0.0 - YYYY-MM-DD`. Date the release and update README
    and website wording that still calls it unreleased or specific to `dev`.
 2. Merge the release changes into `main`, preserving contributor history.
-3. Confirm that the repository secret `PYPI_API_TOKEN` contains a valid PyPI
-   token authorized for `safe-mol`. The workflow checks that the secret is
-   present but cannot validate its scope without contacting PyPI.
+3. Confirm the PyPI Trusted Publisher for `safe-mol` is registered for this
+   repository, the `release.yml` workflow and the `pypi` environment. No API
+   token is used; the upload authenticates over OpenID Connect.
 
 ## Run the release action
 
@@ -31,9 +31,10 @@ Both wheel and source installations are checked with Python's isolated mode,
 including their version and import location. Documentation must also build
 successfully before anything is uploaded.
 
-The publish job sends the artifacts and PEP 740 attestations to PyPI using
-`PYPI_API_TOKEN`. OpenID Connect is used to sign the attestations, not to
-authenticate the upload; no PyPI Trusted Publisher registration is required.
+The publish job uploads the artifacts and PEP 740 attestations to PyPI over
+GitHub's OpenID Connect (Trusted Publishing); no API token is used. This
+requires a PyPI Trusted Publisher registered for this repository, the
+`release.yml` workflow and the `pypi` environment.
 
 Only after PyPI succeeds does the action create the GitHub tag and Release
 at the tested commit, then deploy versioned documentation. A prerelease never
