@@ -1,6 +1,6 @@
-# Migrating to SAFE 1.0
+# Migrating to SAFE 0.2.0
 
-SAFE 1.0 is a maintenance-focused major release. It keeps the established encoding, decoding, tokenization, generation, and training behaviour while moving the supported environment and delivery process forward.
+SAFE 0.2.0 is a maintenance-focused release. It keeps the established encoding, decoding, tokenization, generation, and training behaviour while moving the supported environment and delivery process forward.
 
 ## Supported environment
 
@@ -58,7 +58,7 @@ For GPU installations, install the PyTorch build appropriate for the CUDA driver
   rejecting a valid `safe.encode()` call. A final dummy-aware isomeric graph
   comparison catches changes that standard InChI identity can miss. Enhanced
   CXSMILES stereo groups are rejected explicitly in
-  SAFE 1.0 because plain SAFE/SMILES cannot retain their AND, OR or absolute-group
+  SAFE 0.2.0 because plain SAFE/SMILES cannot retain their AND, OR or absolute-group
   semantics; resolve the group to one stereoisomer, or set `ignore_stereo=True`
   only when dropping that information is intentional.
 - `decode(..., canonical=True)` now means canonical SMILES serialization only.

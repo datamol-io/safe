@@ -4,7 +4,7 @@ This file records user-visible changes. See the [migration guide](docs/migration
 for upgrade instructions and [GitHub releases](https://github.com/datamol-io/safe/releases)
 for earlier release notes.
 
-## Next major release (unreleased)
+## 0.2.0 - 2026-09-03
 
 ### Highlights
 

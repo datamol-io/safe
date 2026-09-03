@@ -52,6 +52,6 @@ Raise Python to 3.11+, exclude RDKit 2026.03, and remove model and training
 dependencies from the core recipe. Move the `safe-train --help` recipe test to
 a training-enabled environment; it cannot run with only the notation core.
 
-Do not merge a version-only feedstock update for this major release. Its
+Do not merge a version-only feedstock update for this release. Its
 dependency metadata and import/CLI tests must reflect the new installation
 boundaries.

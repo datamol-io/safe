@@ -64,14 +64,14 @@ The construction of a SAFE strings requires defining a molecular fragmentation a
 ## News 🚀
 
 #### 💥 2026/09/03 💥
-1. **SAFE 1.0 release.** Improves stereochemistry preservation, decoding and sampling, moves SAFE-GPT to Transformers 5, and separates optional model and training dependencies from the notation core. See the [changelog](https://github.com/datamol-io/safe/blob/dev/CHANGELOG.md) and [migration guide](migration.md) for fixes, deprecations and compatibility limits.
+1. **SAFE 0.2.0 release.** Improves stereochemistry preservation, decoding and sampling, moves SAFE-GPT to Transformers 5, and separates optional model and training dependencies from the notation core. See the [changelog](https://github.com/datamol-io/safe/blob/dev/CHANGELOG.md) and [migration guide](migration.md) for fixes, deprecations and compatibility limits.
 
 #### 💥 2024/01/15 💥
 1. [@IanAWatson](https://github.com/IanAWatson) has a C++ implementation of SAFE in [LillyMol](https://github.com/IanAWatson/LillyMol/tree/bazel_version_float) that is quite fast and use a custom fragmentation algorithm. Follow the installation instruction on the repo and checkout the docs of the CLI here: [docs/Molecule_Tools/SAFE.md](https://github.com/IanAWatson/LillyMol/blob/bazel_version_float/docs/Molecule_Tools/SAFE.md)
 
 ## Installation
 
-SAFE 1.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:
+SAFE 0.2.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:
 
 ```bash
 uv add safe-mol
@@ -95,7 +95,7 @@ beam and beam-sampling paths. The constrained beam backend required by
 model-only linker generation is loaded lazily from a reviewed, commit-pinned
 Hugging Face repository. RDKit 2026.03 is excluded because of an upstream
 stereochemistry regression; RDKit 2024.09 through 2025.09 are covered by CI.
-Read [Migrating to SAFE 1.0](migration.md) before upgrading an existing
+Read [Migrating to SAFE 0.2.0](migration.md) before upgrading an existing
 environment. Visualization and Weights & Biases remain independently available
 through `safe-mol[viz]` and `safe-mol[wandb]`.
 

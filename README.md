@@ -62,14 +62,14 @@ The construction of a SAFE strings requires defining a molecular fragmentation a
 ## News 🚀
 
 #### 💥 2026/09/03 💥
-1. **SAFE 1.0 release.** A maintenance-focused major release. It preserves E/Z and atom stereochemistry across fragmentation, makes strict and permissive decoding behaviour explicit, supports extended ring closures, and updates SAFE-GPT to Transformers 5 without changing the established seeded generation paths. The core notation package is lightweight, while model, training, visualization and Weights & Biases support are independent extras. Sampling gains an optional `try_hard` quality pass and deterministic handling of linker and pattern constraints. See the [complete changelog](CHANGELOG.md) and the [1.0 migration guide](docs/migration.md).
+1. **SAFE 0.2.0 release.** A maintenance-focused release. It preserves E/Z and atom stereochemistry across fragmentation, makes strict and permissive decoding behaviour explicit, supports extended ring closures, and updates SAFE-GPT to Transformers 5 without changing the established seeded generation paths. The core notation package is lightweight, while model, training, visualization and Weights & Biases support are independent extras. Sampling gains an optional `try_hard` quality pass and deterministic handling of linker and pattern constraints. See the [complete changelog](CHANGELOG.md) and the [migration guide](docs/migration.md).
 
 #### 💥 2024/01/15 💥
 1. [@IanAWatson](https://github.com/IanAWatson) has a C++ implementation of SAFE in [LillyMol](https://github.com/IanAWatson/LillyMol/tree/bazel_version_float) that is quite fast and use a custom fragmentation algorithm. Follow the installation instruction on the repo and checkout the docs of the CLI here: [docs/Molecule_Tools/SAFE.md](https://github.com/IanAWatson/LillyMol/blob/bazel_version_float/docs/Molecule_Tools/SAFE.md)
 
 ## Installation
 
-SAFE 1.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:
+SAFE 0.2.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:
 
 ```bash
 uv add safe-mol
@@ -103,7 +103,7 @@ The constrained beam backend required by model-only linker generation is loaded
 lazily from a reviewed, commit-pinned Hugging Face repository. RDKit 2026.03 is
 excluded because of an upstream stereochemistry regression; RDKit 2024.09
 through 2025.09 are covered by CI. See the
-[1.0 migration guide](docs/migration.md) for details.
+[migration guide](docs/migration.md) for details.
 
 For GPU workloads, install the PyTorch build matching your CUDA driver before installing SAFE. You can verify the resulting environment with:
 
