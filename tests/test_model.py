@@ -262,3 +262,20 @@ def test_default_model_load_is_revision_pinned(monkeypatch):
     model_loader.assert_called_once_with(SAFEDesign._DEFAULT_MODEL_PATH, **expected)
     tokenizer_loader.assert_called_once_with(SAFEDesign._DEFAULT_MODEL_PATH, **expected)
     config_loader.assert_called_once_with(SAFEDesign._DEFAULT_MODEL_PATH, **expected)
+
+
+def test_find_fragment_cut_keeps_fragment_carrying_the_closure():
+    # _find_fragment_cut does not use ``self``; call it unbound so the test
+    # does not need a loaded model.
+    cut = SAFEDesign._find_fragment_cut
+
+    # The required closure lands in the first generated fragment (the case the
+    # published regression oracle exercises): behaviour is unchanged.
+    assert cut(None, "CC%12.CCC%13.CN", "CC%12", "%13") == "CCC%13"
+
+    # The required closure lands in a later generated fragment. Previously the
+    # match counter never advanced past 1, so the closure-bearing fragment was
+    # dropped; it must now be retained.
+    result = cut(None, "CC%12.CN.CCC%13", "CC%12", "%13")
+    assert result == "CN.CCC%13"
+    assert "%13" in result

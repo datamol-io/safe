@@ -90,6 +90,10 @@ for earlier release notes.
 - Correct model-only linker constraints, remove leaked intermediate SAFE
   strings, and make linker, scaffold and pattern sampling deterministic across
   Python hash seeds and CPU, CUDA or Apple Silicon MPS devices.
+- Fix model-only linker/scaffold-morphing fragment selection: the cut kept only
+  the first generated fragment, dropping the fragment that carried the required
+  ring closure when the model emitted it later. It now retains fragments up to
+  and including the closure-bearing one.
 - Sanitize pattern exemplars before completion, report unavailable linkers
   consistently, validate visualization modes and require an explicit tokenizer
   in the training CLI.

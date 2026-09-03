@@ -895,9 +895,9 @@ class SAFEDesign:
         )
         fragments = fragment.split(".")
         i = 0
-        for x in fragments:
+        for idx, x in enumerate(fragments):
             if branching_id in x:
-                i += 1
+                i = idx + 1
                 break
         return ".".join(fragments[:i])
 
