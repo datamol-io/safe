@@ -1018,8 +1018,8 @@ core matrix on Linux x86-64, Windows x86-64, macOS Apple Silicon and macOS
 Intel. All maintained extras, the published SAFE-GPT checkpoint and executable
 tutorials are validated in a separate Linux integration lane.
 Documentation is built in strict mode.</p>
-<p>Publication remains a manual action using <code>PYPI_API_TOKEN</code>, with full test
-validation and isolated wheel/source installation checks. The action creates
+<p>Publication remains a manual action, using PyPI Trusted Publishing (OpenID
+Connect) with full test validation and isolated wheel/source installation checks. The action creates
 a GitHub tag and Release at the tested commit only after PyPI succeeds; it
 never pushes code to <code>main</code>. See the <a href="releasing.html">release guide</a> for dry
 runs, prereleases and the separate conda-forge recipe updates.</p>
