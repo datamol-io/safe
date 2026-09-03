@@ -131,7 +131,7 @@ jobs:
           enable-cache: true
 
       - name: Install integration dependencies
-        run: uv pip install --editable ".[test,docs,all]"
+        run: uv pip install --editable ".[test,docs,model]"
 
       - name: Test training CLI
         run: safe-train --help

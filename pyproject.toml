@@ -37,42 +37,22 @@ keywords = ["safe", "smiles", "de novo", "design", "molecules"]
 dependencies = [
     "datamol>=0.12.5",
     "loguru>=0.7",
+    "matplotlib>=3.8",
     "networkx>=3.2",
     "numpy>=1.26",
+    "pillow>=10",
     "rdkit>=2024.9.1,!=2026.3.*",
 ]
 
 [project.optional-dependencies]
+# The model stack: SAFE-GPT inference, the `safe-train` CLI and W&B logging.
+# The notation core (and visualization) ship in the base install.
 model = [
-    "fsspec>=2023.9.2",
-    "huggingface-hub>=1.5,<2",
-    "tokenizers>=0.23.1,<0.24",
-    "torch>=2.5",
-    "tqdm>=4.66",
-    "transformers>=5,<6",
-]
-train = [
     "accelerate>=1.1",
     "datasets>=4",
     "evaluate>=0.4.3",
     "fsspec>=2023.9.2",
     "huggingface-hub>=1.5,<2",
-    "tokenizers>=0.23.1,<0.24",
-    "torch>=2.5",
-    "tqdm>=4.66",
-    "transformers>=5,<6",
-    "universal-pathlib>=0.2",
-]
-viz = ["matplotlib>=3.8", "pillow>=10"]
-wandb = ["fsspec>=2023.9.2", "wandb>=0.18"]
-all = [
-    "accelerate>=1.1",
-    "datasets>=4",
-    "evaluate>=0.4.3",
-    "fsspec>=2023.9.2",
-    "huggingface-hub>=1.5,<2",
-    "matplotlib>=3.8",
-    "pillow>=10",
     "tokenizers>=0.23.1,<0.24",
     "torch>=2.5",
     "tqdm>=4.66",

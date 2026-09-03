@@ -4,6 +4,21 @@ This file records user-visible changes. See the [migration guide](docs/migration
 for upgrade instructions and [GitHub releases](https://github.com/datamol-io/safe/releases)
 for earlier release notes.
 
+## 0.2.1 - 2026-09-03
+
+### Changed
+
+- Simplify the install extras. The base `safe-mol` install now includes molecule
+  visualization, and a single `safe-mol[model]` extra provides the full model
+  stack (SAFE-GPT inference, the `safe-train` CLI and Weights & Biases logging).
+  Encoding, decoding and `safe.split` continue to work from the base install
+  without PyTorch.
+
+### Removed
+
+- Remove the `train`, `viz`, `wandb` and `all` extras. Use `safe-mol` for the
+  notation core (with visualization) and `safe-mol[model]` for everything else.
+
 ## 0.2.0 - 2026-09-03
 
 ### Highlights
