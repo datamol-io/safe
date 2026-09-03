@@ -31,9 +31,9 @@ Both wheel and source installations are checked with Python's isolated mode,
 including their version and import location. Documentation must also build
 successfully before anything is uploaded.
 
-The publish job sends the artifacts and PEP 740 attestations to PyPI using
-`PYPI_API_TOKEN`. OpenID Connect is used to sign the attestations, not to
-authenticate the upload; no PyPI Trusted Publisher registration is required.
+The publish job uploads the artifacts to PyPI with `PYPI_API_TOKEN`; no PyPI
+Trusted Publisher registration is required. PEP 740 attestations are not sent,
+because PyPI only accepts them under Trusted Publishing.
 
 Only after PyPI succeeds does the action create the GitHub tag and Release
 at the tested commit, then deploy versioned documentation. A prerelease never

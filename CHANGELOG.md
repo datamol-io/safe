@@ -117,8 +117,8 @@ for earlier release notes.
   executable tutorials in separate CI jobs.
 - Cover the core on Linux, Windows, macOS Apple Silicon and macOS Intel across
   the supported Python and RDKit matrix; run model integration tests on Linux.
-- Keep publication manual through the `release` action and `PYPI_API_TOKEN`,
-  with PEP 740 attestations. Release tests and isolated wheel/source checks
-  gate publication; prereleases never replace the stable documentation.
+- Keep publication manual through the `release` action and `PYPI_API_TOKEN`.
+  Release tests and isolated wheel/source checks gate publication; prereleases
+  never replace the stable documentation.
 - Add a non-publishing dry run and a [release guide](docs/releasing.md).
   Conda-forge remains a separate channel requiring recipe updates.
