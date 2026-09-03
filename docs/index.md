@@ -71,33 +71,37 @@ The construction of a SAFE strings requires defining a molecular fragmentation a
 
 ## Installation
 
-SAFE 0.2.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:
+SAFE 0.2.0 supports Python 3.11 through 3.14.
 
 ```bash
-uv add safe-mol
-```
-
-Pip and conda-forge remain supported:
-
-```bash
-pip install safe-mol
+uv add safe-mol          # or: pip install safe-mol
 mamba install -c conda-forge safe-mol
 ```
 
-SAFE's core install contains only encoding, decoding and notation splitting.
-Use `safe-mol[model]` for `SAFETokenizer` and `SAFEDesign`,
-`safe-mol[train]` for the model stack plus `safe-train`, or
-`safe-mol[all]` for every maintained feature. Model APIs remain available from
-the top-level module and load their dependencies only when used.
+The core install is lightweight — only encoding, decoding and notation
+splitting — and needs no PyTorch, so it also runs on Mac Intel. Optional
+features are available as extras:
 
-The optional model stack uses Transformers 5. SAFE maintains random, greedy,
-beam and beam-sampling paths. The constrained beam backend required by
-model-only linker generation is loaded lazily from a reviewed, commit-pinned
-Hugging Face repository. RDKit 2026.03 is excluded because of an upstream
-stereochemistry regression; RDKit 2024.09 through 2025.09 are covered by CI.
-Read [Migrating to SAFE 0.2.0](migration.md) before upgrading an existing
-environment. Visualization and Weights & Biases remain independently available
-through `safe-mol[viz]` and `safe-mol[wandb]`.
+| Install            | Adds                                                       |
+| ------------------ | ---------------------------------------------------------- |
+| `safe-mol`         | Core notation: `safe.encode`, `safe.decode`, `safe.split` |
+| `safe-mol[model]`  | `SAFETokenizer` and `SAFEDesign` (SAFE-GPT inference)      |
+| `safe-mol[train]`  | The model stack plus the `safe-train` CLI                  |
+| `safe-mol[viz]`    | Molecule visualization helpers                            |
+| `safe-mol[wandb]`  | Weights & Biases logging                                  |
+| `safe-mol[all]`    | Every maintained feature above                            |
+
+```bash
+uv add "safe-mol[model]"        # or: pip install "safe-mol[model]"
+```
+
+Model APIs keep their top-level imports but load their dependencies only when
+used. The `model` and `train` extras require PyTorch 2.5+; official Mac Intel
+wheels stop at 2.2, so use Linux, Windows or Apple Silicon for that stack. The
+optional model stack uses Transformers 5, and RDKit 2026.03 is excluded because
+of an upstream stereochemistry regression (RDKit 2024.09 through 2025.09 are
+covered by CI). Read [Migrating to SAFE 0.2.0](migration.md) before upgrading an
+existing environment.
 
 For constrained design, `try_hard=True` is the opt-in quality mode. It
 oversamples, validates the molecular and substructure constraints, and removes
