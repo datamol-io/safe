@@ -31,7 +31,7 @@ jobs:
           enable-cache: true
 
       - name: Install documentation dependencies
-        run: uv pip install --editable ".[docs,train]"
+        run: uv pip install --editable ".[docs,model]"
 
       - name: Build documentation
         run: mkdocs build --strict
@@ -61,7 +61,7 @@ jobs:
           enable-cache: true
 
       - name: Install documentation dependencies
-        run: uv pip install --editable ".[docs,train]"
+        run: uv pip install --editable ".[docs,model]"
 
       - name: Configure Git
         run: |

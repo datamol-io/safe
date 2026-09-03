@@ -76,29 +76,27 @@ uv add safe-mol          # or: pip install safe-mol
 mamba install -c conda-forge safe-mol
 ```
 
-The core install is lightweight — only encoding, decoding and notation
-splitting — and needs no PyTorch, so it also runs on Mac Intel. Optional
-features are available as extras:
+The base install covers the notation core (`safe.encode`, `safe.decode`,
+`safe.split`) and molecule visualization, and needs no PyTorch — so it runs
+anywhere, including Mac Intel. The model stack is a single optional extra:
 
-| Install            | Adds                                                       |
-| ------------------ | ---------------------------------------------------------- |
-| `safe-mol`         | Core notation: `safe.encode`, `safe.decode`, `safe.split` |
-| `safe-mol[model]`  | `SAFETokenizer` and `SAFEDesign` (SAFE-GPT inference)      |
-| `safe-mol[train]`  | The model stack plus the `safe-train` CLI                  |
-| `safe-mol[viz]`    | Molecule visualization helpers                            |
-| `safe-mol[wandb]`  | Weights & Biases logging                                  |
-| `safe-mol[all]`    | Every maintained feature above                            |
+| Install           | Includes                                                                       |
+| ----------------- | ------------------------------------------------------------------------------ |
+| `safe-mol`        | Notation core + molecule visualization                                         |
+| `safe-mol[model]` | Everything above **plus** SAFE-GPT inference, the `safe-train` CLI and W&B logging |
 
 ```bash
 uv add "safe-mol[model]"        # or: pip install "safe-mol[model]"
 ```
 
-Model APIs keep their top-level imports but load their dependencies only when
-used. The `model` and `train` extras require PyTorch 2.5+; official Mac Intel
-wheels stop at 2.2, so use Linux, Windows or Apple Silicon for that stack. The
-optional model stack uses Transformers 5, and RDKit 2026.03 is excluded because
-of an upstream stereochemistry regression (RDKit 2024.09 through 2025.09 are
-covered by CI). See the [migration guide](docs/migration.md) for details.
+Installing the extra always includes the base, so `safe-mol[model]` gives you
+the core, visualization and the full model stack. Model APIs keep their
+top-level imports but load their dependencies only when used. The `model` extra
+requires PyTorch 2.5+; official Mac Intel wheels stop at 2.2, so use Linux,
+Windows or Apple Silicon for that stack. It uses Transformers 5, and RDKit
+2026.03 is excluded because of an upstream stereochemistry regression (RDKit
+2024.09 through 2025.09 are covered by CI). See the
+[migration guide](docs/migration.md) for details.
 
 For GPU workloads, install the PyTorch build matching your CUDA driver before installing SAFE. You can verify the resulting environment with:
 
