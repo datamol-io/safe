@@ -209,17 +209,17 @@ def test_motif_extension_is_a_deprecated_scaffold_decoration_alias():
         do_not_fragment_further=True,
         random_seed=None,
         add_dot=True,
-        try_hard=False,
+        refine=False,
     )
 
 
-def test_try_hard_sampling_budget_and_stable_deduplication():
-    assert SAFEDesign._candidate_count(4, try_hard=False) == 4
-    assert SAFEDesign._candidate_count(4, try_hard=True) == 12
+def test_refine_sampling_budget_and_stable_deduplication():
+    assert SAFEDesign._candidate_count(4, refine=False) == 4
+    assert SAFEDesign._candidate_count(4, refine=True) == 12
     samples = ["CC", None, "CN", "CC", "CO"]
 
-    assert SAFEDesign._finalize_samples(samples, limit=2, try_hard=True) == ["CC", "CN"]
-    assert SAFEDesign._finalize_samples(samples, limit=2, try_hard=False) is samples
+    assert SAFEDesign._finalize_samples(samples, limit=2, refine=True) == ["CC", "CN"]
+    assert SAFEDesign._finalize_samples(samples, limit=2, refine=False) is samples
 
 
 def test_completion_uses_distinct_reproducible_seed_per_trial():
@@ -279,3 +279,48 @@ def test_find_fragment_cut_keeps_fragment_carrying_the_closure():
     result = cut(None, "CC%12.CN.CCC%13", "CC%12", "%13")
     assert result == "CN.CCC%13"
     assert "%13" in result
+
+
+def _fake_tokenizer():
+    vocab = {"[CLS]": 0, "[SEP]": 1, "C": 2, "1": 3, ".": 4, "(": 5, ")": 6, "c": 7, "2": 8}
+
+    class FakeTok:
+        eos_token_id = 1
+        unk_token_id = None
+        all_special_tokens = ["[CLS]", "[SEP]"]
+
+        def get_vocab(self):
+            return dict(vocab)
+
+        def convert_tokens_to_ids(self, tok):
+            return vocab.get(tok)
+
+    return FakeTok(), vocab
+
+
+def test_connectivity_processor_forces_eos_when_complete():
+    from safe.sample import ScaffoldConnectivityLogitsProcessor
+
+    tok, v = _fake_tokenizer()
+    proc = ScaffoldConnectivityLogitsProcessor(tok, prompt_len=3)
+    neg = torch.finfo(torch.float32).min
+    # prompt "[CLS] C 1" + generated ". C 1" -> closes label 1 -> complete
+    ids = torch.tensor([[v["[CLS]"], v["C"], v["1"], v["."], v["C"], v["1"]]])
+    out = proc(ids, torch.zeros(1, len(v)))
+    assert out[0, v["[SEP]"]] > neg  # EOS kept
+    non_eos = [i for i in range(len(v)) if i != v["[SEP]"]]
+    assert torch.all(out[0, non_eos] == neg)  # everything else masked -> EOS forced
+
+
+def test_connectivity_processor_blocks_detached_fragment_and_eos():
+    from safe.sample import ScaffoldConnectivityLogitsProcessor
+
+    tok, v = _fake_tokenizer()
+    proc = ScaffoldConnectivityLogitsProcessor(tok, prompt_len=3)
+    neg = torch.finfo(torch.float32).min
+    # prompt "[CLS] C 1" + generated ". c 2": new fragment opened label 2, detached
+    ids = torch.tensor([[v["[CLS]"], v["C"], v["1"], v["."], v["c"], v["2"]]])
+    out = proc(ids, torch.zeros(1, len(v)))
+    assert out[0, v["[SEP]"]] == neg  # incomplete -> EOS suppressed
+    assert out[0, v["."]] == neg  # detached -> cannot start a new fragment
+    assert out[0, v["C"]] > neg  # atoms still allowed (so it can attach)
