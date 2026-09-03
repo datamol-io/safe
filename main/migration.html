@@ -70,7 +70,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#migrating-to-safe-10" class="md-skip">
+        <a href="#migrating-to-safe-020" class="md-skip">
           Skip to content
         </a>
       
@@ -902,8 +902,8 @@
   
 
 
-<h1 id="migrating-to-safe-10">Migrating to SAFE 1.0<a class="headerlink" href="#migrating-to-safe-10" title="Permanent link">&para;</a></h1>
-<p>SAFE 1.0 is a maintenance-focused major release. It keeps the established encoding, decoding, tokenization, generation, and training behaviour while moving the supported environment and delivery process forward.</p>
+<h1 id="migrating-to-safe-020">Migrating to SAFE 0.2.0<a class="headerlink" href="#migrating-to-safe-020" title="Permanent link">&para;</a></h1>
+<p>SAFE 0.2.0 is a maintenance-focused release. It keeps the established encoding, decoding, tokenization, generation, and training behaviour while moving the supported environment and delivery process forward.</p>
 <h2 id="supported-environment">Supported environment<a class="headerlink" href="#supported-environment" title="Permanent link">&para;</a></h2>
 <ul>
 <li>Python 3.11 through 3.14 is supported. Python 3.9 and 3.10 are no longer tested.</li>
@@ -953,7 +953,7 @@ experiment reporting is required).</p>
   rejecting a valid <code>safe.encode()</code> call. A final dummy-aware isomeric graph
   comparison catches changes that standard InChI identity can miss. Enhanced
   CXSMILES stereo groups are rejected explicitly in
-  SAFE 1.0 because plain SAFE/SMILES cannot retain their AND, OR or absolute-group
+  SAFE 0.2.0 because plain SAFE/SMILES cannot retain their AND, OR or absolute-group
   semantics; resolve the group to one stereoisomer, or set <code>ignore_stereo=True</code>
   only when dropping that information is intentional.</li>
 <li><code>decode(..., canonical=True)</code> now means canonical SMILES serialization only.

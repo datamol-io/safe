@@ -1276,14 +1276,14 @@
 <h2 id="news">News 🚀<a class="headerlink" href="#news" title="Permanent link">&para;</a></h2>
 <h4 id="20260903">💥 2026/09/03 💥<a class="headerlink" href="#20260903" title="Permanent link">&para;</a></h4>
 <ol>
-<li><strong>SAFE 1.0 release.</strong> Improves stereochemistry preservation, decoding and sampling, moves SAFE-GPT to Transformers 5, and separates optional model and training dependencies from the notation core. See the <a href="https://github.com/datamol-io/safe/blob/dev/CHANGELOG.md">changelog</a> and <a href="migration.html">migration guide</a> for fixes, deprecations and compatibility limits.</li>
+<li><strong>SAFE 0.2.0 release.</strong> Improves stereochemistry preservation, decoding and sampling, moves SAFE-GPT to Transformers 5, and separates optional model and training dependencies from the notation core. See the <a href="https://github.com/datamol-io/safe/blob/dev/CHANGELOG.md">changelog</a> and <a href="migration.html">migration guide</a> for fixes, deprecations and compatibility limits.</li>
 </ol>
 <h4 id="20240115">💥 2024/01/15 💥<a class="headerlink" href="#20240115" title="Permanent link">&para;</a></h4>
 <ol>
 <li><a href="https://github.com/IanAWatson">@IanAWatson</a> has a C++ implementation of SAFE in <a href="https://github.com/IanAWatson/LillyMol/tree/bazel_version_float">LillyMol</a> that is quite fast and use a custom fragmentation algorithm. Follow the installation instruction on the repo and checkout the docs of the CLI here: <a href="https://github.com/IanAWatson/LillyMol/blob/bazel_version_float/docs/Molecule_Tools/SAFE.md">docs/Molecule_Tools/SAFE.md</a></li>
 </ol>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<p>SAFE 1.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:</p>
+<p>SAFE 0.2.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:</p>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>add<span class="w"> </span>safe-mol
 </code></pre></div>
 <p>Pip and conda-forge remain supported:</p>
@@ -1300,7 +1300,7 @@ beam and beam-sampling paths. The constrained beam backend required by
 model-only linker generation is loaded lazily from a reviewed, commit-pinned
 Hugging Face repository. RDKit 2026.03 is excluded because of an upstream
 stereochemistry regression; RDKit 2024.09 through 2025.09 are covered by CI.
-Read <a href="migration.html">Migrating to SAFE 1.0</a> before upgrading an existing
+Read <a href="migration.html">Migrating to SAFE 0.2.0</a> before upgrading an existing
 environment. Visualization and Weights &amp; Biases remain independently available
 through <code>safe-mol[viz]</code> and <code>safe-mol[wandb]</code>.</p>
 <p>For constrained design, <code>try_hard=True</code> is the opt-in quality mode. It
