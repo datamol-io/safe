@@ -10,13 +10,13 @@
       
       
       
-        <link rel="canonical" href="https://safe-docs.datamol.io/main/license.html">
+        <link rel="canonical" href="https://safe-docs.datamol.io/main/migration.html">
       
       
-        <link rel="prev" href="cli.html">
+        <link rel="prev" href="index.html">
       
       
-        <link rel="next" href="data_license.html">
+        <link rel="next" href="releasing.html">
       
       
         
@@ -27,7 +27,7 @@
     
     
       
-        <title>License - SAFE</title>
+        <title>Migrating to 1.0 - SAFE</title>
       
     
     
@@ -69,6 +69,11 @@
     <label class="md-overlay" for="__drawer"></label>
     <div data-md-component="skip">
       
+        
+        <a href="#migrating-to-safe-10" class="md-skip">
+          Skip to content
+        </a>
+      
     </div>
     <div data-md-component="announce">
       
@@ -105,7 +110,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              License
+              Migrating to 1.0
             
           </span>
         </div>
@@ -249,10 +254,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="migration.html" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migrating to 1.0
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="migration.html" class="md-nav__link md-nav__link--active">
         
   
   
@@ -268,6 +300,70 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#supported-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported environment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#behaviour-preserving-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behaviour-preserving fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sampling-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sampling transition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ci-and-releases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI and releases
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -666,17 +762,10 @@
       
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-      
-      <a href="license.html" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="license.html" class="md-nav__link">
         
   
   
@@ -692,7 +781,6 @@
   
 
       </a>
-      
     </li>
   
 
@@ -741,6 +829,60 @@
   
   
   
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#supported-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supported environment
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#behaviour-preserving-fixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Behaviour-preserving fixes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sampling-transition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sampling transition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ci-and-releases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CI and releases
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
   
 </nav>
                   </div>
@@ -760,212 +902,127 @@
   
 
 
-  <h1>License</h1>
-
-<p>The Python package is licensed under Apache-2.0. The separate
-<a href="data_license.html">data licence</a> applies to the training dataset, not the code.</p>
-<div class="highlight"><pre><span></span><code>Apache License
-                           Version 2.0, January 2004
-                        http://www.apache.org/licenses/
-
-   TERMS AND CONDITIONS FOR USE, REPRODUCTION, AND DISTRIBUTION
-
-   1. Definitions.
-
-      "License" shall mean the terms and conditions for use, reproduction,
-      and distribution as defined by Sections 1 through 9 of this document.
-
-      "Licensor" shall mean the copyright owner or entity authorized by
-      the copyright owner that is granting the License.
-
-      "Legal Entity" shall mean the union of the acting entity and all
-      other entities that control, are controlled by, or are under common
-      control with that entity. For the purposes of this definition,
-      "control" means (i) the power, direct or indirect, to cause the
-      direction or management of such entity, whether by contract or
-      otherwise, or (ii) ownership of fifty percent (50%) or more of the
-      outstanding shares, or (iii) beneficial ownership of such entity.
-
-      "You" (or "Your") shall mean an individual or Legal Entity
-      exercising permissions granted by this License.
-
-      "Source" form shall mean the preferred form for making modifications,
-      including but not limited to software source code, documentation
-      source, and configuration files.
-
-      "Object" form shall mean any form resulting from mechanical
-      transformation or translation of a Source form, including but
-      not limited to compiled object code, generated documentation,
-      and conversions to other media types.
-
-      "Work" shall mean the work of authorship, whether in Source or
-      Object form, made available under the License, as indicated by a
-      copyright notice that is included in or attached to the work
-      (an example is provided in the Appendix below).
-
-      "Derivative Works" shall mean any work, whether in Source or Object
-      form, that is based on (or derived from) the Work and for which the
-      editorial revisions, annotations, elaborations, or other modifications
-      represent, as a whole, an original work of authorship. For the purposes
-      of this License, Derivative Works shall not include works that remain
-      separable from, or merely link (or bind by name) to the interfaces of,
-      the Work and Derivative Works thereof.
-
-      "Contribution" shall mean any work of authorship, including
-      the original version of the Work and any modifications or additions
-      to that Work or Derivative Works thereof, that is intentionally
-      submitted to Licensor for inclusion in the Work by the copyright owner
-      or by an individual or Legal Entity authorized to submit on behalf of
-      the copyright owner. For the purposes of this definition, "submitted"
-      means any form of electronic, verbal, or written communication sent
-      to the Licensor or its representatives, including but not limited to
-      communication on electronic mailing lists, source code control systems,
-      and issue tracking systems that are managed by, or on behalf of, the
-      Licensor for the purpose of discussing and improving the Work, but
-      excluding communication that is conspicuously marked or otherwise
-      designated in writing by the copyright owner as "Not a Contribution."
-
-      "Contributor" shall mean Licensor and any individual or Legal Entity
-      on behalf of whom a Contribution has been received by Licensor and
-      subsequently incorporated within the Work.
-
-   2. Grant of Copyright License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      copyright license to reproduce, prepare Derivative Works of,
-      publicly display, publicly perform, sublicense, and distribute the
-      Work and such Derivative Works in Source or Object form.
-
-   3. Grant of Patent License. Subject to the terms and conditions of
-      this License, each Contributor hereby grants to You a perpetual,
-      worldwide, non-exclusive, no-charge, royalty-free, irrevocable
-      (except as stated in this section) patent license to make, have made,
-      use, offer to sell, sell, import, and otherwise transfer the Work,
-      where such license applies only to those patent claims licensable
-      by such Contributor that are necessarily infringed by their
-      Contribution(s) alone or by combination of their Contribution(s)
-      with the Work to which such Contribution(s) was submitted. If You
-      institute patent litigation against any entity (including a
-      cross-claim or counterclaim in a lawsuit) alleging that the Work
-      or a Contribution incorporated within the Work constitutes direct
-      or contributory patent infringement, then any patent licenses
-      granted to You under this License for that Work shall terminate
-      as of the date such litigation is filed.
-
-   4. Redistribution. You may reproduce and distribute copies of the
-      Work or Derivative Works thereof in any medium, with or without
-      modifications, and in Source or Object form, provided that You
-      meet the following conditions:
-
-      (a) You must give any other recipients of the Work or
-          Derivative Works a copy of this License; and
-
-      (b) You must cause any modified files to carry prominent notices
-          stating that You changed the files; and
-
-      (c) You must retain, in the Source form of any Derivative Works
-          that You distribute, all copyright, patent, trademark, and
-          attribution notices from the Source form of the Work,
-          excluding those notices that do not pertain to any part of
-          the Derivative Works; and
-
-      (d) If the Work includes a "NOTICE" text file as part of its
-          distribution, then any Derivative Works that You distribute must
-          include a readable copy of the attribution notices contained
-          within such NOTICE file, excluding those notices that do not
-          pertain to any part of the Derivative Works, in at least one
-          of the following places: within a NOTICE text file distributed
-          as part of the Derivative Works; within the Source form or
-          documentation, if provided along with the Derivative Works; or,
-          within a display generated by the Derivative Works, if and
-          wherever such third-party notices normally appear. The contents
-          of the NOTICE file are for informational purposes only and
-          do not modify the License. You may add Your own attribution
-          notices within Derivative Works that You distribute, alongside
-          or as an addendum to the NOTICE text from the Work, provided
-          that such additional attribution notices cannot be construed
-          as modifying the License.
-
-      You may add Your own copyright statement to Your modifications and
-      may provide additional or different license terms and conditions
-      for use, reproduction, or distribution of Your modifications, or
-      for any such Derivative Works as a whole, provided Your use,
-      reproduction, and distribution of the Work otherwise complies with
-      the conditions stated in this License.
-
-   5. Submission of Contributions. Unless You explicitly state otherwise,
-      any Contribution intentionally submitted for inclusion in the Work
-      by You to the Licensor shall be under the terms and conditions of
-      this License, without any additional terms or conditions.
-      Notwithstanding the above, nothing herein shall supersede or modify
-      the terms of any separate license agreement you may have executed
-      with Licensor regarding such Contributions.
-
-   6. Trademarks. This License does not grant permission to use the trade
-      names, trademarks, service marks, or product names of the Licensor,
-      except as required for reasonable and customary use in describing the
-      origin of the Work and reproducing the content of the NOTICE file.
-
-   7. Disclaimer of Warranty. Unless required by applicable law or
-      agreed to in writing, Licensor provides the Work (and each
-      Contributor provides its Contributions) on an "AS IS" BASIS,
-      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
-      implied, including, without limitation, any warranties or conditions
-      of TITLE, NON-INFRINGEMENT, MERCHANTABILITY, or FITNESS FOR A
-      PARTICULAR PURPOSE. You are solely responsible for determining the
-      appropriateness of using or redistributing the Work and assume any
-      risks associated with Your exercise of permissions under this License.
-
-   8. Limitation of Liability. In no event and under no legal theory,
-      whether in tort (including negligence), contract, or otherwise,
-      unless required by applicable law (such as deliberate and grossly
-      negligent acts) or agreed to in writing, shall any Contributor be
-      liable to You for damages, including any direct, indirect, special,
-      incidental, or consequential damages of any character arising as a
-      result of this License or out of the use or inability to use the
-      Work (including but not limited to damages for loss of goodwill,
-      work stoppage, computer failure or malfunction, or any and all
-      other commercial damages or losses), even if such Contributor
-      has been advised of the possibility of such damages.
-
-   9. Accepting Warranty or Additional Liability. While redistributing
-      the Work or Derivative Works thereof, You may choose to offer,
-      and charge a fee for, acceptance of support, warranty, indemnity,
-      or other liability obligations and/or rights consistent with this
-      License. However, in accepting such obligations, You may act only
-      on Your own behalf and on Your sole responsibility, not on behalf
-      of any other Contributor, and only if You agree to indemnify,
-      defend, and hold each Contributor harmless for any liability
-      incurred by, or claims asserted against, such Contributor by reason
-      of your accepting any such warranty or additional liability.
-
-   END OF TERMS AND CONDITIONS
-
-   APPENDIX: How to apply the Apache License to your work.
-
-      To apply the Apache License to your work, attach the following
-      boilerplate notice, with the fields enclosed by brackets "[]"
-      replaced with your own identifying information. (Don't include
-      the brackets!)  The text should be enclosed in the appropriate
-      comment syntax for the file format. We also recommend that a
-      file or class name and description of purpose be included on the
-      same "printed page" as the copyright notice for easier
-      identification within third-party archives.
-
-   Copyright 2023 Emmanuel Noutahi
-
-   Licensed under the Apache License, Version 2.0 (the "License");
-   you may not use this file except in compliance with the License.
-   You may obtain a copy of the License at
-
-       http://www.apache.org/licenses/LICENSE-2.0
-
-   Unless required by applicable law or agreed to in writing, software
-   distributed under the License is distributed on an "AS IS" BASIS,
-   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-   See the License for the specific language governing permissions and
-   limitations under the License.
+<h1 id="migrating-to-safe-10">Migrating to SAFE 1.0<a class="headerlink" href="#migrating-to-safe-10" title="Permanent link">&para;</a></h1>
+<p>SAFE 1.0 is a maintenance-focused major release. It keeps the established encoding, decoding, tokenization, generation, and training behaviour while moving the supported environment and delivery process forward.</p>
+<h2 id="supported-environment">Supported environment<a class="headerlink" href="#supported-environment" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Python 3.11 through 3.14 is supported. Python 3.9 and 3.10 are no longer tested.</li>
+<li>The minimum RDKit release is 2024.09. RDKit 2026.03 is deliberately excluded because that series changes double-bond direction handling during fragmentation and can silently lose stereochemistry in an otherwise valid SAFE round trip. The compatibility matrix uses RDKit 2024.09, 2025.03, and 2025.09.</li>
+<li>Model and training extras require PyTorch 2.5 or newer. Official macOS Intel
+  wheels stop at PyTorch 2.2, so those extras are not supported natively there.
+  The notation core works without PyTorch, including alongside Molfeat on Intel.</li>
+<li>Transformers 5 is the supported generation stack. SAFE maintains greedy,
+  multinomial, beam, beam-sampling and the constrained-beam path required by
+  model-only linker generation. SAFE-GPT keeps identical logits and seeded
+  outputs for those established paths compared with Transformers 4.57.6.</li>
+<li>Datasets 4+, Accelerate 1.1+, Tokenizers 0.23, and current NumPy and NetworkX releases are supported.</li>
+</ul>
+<p>The current Transformers generation stack moved constrained beam search into a
+custom generation repository. SAFE loads it only for model-only linker
+generation, pins the reviewed upstream commit, and allows an offline mirror
+through <code>SAFE_CONSTRAINED_GENERATION_BACKEND</code>. Standard sampling does not
+download or execute this backend. Contrastive and diverse beam search are no
+longer wrapped by SAFE; advanced Transformers experiments should call the
+underlying model directly.</p>
+<p>The default installation is now the molecular notation core: encoding,
+decoding and <code>safe.split</code>. PyTorch, Transformers, Tokenizers, tqdm and fsspec
+move to the <code>model</code> extra. <code>SAFEDesign</code> and <code>SAFETokenizer</code> keep their public
+top-level names and load that stack only when used. The <code>train</code> extra includes
+the model stack plus Datasets, Evaluate, Accelerate and universal-pathlib.
+Matplotlib and Weights &amp; Biases remain isolated in <code>viz</code> and <code>wandb</code>; <code>all</code>
+installs every maintained feature.</p>
+<p>Recreate the environment rather than upgrading it in place:</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--all-extras
 </code></pre></div>
+<p><code>env.yml</code> remains a supported Conda alternative. For a pip training
+environment, install <code>safe-mol[train]</code> (or <code>safe-mol[train,wandb]</code> if
+experiment reporting is required).</p>
+<p>For GPU installations, install the PyTorch build appropriate for the CUDA driver before installing SAFE.</p>
+<h2 id="behaviour-preserving-fixes">Behaviour-preserving fixes<a class="headerlink" href="#behaviour-preserving-fixes" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Canonical SAFE encoding is now invariant to equivalent input SMILES spellings.
+  Passing <code>randomize=True</code> with <code>canonical=True</code> is explicitly a no-op, as the
+  public API has always documented.</li>
+<li>Encoding with <code>ignore_stereo=False</code> no longer cuts stereogenic double bonds,
+  directional single bonds shared by multiple E/Z definitions, or bonds incident
+  to specified non-tetrahedral atom stereocentres. It also protects unsafe
+  explicit-hydrogen cuts near atom stereocentres. Directional single bonds local
+  to one double bond remain cuttable when the exact isomeric graph round-trips.
+  When every candidate cut is unsafe, or the final fragmented graph changes the
+  stereo assignment, SAFE returns the exact molecule unfragmented rather than
+  rejecting a valid <code>safe.encode()</code> call. A final dummy-aware isomeric graph
+  comparison catches changes that standard InChI identity can miss. Enhanced
+  CXSMILES stereo groups are rejected explicitly in
+  SAFE 1.0 because plain SAFE/SMILES cannot retain their AND, OR or absolute-group
+  semantics; resolve the group to one stereoisomer, or set <code>ignore_stereo=True</code>
+  only when dropping that information is intentional.</li>
+<li><code>decode(..., canonical=True)</code> now means canonical SMILES serialization only.
+  It no longer standardizes charges or selects a canonical tautomer, operations
+  which could change the molecular graph represented by an otherwise valid SAFE
+  string.</li>
+<li>Decode failures now follow the documented contract: strict decoding raises
+  <code>SAFEDecodeError</code>, while <code>ignore_errors=True</code> remains the permissive batch path
+  and returns <code>None</code> for an invalid item.</li>
+<li>Wildcard-containing molecules no longer turn a structural wildcard into an invalid ring closure. Terminal wildcard attachment points remain open for linker generation and scaffold morphing, while degree-two and lone wildcards keep their original topology. An open attachment's SAFE form is an unmatched ring-closure token rather than a literal <code>*</code>; decode with <code>remove_dummies=False</code> when attachment points must be visible again as wildcard atoms.</li>
+<li>Molecules with 100 or more attachment bonds use RDKit's extended <code>%(nnn)</code> ring-closure notation. The SAFE tokenizer accepts every RDKit extended form from <code>%(1)</code> through five digits as one token.</li>
+<li>A one-item batch keeps its batch dimension in the property head.</li>
+<li><code>SAFETrainer.compute_loss</code> accepts the current Transformers trainer call signature.</li>
+<li><code>SAFETokenizer.save_pretrained()</code> now writes a loadable <code>tokenizer.json</code> instead of calling a method that does not exist on the underlying Rust tokenizer.</li>
+<li>Pickling a <code>SAFETokenizer</code> now restores its SAFE-aware pre-tokenizer, including
+  extended ring-closure tokens such as <code>%(100)</code>.</li>
+<li>Model-only linker constraints now encode each ring-closure permutation as a complete phrase. Previously, a dot token alone could satisfy the disjunctive constraint, and intermediate SAFE strings leaked into the returned SMILES list.</li>
+<li>Model-only linker candidates use a stable sorted order instead of iterating an
+  unordered set, so results no longer depend on <code>PYTHONHASHSEED</code>.</li>
+<li>Pattern sampling allocates tensors on the model device (CPU, CUDA or Apple
+  Silicon MPS) and uses operation-local random generators. Each generation trial
+  also receives a distinct, reproducible SAFE randomization seed.</li>
+<li>Pattern decoration now converts sampled concrete scaffolds to sanitized
+  molecules before completion and skips invalid exemplars, instead of passing a
+  SMARTS query molecule into the SAFE encoder.</li>
+<li>Linker extraction reports an unavailable linker as <code>(molecule, None, None)</code>
+  when the requested minimum size cannot be met. Visualization accepts an
+  explicit fragment sequence and rejects unknown highlight modes with a clear
+  error.</li>
+<li>The training CLI now reports a clear error when <code>--tokenizer</code> is missing.</li>
+</ul>
+<h2 id="sampling-transition">Sampling transition<a class="headerlink" href="#sampling-transition" title="Permanent link">&para;</a></h2>
+<p><code>motif_extension()</code> was an exact wrapper around
+<code>scaffold_decoration(..., add_dot=True)</code>. It remains as a deprecated alias for
+this transition and will be removed in SAFE 2.0.</p>
+<p><code>max_new_tokens</code> is now the default generation-length control because it gives
+the completion the same budget regardless of prompt length:</p>
+<div class="highlight"><pre><span></span><code><span class="n">designer</span><span class="o">.</span><span class="n">scaffold_decoration</span><span class="p">(</span><span class="n">scaffold</span><span class="p">,</span> <span class="n">max_new_tokens</span><span class="o">=</span><span class="mi">80</span><span class="p">)</span>
+</code></pre></div>
+<p><code>max_length</code> retains its previous total-length semantics for this release and
+emits a <code>FutureWarning</code>; it is scheduled for removal in SAFE 2.0. Passing both
+length controls is an error.</p>
+<p>All public design methods accept <code>try_hard=False</code>. Enabling it performs a
+transparent quality pass: SAFE samples three times the requested candidates,
+decodes and validates them, preserves any requested fragment or scaffold
+constraint, removes duplicates in generation order, and returns at most the
+requested count. It does not change model logits or apply medicinal-chemistry
+heuristics:</p>
+<div class="highlight"><pre><span></span><code><span class="n">designer</span><span class="o">.</span><span class="n">linker_generation</span><span class="p">(</span>
+    <span class="s2">"[*]c1ccccc1"</span><span class="p">,</span>
+    <span class="s2">"[*]N1CCCCC1"</span><span class="p">,</span>
+    <span class="n">n_samples_per_trial</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">try_hard</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The published <code>datamol-io/safe-gpt</code> checkpoint is loaded at a reviewed pinned
+revision by default. Pass <code>model_revision=</code> explicitly to test another Hub
+revision, or <code>model_dir=</code> to load a local model.</p>
+<h2 id="ci-and-releases">CI and releases<a class="headerlink" href="#ci-and-releases" title="Permanent link">&para;</a></h2>
+<p>Pull requests and pushes to <code>dev</code> and <code>main</code> now run the supported Python/RDKit
+core matrix on Linux x86-64, Windows x86-64, macOS Apple Silicon and macOS
+Intel. All maintained extras, the published SAFE-GPT checkpoint and executable
+tutorials are validated in a separate Linux integration lane.
+Documentation is built in strict mode.</p>
+<p>Publication remains a manual action using <code>PYPI_API_TOKEN</code>, with full test
+validation and isolated wheel/source installation checks. The action creates
+a GitHub tag and Release at the tested commit only after PyPI succeeds; it
+never pushes code to <code>main</code>. See the <a href="releasing.html">release guide</a> for dry
+runs, prereleases and the separate conda-forge recipe updates.</p>
 
 
 
