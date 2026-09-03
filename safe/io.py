@@ -1,18 +1,16 @@
-from typing import Optional, List
-
-import tempfile
-import os
 import contextlib
-import torch
-import wandb
+import os
+import tempfile
+from typing import TYPE_CHECKING, List, Optional
+
 import fsspec
 
-from transformers import PreTrainedModel, is_torch_available
-from transformers.processing_utils import PushToHubMixin
+if TYPE_CHECKING:
+    from transformers import PreTrainedModel
 
 
 def upload_to_wandb(
-    model: PreTrainedModel,
+    model: "PreTrainedModel",
     tokenizer,
     artifact_name: str,
     wandb_project_name: Optional[str] = "safe-models",
@@ -34,6 +32,13 @@ def upload_to_wandb(
         aliases (Optional[List[str]]): List of aliases to assign to this artifact version.
         **init_args: Additional arguments to pass into `wandb.init()`.
     """
+
+    try:
+        import wandb
+    except ImportError:
+        raise ImportError(
+            'Weights & Biases support requires: python -m pip install "safe-mol[wandb]"'
+        ) from None
 
     with tempfile.TemporaryDirectory() as tmpdirname:
         # Paths to save model and tokenizer

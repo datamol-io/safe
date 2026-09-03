@@ -1,17 +1,15 @@
 from typing import Union
 from typing import List
 from typing import Optional
+import contextlib
 import re
 import datamol as dm
 import torch
 import numpy as np
 import safe as sf
-import torch.nn.functional as F
-import transformers
+from rdkit import Chem
 
-from loguru import logger
 from tqdm.auto import tqdm
-import contextlib
 
 
 class PatternConstraint:
@@ -114,23 +112,25 @@ class PatternConstraint:
         # Normalize probs so that the sum of non-masked probabilities is 1
         probs = probs * mask  # Zero out masked elements
         probs_sum = probs.sum(dim=-1, keepdim=True)  # Sum only the non-masked elements
+        if torch.any(probs_sum == 0):
+            raise ValueError("Pattern constraint masks every token in the vocabulary")
         return probs / probs_sum  # Normalize
 
     @classmethod
-    def randomize(cls, scaffold: str, n: int = 10):
+    def randomize(cls, scaffold: str, n: int = 10, seed: Optional[int] = None):
         """Randomize a scaffold for decoration."""
         random_mol = (
             dm.from_smarts(scaffold) if not isinstance(scaffold, dm.Mol) else dm.copy_mol(scaffold)
         )
+        if random_mol is None:
+            raise ValueError(f"Invalid scaffold pattern: {scaffold!r}")
+        rng = np.random.default_rng(seed)
         out = set()
-        while not out or n > 0:
-            random_mol = dm.randomize_atoms(random_mol)
-            try:
-                out.add(dm.to_smarts(random_mol))
-            except Exception as e:
-                logger.error(e)
-            n -= 1
-        return out
+        for _ in range(n):
+            atom_indices = rng.permutation(random_mol.GetNumAtoms()).tolist()
+            random_mol = Chem.RenumberAtoms(random_mol, atom_indices)
+            out.add(dm.to_smarts(random_mol))
+        return sorted(out)
 
     def _find_ring_tokens(self):
         """Find all possible ring tokens in the vocab."""
@@ -282,14 +282,14 @@ class PatternConstraint:
         with dm.without_rdkit_log():
             try:
                 tk_mol = dm.from_smarts(token)
-            except:
+            except Exception:
                 tk_mol = dm.to_mol(token, sanitize=True)
             # didn't work, try with second strategy
             if tk_mol is None:
                 tk_mol = dm.to_mol(token, sanitize=False)
                 try:
                     tk_mol = dm.from_smarts(dm.smiles_as_smarts(tk_mol))
-                except:
+                except Exception:
                     tk_mol = None
         return tk_mol
 
@@ -351,12 +351,8 @@ class PatternSampler:
         Returns:
             torch.Tensor: Loss for each example, shape (batch_size).
         """
-        target_expanded = (
-            torch.zeros(inputs.size()).cuda()
-            if torch.cuda.is_available()
-            else torch.zeros(inputs.size())
-        )
-        target_expanded.scatter_(1, targets.contiguous().view(-1, 1).data, 1.0)
+        target_expanded = torch.zeros_like(inputs)
+        target_expanded.scatter_(1, targets.contiguous().view(-1, 1), 1.0)
         loss = target_expanded * inputs
         return torch.sum(loss, dim=1)
 
@@ -374,18 +370,37 @@ class PatternSampler:
         Returns:
             List[str]: List of sampled sequences as strings.
         """
-        if random_seed is not None:
-            torch.manual_seed(random_seed)
+        device = next(self.model.parameters()).device
+        generator = None
+        mps_rng_state = None
+        if device.type == "mps":
+            if random_seed is not None:
+                # MPS does not expose a per-device Generator. Preserve the
+                # caller's process-wide state while seeding this operation.
+                mps_rng_state = torch.mps.get_rng_state()
+                torch.mps.manual_seed(random_seed)
+        elif random_seed is not None:
+            generator = torch.Generator(device=device)
+            generator.manual_seed(random_seed)
+        numpy_rng = np.random.default_rng(random_seed)
 
         sampled_mols = []
-        for _ in tqdm(range(n_trials), leave=False):
-            generated_sequences, *_ = self._generate(n_samples)
-            sampled_mols.extend(
-                [
-                    self._as_scaffold(self.tokenizer.decode(seq, skip_special_tokens=False))
-                    for seq in generated_sequences
-                ]
-            )
+        try:
+            for _ in tqdm(range(n_trials), leave=False):
+                generated_sequences, *_ = self._generate(
+                    n_samples,
+                    generator=generator,
+                    numpy_rng=numpy_rng,
+                )
+                sampled_mols.extend(
+                    [
+                        self._as_scaffold(self.tokenizer.decode(seq, skip_special_tokens=False))
+                        for seq in generated_sequences
+                    ]
+                )
+        finally:
+            if mps_rng_state is not None:
+                torch.mps.set_rng_state(mps_rng_state)
         return sampled_mols
 
     def _as_scaffold(self, scaff: str) -> str:
@@ -406,7 +421,13 @@ class PatternSampler:
             splitted_out[pos] = query
         return "".join(splitted_out)
 
-    def _generate(self, batch_size: int, max_length: Optional[int] = None):
+    def _generate(
+        self,
+        batch_size: int,
+        max_length: Optional[int] = None,
+        generator: Optional[torch.Generator] = None,
+        numpy_rng: Optional[np.random.Generator] = None,
+    ):
         """
         Generate sequences with custom constraints using the model and PatternConstraint.
 
@@ -421,30 +442,29 @@ class PatternSampler:
         if max_length is None:
             max_length = self.max_length
 
-        start_token = torch.full((batch_size, 1), self.tokenizer.bos_token_id, dtype=torch.long)
-        finished = torch.zeros(batch_size, dtype=bool)
-        log_probs = torch.zeros(batch_size)
-        entropy = torch.zeros(batch_size)
+        device = next(self.model.parameters()).device
+        start_token = torch.full(
+            (batch_size, 1),
+            self.tokenizer.bos_token_id,
+            dtype=torch.long,
+            device=device,
+        )
+        finished = torch.zeros(batch_size, dtype=torch.bool, device=device)
+        log_probs = torch.zeros(batch_size, device=device)
+        entropy = torch.zeros(batch_size, device=device)
+        if numpy_rng is None:
+            numpy_rng = np.random.default_rng()
 
-        if torch.cuda.is_available():
-            log_probs = log_probs.cuda()
-            entropy = entropy.cuda()
-            start_token = start_token.cuda()
-            finished = finished.cuda()
-
-        max_dec_steps = max_length - len(self.pattern_decorator)
-        if max_dec_steps < 0:
+        if max_length < len(self.pattern_decorator):
             raise ValueError("Step size negative due to scaffold being longer than max_length")
 
         input_ids = start_token
         trackers = torch.zeros(batch_size, dtype=torch.int)  # Tracks the position in the scaffold
 
-        for step in range(max_length):
+        for _ in range(max_length):
             current_tokens = [self.pattern_decorator.tokens[index] for index in trackers]
             action_i = [
-                self.pattern_decorator.actions.setdefault(
-                    self.pattern_decorator.tokens[index], "roll"
-                )
+                self.pattern_decorator.actions.get(self.pattern_decorator.tokens[index], "roll")
                 for index in trackers
             ]
 
@@ -454,19 +474,31 @@ class PatternSampler:
             log_prob = torch.log_softmax(logits, dim=-1)
             probs = log_prob.exp()
 
-            decoder_input = torch.multinomial(probs, num_samples=1).squeeze(1).view(-1)
+            decoder_input = torch.multinomial(
+                probs,
+                num_samples=1,
+                generator=generator,
+            ).view(-1)
 
             for i in range(batch_size):
                 if action_i[i] == "constraint":
                     mask = self.pattern_decorator.token_masks[current_tokens[i]].to(
                         input_ids.device
                     )
+                    if not torch.any(mask):
+                        raise ValueError(
+                            f"Pattern constraint {current_tokens[i]!r} matches no tokenizer token"
+                        )
                     prob_i = self.pattern_decorator._logprobs_to_probs(log_prob[i, :], mask)
-                    if prob_i.sum() == 0:
-                        random_choice = torch.nonzero(mask.squeeze()).squeeze().cpu().numpy()
-                        decoder_input[i] = np.random.choice(random_choice)
+                    if prob_i.sum().item() == 0:
+                        random_choice = torch.nonzero(mask.squeeze()).flatten().cpu().numpy()
+                        decoder_input[i] = numpy_rng.choice(random_choice)
                     else:
-                        decoder_input[i] = torch.multinomial(prob_i, num_samples=1).view(-1)
+                        decoder_input[i] = torch.multinomial(
+                            prob_i,
+                            num_samples=1,
+                            generator=generator,
+                        ).view(-1)
                     trackers[i] += int(decoder_input[i] != self.tokenizer.eos_token_id)
                 else:
                     decoder_input[i] = self.pattern_decorator.ids[trackers[i].item()]
@@ -475,7 +507,7 @@ class PatternSampler:
             sequences.append(decoder_input.unsqueeze(-1))
             input_ids = torch.cat((input_ids, decoder_input.unsqueeze(-1)), dim=1)
             log_probs += self.nll_loss(log_prob, decoder_input)
-            entropy += -torch.sum(log_prob * probs, dim=-1)
+            entropy += torch.special.entr(probs).sum(dim=-1)
 
             eos_sampled = (decoder_input == self.tokenizer.eos_token_id).bool()
             finished = torch.ge(finished + eos_sampled, 1)

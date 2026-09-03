@@ -2,7 +2,7 @@ import itertools
 import random
 import re
 from collections import deque
-from contextlib import contextmanager, suppress
+from contextlib import contextmanager
 from functools import partial
 from itertools import combinations, compress
 from typing import Any, List, Optional, Tuple, Union
@@ -110,6 +110,9 @@ class MolSlicer:
                 )
 
         masked_bond_pdist = np.ma.masked_less_equal(bond_pdist, self.min_linker_size)
+
+        if masked_bond_pdist.count() == 0:
+            return None
 
         if self.shortest_linker:
             return np.unravel_index(np.ma.argmin(masked_bond_pdist), bond_pdist.shape)
@@ -229,6 +232,8 @@ class MolSlicer:
         # CASE 3a: we select the most plausible bond to cut on ourselves
         if expected_head is None:
             choice = self._bond_selection_from_max_cuts(candidate_bonds, dist_mat)
+            if choice is None:
+                return (mol, None, None)
             selected_bonds = [selected_bonds[c] for c in choice]
             return self._fragment_mol(mol, selected_bonds)
 
@@ -290,28 +295,37 @@ def attr_as(obj: Any, field: str, value: Any):
     """
     old_value = getattr(obj, field, None)
     setattr(obj, field, value)
-    yield
-    with suppress(TypeError):
+    try:
+        yield
+    finally:
         setattr(obj, field, old_value)
 
 
-def _selective_add_hs(mol: dm.Mol, fraction_hs: Optional[bool] = None):
+def _selective_add_hs(
+    mol: dm.Mol,
+    fraction_hs: Optional[float] = None,
+    rng: Optional[random.Random] = None,
+):
     """Custom addition of hydrogens to a molecule
     This version of hydrogen bond adding only at max 1 hydrogen per atom
 
     Args:
         mol: molecule to split
         fraction_hs: proportion of random atom to which we will add explicit hydrogens
+        rng: local random-number generator
     """
 
     carbon_with_implicit_atoms = mol.GetSubstructMatches(__implicit_carbon_query, uniquify=True)
     carbon_with_implicit_atoms = [x[0] for x in carbon_with_implicit_atoms]
-    carbon_with_implicit_atoms = list(set(carbon_with_implicit_atoms))
+    carbon_with_implicit_atoms = sorted(set(carbon_with_implicit_atoms))
+    if not carbon_with_implicit_atoms:
+        return mol
     # we get a proportion of the carbon we can extend
     if fraction_hs is not None and fraction_hs > 0:
         fraction_hs = np.ceil(fraction_hs * len(carbon_with_implicit_atoms))
         fraction_hs = int(np.clip(fraction_hs, 1, len(carbon_with_implicit_atoms)))
-        carbon_with_implicit_atoms = random.sample(carbon_with_implicit_atoms, k=fraction_hs)
+        rng = rng or random.Random()
+        carbon_with_implicit_atoms = rng.sample(carbon_with_implicit_atoms, k=fraction_hs)
     carbon_with_implicit_atoms = [int(x) for x in carbon_with_implicit_atoms]
     emol = EditableMol(mol)
     for atom_id in carbon_with_implicit_atoms:
@@ -398,7 +412,7 @@ def find_partition_edges(G: nx.Graph, partition: List[List]) -> List[Tuple]:
     return partition_edges
 
 
-def fragment_aware_spliting(mol: dm.Mol, fraction_hs: Optional[bool] = None, **kwargs: Any):
+def fragment_aware_spliting(mol: dm.Mol, fraction_hs: Optional[float] = None, **kwargs: Any):
     """Custom splitting algorithm for dataset building.
 
     This slicing strategy will cut any bond including bonding with hydrogens
@@ -409,9 +423,10 @@ def fragment_aware_spliting(mol: dm.Mol, fraction_hs: Optional[bool] = None, **k
         fraction_hs: proportion of random atom to which we will add explicit hydrogens
         kwargs: additional arguments to pass to the partitioning algorithm
     """
-    random.seed(kwargs.get("seed", 1))
+    seed = kwargs.get("seed", 1)
+    rng = random.Random(seed)
     mol = dm.to_mol(mol, remove_hs=False)
-    mol = _selective_add_hs(mol, fraction_hs=fraction_hs)
+    mol = _selective_add_hs(mol, fraction_hs=fraction_hs, rng=rng)
     graph = dm.graph.to_graph(mol)
     d = mol_partition(mol, **kwargs)
     q = deque(d)
@@ -426,7 +441,7 @@ def convert_to_safe(
     seed: Optional[int] = 1,
     slicer: str = "brics",
     split_fragment: bool = True,
-    fraction_hs: bool = None,
+    fraction_hs: Optional[float] = None,
     resolution: Optional[float] = 0.5,
 ):
     """Convert a molecule to a safe representation
@@ -447,7 +462,7 @@ def convert_to_safe(
         x = sf.encode(mol, canonical=canonical, randomize=randomize, slicer=slicer, seed=seed)
     except sf.SAFEFragmentationError:
         if split_fragment:
-            if "." in mol:
+            if isinstance(mol, str) and "." in mol:
                 return None
             try:
                 x = sf.encode(
@@ -554,15 +569,21 @@ def filter_by_substructure_constraints(
 
     """
 
+    # Normalize both string and molecule queries the same way: attachment
+    # points must behave as wildcards, otherwise a ``dm.Mol`` query carrying
+    # dummy atoms would only match other dummies and silently reject every
+    # decorated molecule.
+    if isinstance(substruct, dm.Mol):
+        substruct = dm.to_smiles(substruct)
     if isinstance(substruct, str):
         substruct = standardize_attach(substruct)
         substruct = dm.from_smarts(substruct)
+    if substruct is None:
+        raise ValueError("Substructure constraint could not be parsed")
 
     def _check_match(mol):
-        with suppress(Exception):
-            mol = dm.to_mol(mol)
-            return mol.HasSubstructMatch(substruct)
-        return False
+        mol = dm.to_mol(mol)
+        return mol is not None and mol.HasSubstructMatch(substruct)
 
     matches = dm.parallelized(_check_match, sequences, n_jobs=n_jobs)
     return list(compress(sequences, matches))

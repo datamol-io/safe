@@ -1,17 +1,14 @@
 import itertools
 import re
 from collections import Counter
-from contextlib import suppress
 from typing import Callable, List, Optional, Union
 
 import datamol as dm
 import numpy as np
 from rdkit import Chem
 from rdkit.Chem import BRICS
-from loguru import logger
 
 from ._exception import SAFEDecodeError, SAFEEncodeError, SAFEFragmentationError
-from .utils import standardize_attach
 
 
 class SAFEConverter:
@@ -73,7 +70,8 @@ class SAFEConverter:
                 `attach` slicer requires adding hydrogens.
             use_original_opener_for_attach: whether to use the original branch opener digit when adding back
                 mapping number to attachment points, or use simple enumeration.
-            ignore_stereo: RDKIT does not support some particular SAFE subset when stereochemistry is defined.
+            ignore_stereo: whether to discard input stereochemistry explicitly. When false,
+                stereochemistry-changing cuts are skipped and the encoded graph is verified.
 
         """
         self.slicer = slicer
@@ -99,31 +97,56 @@ class SAFEConverter:
         """
         if isinstance(rng, int):
             rng = np.random.default_rng(rng)
+        elif rng is None:
+            rng = np.random.default_rng()
         if mol.GetNumAtoms() == 0:
             return mol
         atom_indices = list(range(mol.GetNumAtoms()))
         atom_indices = rng.permutation(atom_indices).tolist()
         return Chem.RenumberAtoms(mol, atom_indices)
 
+    @staticmethod
+    def _format_ring_closure(num: int) -> str:
+        """Format a ring-closure (branch) number into its SMILES token.
+
+        Single digits stay bare (e.g. ``5``), two-digit numbers use the ``%NN``
+        form, and numbers >= 100 use RDKit's extended ``%(nnn)`` ring-closure
+        notation (see https://www.rdkit.org/docs/RDKit_Book.html#ring-closures).
+
+        Args:
+            num: ring-closure number to format
+        """
+        if num < 10:
+            return str(num)
+        if num < 100:
+            return f"%{num}"
+        return f"%({num})"
+
+    @classmethod
+    def _find_branch_number_positions(cls, inp: str):
+        """Find ring-closure labels and their positions in a SMILES string."""
+        matches = re.finditer(r"\[[^\]]+\]|%\((\d+)\)|%(\d{2})|(\d+)", inp)
+        branch_numbers = []
+        for match in matches:
+            extended, double, singles = match.groups()
+            if extended:
+                branch_numbers.append((int(extended), match.start()))
+            elif double:
+                branch_numbers.append((int(double), match.start()))
+            elif singles:
+                branch_numbers.extend(
+                    (int(digit), match.start(3) + offset) for offset, digit in enumerate(singles)
+                )
+        return branch_numbers
+
     @classmethod
     def _find_branch_number(cls, inp: str):
-        """Find the branch number and ring closure in the SMILES representation using regexp
+        """Find the branch numbers and ring closures in a SMILES representation.
 
         Args:
             inp: input smiles
         """
-        inp = re.sub(r"\[.*?\]", "", inp)  # noqa
-        matching_groups = re.findall(r"((?<=%)\d{2})|((?<!%)\d+)(?![^\[]*\])", inp)
-        # first match is for multiple connection as multiple digits
-        # second match is for single connections requiring 2 digits
-        # SMILES does not support triple digits
-        branch_numbers = []
-        for m in matching_groups:
-            if m[0] == "":
-                branch_numbers.extend(int(mm) for mm in m[1])
-            elif m[1] == "":
-                branch_numbers.append(int(m[0].replace("%", "")))
-        return branch_numbers
+        return [label for label, _ in cls._find_branch_number_positions(inp)]
 
     def _ensure_valid(self, inp: str):
         """Ensure that the input SAFE string is valid by fixing the missing attachment points
@@ -139,11 +162,10 @@ class SAFEConverter:
         branch_numbers = Counter(branch_numbers)
         for i, (bnum, bcount) in enumerate(branch_numbers.items()):
             if bcount % 2 != 0:
-                bnum_str = str(bnum) if bnum < 10 else f"%{bnum}"
+                bnum_str = self._format_ring_closure(bnum)
                 _tk = f"[*:{i+1}]{bnum_str}"
                 if self.use_original_opener_for_attach:
-                    bnum_digit = bnum_str.strip("%")  # strip out the % sign
-                    _tk = f"[*:{bnum_digit}]{bnum_str}"
+                    _tk = f"[*:{bnum}]{bnum_str}"
                 missing_tokens.append(_tk)
         return ".".join(missing_tokens)
 
@@ -163,29 +185,62 @@ class SAFEConverter:
             as_mol: whether to return a molecule object or a smiles string
             canonical: whether to return a canonical
             fix: whether to fix the SAFE representation to take into account non-connected attachment points
-            remove_dummies: whether to remove dummy atoms from the SAFE representation. Note that removing_dummies is incompatible with
+            remove_dummies: whether to remove dummy atoms from the SAFE representation. Set this to
+                ``False`` when decoding an open SAFE fragment or scaffold if attachment points
+                must be preserved.
             remove_added_hs: whether to remove all the added hydrogen atoms after applying dummy removal for recovery
         """
 
         if fix:
             inp = self._ensure_valid(inp)
         mol = dm.to_mol(inp)
+        if mol is None:
+            raise ValueError("SAFE string could not be parsed into a molecule")
         if remove_dummies:
-            with suppress(Exception):
-                du = dm.from_smarts("[$([#0]!-!:*);$([#0;D1])]")
-                out = Chem.ReplaceSubstructs(mol, du, dm.to_mol("C"), True)[0]
-                mol = dm.remove_dummies(out)
+            dummy_query = dm.from_smarts("[$([#0]!-!:*);$([#0;D1])]")
+            if any(atom.GetAtomicNum() == 0 for atom in mol.GetAtoms()):
+                replacements = Chem.ReplaceSubstructs(
+                    mol,
+                    dummy_query,
+                    dm.to_mol("C"),
+                    True,
+                )
+                mol = dm.remove_dummies(replacements[0])
         if as_mol:
             if remove_added_hs:
                 mol = dm.remove_hs(mol, update_explicit_count=True)
-            if canonical:
-                mol = dm.standardize_mol(mol)
-                mol = dm.canonical_tautomer(mol)
             return mol
         out = dm.to_smiles(mol, canonical=canonical, explicit_hs=(not remove_added_hs))
-        if canonical:
-            out = dm.standardize_smiles(out)
+        has_stereo = any(
+            atom.GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED for atom in mol.GetAtoms()
+        ) or any(bond.GetStereo() != Chem.BondStereo.STEREONONE for bond in mol.GetBonds())
+        mol_graph = self._canonical_isomeric_graph(mol)
+        if has_stereo and self._canonical_isomeric_graph(out) != mol_graph:
+            # RDKit's non-canonical writer can choose an inconsistent parity
+            # for rare symmetry-dependent stereocentres. Canonical writing is
+            # deterministic and preserves the graph in those cases.
+            canonical_out = dm.to_smiles(
+                mol,
+                canonical=True,
+                explicit_hs=(not remove_added_hs),
+            )
+            out = (
+                canonical_out if self._canonical_isomeric_graph(canonical_out) == mol_graph else inp
+            )
         return out
+
+    @staticmethod
+    def _canonical_isomeric_graph(inp: Union[str, dm.Mol]):
+        """Return a map-independent, dummy-aware isomeric graph identity."""
+        mol = dm.to_mol(inp, remove_hs=False)
+        if mol is None:
+            return None
+        mol = dm.remove_hs(mol, update_explicit_count=True)
+        for atom in mol.GetAtoms():
+            atom.SetAtomMapNum(0)
+            if atom.GetAtomicNum() == 0:
+                atom.SetIsotope(0)
+        return Chem.MolToSmiles(mol, canonical=True, isomericSmiles=True)
 
     def _fragment(self, mol: dm.Mol, allow_empty: bool = False):
         """
@@ -221,6 +276,103 @@ class SAFEConverter:
             raise SAFEFragmentationError(
                 "Slicing algorithms did not return any bonds that can be cut !"
             )
+
+        if not self.ignore_stereo:
+            specified_stereos = [
+                stereo
+                for stereo in Chem.FindPotentialStereo(mol)
+                if stereo.specified == Chem.StereoSpecified.Specified
+            ]
+            specified_double_bonds = {
+                stereo.centeredOn
+                for stereo in specified_stereos
+                if stereo.type == Chem.StereoType.Bond_Double
+            }
+            specified_atom_centers = {
+                stereo.centeredOn
+                for stereo in specified_stereos
+                if stereo.type
+                in {
+                    Chem.StereoType.Atom_Tetrahedral,
+                    Chem.StereoType.Atom_SquarePlanar,
+                    Chem.StereoType.Atom_TrigonalBipyramidal,
+                    Chem.StereoType.Atom_Octahedral,
+                }
+            }
+
+            # Explicit H cuts can alter rooted-fragment parity near an atom
+            # stereocentre even when the cut atom itself is not stereogenic.
+            # Build the protected two-hop neighbourhood once rather than doing
+            # a shortest-path query for every candidate bond.
+            atoms_near_stereocenters = set(specified_atom_centers)
+            frontier = set(specified_atom_centers)
+            if self.require_hs:
+                for _ in range(2):
+                    frontier = {
+                        neighbor.GetIdx()
+                        for atom_idx in frontier
+                        for neighbor in mol.GetAtomWithIdx(atom_idx).GetNeighbors()
+                        if neighbor.GetAtomicNum() != 1
+                        and neighbor.GetIdx() not in atoms_near_stereocenters
+                    }
+                    atoms_near_stereocenters.update(frontier)
+
+            # Cutting a specified double bond loses its E/Z metadata. A single
+            # bond shared by two specified double bonds is unsafe for a subtler
+            # reason: its SMILES direction participates in both local stereo
+            # definitions, but the fragments are serialized independently
+            # before their dummy atoms become one SAFE ring closure. Directional
+            # single bonds belonging to only one double bond round-trip safely,
+            # except for newly explicit hydrogen bonds: unlike the directional
+            # heavy-atom reference, they carry no slash direction of their own.
+            stereo_safe_bonds = []
+            for atom_pair in matching_bonds:
+                bond = mol.GetBondBetweenAtoms(*atom_pair)
+                if bond.GetStereo() != Chem.BondStereo.STEREONONE:
+                    continue
+                atoms = [mol.GetAtomWithIdx(atom_idx) for atom_idx in atom_pair]
+                adjacent_stereo_bonds = {
+                    adjacent_bond.GetIdx()
+                    for atom_idx in atom_pair
+                    for adjacent_bond in mol.GetAtomWithIdx(atom_idx).GetBonds()
+                    if adjacent_bond.GetIdx() in specified_double_bonds
+                }
+                cuts_explicit_stereo_hydrogen = (
+                    self.require_hs
+                    and bool(adjacent_stereo_bonds)
+                    and any(atom.GetAtomicNum() == 1 for atom in atoms)
+                )
+                cuts_noncarbon_stereocenter = any(
+                    atom_idx in specified_atom_centers and atom.GetAtomicNum() != 6
+                    for atom_idx, atom in zip(atom_pair, atoms)
+                )
+                cuts_hydrogen_near_stereocenter = self.require_hs and any(
+                    atom.GetAtomicNum() == 1
+                    and any(
+                        neighbor.GetIdx() in atoms_near_stereocenters
+                        for neighbor in atom.GetNeighbors()
+                    )
+                    for atom in atoms
+                )
+                cuts_multiple_bond_with_ez = (
+                    bool(specified_double_bonds) and bond.GetBondType() != Chem.BondType.SINGLE
+                )
+                if bond.GetBondType() == Chem.BondType.SINGLE and (
+                    len(adjacent_stereo_bonds) > 1 or cuts_explicit_stereo_hydrogen
+                ):
+                    continue
+                if (
+                    cuts_noncarbon_stereocenter
+                    or cuts_hydrogen_near_stereocenter
+                    or cuts_multiple_bond_with_ez
+                ):
+                    continue
+                stereo_safe_bonds.append(atom_pair)
+            matching_bonds = stereo_safe_bonds
+
+        # A slicer did find bonds, but every cut was unsafe for the specified
+        # stereochemistry. Returning the molecule unfragmented is exact and is
+        # preferable to rejecting an otherwise valid public ``safe.encode`` call.
         return matching_bonds or []
 
     def encoder(
@@ -248,32 +400,63 @@ class SAFEConverter:
             allow_empty: whether to allow the slicing algorithm to return empty bonds
             rdkit_safe: whether to apply rdkit-safe digit standardization to the output SAFE string.
         """
+        source_text = inp if isinstance(inp, str) else None
+        source_mol = dm.to_mol(inp, remove_hs=False)
+        if source_mol is None:
+            raise ValueError("Input could not be parsed into a molecule")
+        if not self.ignore_stereo and source_mol.GetStereoGroups():
+            raise SAFEEncodeError(
+                "Enhanced CXSMILES stereo groups are not representable in SAFE 1.0; "
+                "resolve them to a single stereoisomer or set ignore_stereo=True explicitly"
+            )
+
         rng = None
-        if randomize:
+        should_randomize = bool(randomize and not canonical)
+        if should_randomize:
             rng = np.random.default_rng(seed)
-            if not canonical:
-                inp = dm.to_mol(inp, remove_hs=False)
-                inp = self.randomize(inp, rng)
+            inp = self.randomize(source_mol, rng)
 
         if isinstance(inp, dm.Mol):
             inp = dm.to_smiles(inp, canonical=canonical, randomize=False, ordered=False)
+        elif canonical:
+            # Canonical SAFE must not depend on which equivalent SMILES spelling
+            # the caller supplied. Molecule inputs already followed this path;
+            # normalize string inputs before choosing rooted fragment atoms.
+            inp = dm.to_smiles(source_mol, canonical=True, randomize=False, ordered=False)
 
         # EN: we first normalize the attachment if the molecule is a query:
         # inp = dm.reactions.convert_attach_to_isotope(inp, as_smiles=True)
 
-        # TODO(maclandrol): RDKit supports some extended form of ring closure, up to 5 digits
-        # https://www.rdkit.org/docs/RDKit_Book.html#ring-closures and I should try to include them
+        # RDKit's extended ring-closure form ('%(nnn)', up to 5 digits) is used for
+        # labels >= 100; see `_format_ring_closure`.
+        # https://www.rdkit.org/docs/RDKit_Book.html#ring-closures
         branch_numbers = self._find_branch_number(inp)
 
         mol = dm.to_mol(inp, remove_hs=False)
-        potential_stereos = Chem.FindPotentialStereo(mol)
-        has_stereo_bonds = any(x.type == Chem.StereoType.Bond_Double for x in potential_stereos)
+        if mol is None:
+            raise ValueError("Input could not be parsed into a molecule")
+        # Inspect explicit tags on the original graph. FindPotentialStereo can
+        # omit symmetry-dependent tags in constrained peroxide systems, and
+        # atom renumbering must never disable the final identity guard.
+        has_specified_stereo = any(
+            atom.GetChiralTag() != Chem.ChiralType.CHI_UNSPECIFIED for atom in source_mol.GetAtoms()
+        ) or any(bond.GetStereo() != Chem.BondStereo.STEREONONE for bond in source_mol.GetBonds())
         if self.ignore_stereo:
             mol = dm.remove_stereochemistry(mol)
 
         bond_map_id = 1
+        open_attachment_ids = set()
         for atom in mol.GetAtoms():
             if atom.GetAtomicNum() == 0:
+                # Preserve the distinction between an explicitly labelled
+                # attachment point (for example ``[1*]`` or ``[*:1]``), or a
+                # terminal ``[*]``, and a literal wildcard atom embedded in a
+                # structure (for example ``C1*CCC1``). All are normalised below
+                # so fragment labels remain unique, but only attachment points
+                # must survive as unmatched SAFE ring closures for constrained
+                # generation.
+                if atom.GetDegree() == 1:
+                    open_attachment_ids.add(bond_map_id)
                 atom.SetAtomMapNum(0)
                 atom.SetIsotope(bond_map_id)
                 bond_map_id += 1
@@ -310,7 +493,7 @@ class SAFEConverter:
         # here we need to be clever and disable rooted atom as the atom with mapping
 
         frags = list(Chem.GetMolFrags(mol, asMols=True))
-        if randomize:
+        if should_randomize:
             frags = rng.permutation(frags).tolist()
         elif canonical:
             frags = sorted(
@@ -329,7 +512,7 @@ class SAFEConverter:
                     frag,
                     isomericSmiles=True,
                     canonical=True,  # needs to always be true
-                    rootedAtAtom=non_map_atom_idxs[0],
+                    rootedAtAtom=non_map_atom_idxs[0] if non_map_atom_idxs else -1,
                 )
             )
 
@@ -341,28 +524,57 @@ class SAFEConverter:
 
         # don't capture atom mapping in the scaffold
         attach_pos = set(re.findall(r"(\[\d+\*\]|!\[[^:]*:\d+\])", scaffold_str))
-        if canonical:
-            attach_pos = sorted(attach_pos)
+        # Set iteration made non-canonical encodings, and therefore seeded
+        # model prompts, depend on PYTHONHASHSEED. Retain the historical seed-0
+        # ordering explicitly while canonical encodings keep ascending order.
+        attach_pos = sorted(attach_pos, reverse=not canonical)
         starting_num = 1 if len(scf_branch_num) == 0 else max(scf_branch_num) + 1
         for attach in attach_pos:
-            val = str(starting_num) if starting_num < 10 else f"%{starting_num}"
+            val = self._format_ring_closure(starting_num)
             # we cannot have anything of the form "\([@=-#-$/\]*\d+\)"
             attach_regexp = re.compile(r"(" + re.escape(attach) + r")")
-            scaffold_str = attach_regexp.sub(val, scaffold_str)
+            # check if we have at least 2 matches, if not, we have a dummy
+            n_matches = len(attach_regexp.findall(scaffold_str))
+            attachment_match = re.fullmatch(r"\[(\d+)\*\]", attach)
+            is_explicit_attachment = (
+                attachment_match is not None
+                and int(attachment_match.group(1)) in open_attachment_ids
+            )
+            scaffold_str = (
+                attach_regexp.sub(val, scaffold_str)
+                if n_matches > 1 or is_explicit_attachment
+                else scaffold_str.replace(attach, "*")
+            )
             starting_num += 1
 
         # now we need to remove all the parenthesis around digit only number
-        wrong_attach = re.compile(r"\(([\%\d]*)\)")
+        wrong_attach = re.compile(r"(?<!%)\((%\(\d+\)|[\%\d]*)\)")
         scaffold_str = wrong_attach.sub(r"\g<1>", scaffold_str)
         # furthermore, we autoapply rdkit-compatible digit standardization.
         if rdkit_safe:
-            pattern = r"\(([=-@#\/\\]{0,2})(%?\d{1,2})\)"
+            pattern = r"\(([=-@#\/\\]{0,2})(%\(\d+\)|%?\d{1,2})\)"
             replacement = r"\g<1>\g<2>"
             scaffold_str = re.sub(pattern, replacement, scaffold_str)
-        if not self.ignore_stereo and has_stereo_bonds and not dm.same_mol(scaffold_str, inp):
-            logger.warning(
-                "Ignoring stereo is disabled, but molecule has stereochemistry interferring with SAFE representation"
+        if not self.ignore_stereo and has_specified_stereo:
+            source_graph = self._canonical_isomeric_graph(source_mol)
+            encoded_graph = self._canonical_isomeric_graph(
+                self.decoder(
+                    scaffold_str,
+                    canonical=True,
+                    remove_dummies=False,
+                )
             )
+            if source_graph is None or source_graph != encoded_graph:
+                # Some constrained stereochemical systems can change their
+                # RDKit assignment after fragmentation even when no directly
+                # stereogenic bond was cut. Preserve the valid input intact.
+                if source_text is not None:
+                    return source_text
+                return Chem.MolToSmiles(
+                    source_mol,
+                    canonical=True,
+                    isomericSmiles=True,
+                )
         return scaffold_str
 
 
@@ -375,6 +587,7 @@ def encode(
     require_hs: Optional[bool] = None,
     constraints: Optional[List[dm.Mol]] = None,
     ignore_stereo: Optional[bool] = False,
+    allow_empty: bool = False,
 ):
     """
     Convert input smiles to SAFE representation
@@ -387,7 +600,12 @@ def encode(
         slicer: slicer algorithm to use for encoding. Defaults to "brics".
         require_hs: whether the slicing algorithm require the molecule to have hydrogen explictly added.
         constraints: List of molecules or pattern to preserve during the SAFE construction.
-        ignore_stereo: RDKIT does not support some particular SAFE subset when stereochemistry is defined.
+        ignore_stereo: whether to discard input stereochemistry explicitly. When false,
+            stereochemistry-changing cuts are skipped and the encoded graph is verified.
+        allow_empty: whether to tolerate molecules the slicer cannot cut. When True,
+            an input with no breakable bonds (for example a rigid ring, a single atom,
+            or the components of a salt) is returned as a single unfragmented SAFE
+            block instead of raising ``SAFEFragmentationError``.
     """
     if slicer is None:
         slicer = "brics"
@@ -400,8 +618,9 @@ def encode(
                 randomize=randomize,
                 constraints=constraints,
                 seed=seed,
+                allow_empty=allow_empty,
             )
-        except SAFEFragmentationError as e:
+        except (SAFEEncodeError, SAFEFragmentationError) as e:
             raise e
         except Exception as e:
             raise SAFEEncodeError(f"Failed to encode {inp} with {slicer}") from e

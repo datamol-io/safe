@@ -1,9 +1,9 @@
 site_name: "SAFE"
 site_description: "Gotta be SAFE: a new framework for molecular design"
-site_url: "https://github.com/datamol-io/safe"
+site_url: "https://safe-docs.datamol.io/"
 repo_url: "https://github.com/datamol-io/safe"
 repo_name: "datamol-io/safe"
-copyright: Copyright 2023 Valence Labs
+copyright: Copyright 2026 Valence Labs
 
 remote_branch: "gh-pages"
 docs_dir: "docs"
@@ -12,11 +12,14 @@ strict: true
 
 nav:
   - Overview: index.md
+  - Migrating to 1.0: migration.md
+  - Releasing: releasing.md
   - Tutorials:
       - Getting Started: tutorials/getting-started.ipynb
       - Molecular design: tutorials/design-with-safe.ipynb
       - How it works: tutorials/how-it-works.ipynb
       - Extracting representation (molfeat): tutorials/extracting-representation-molfeat.ipynb
+      - Loading from Weights & Biases: tutorials/load-from-wandb.ipynb
   - API:
       - SAFE: api/safe.md
       - Visualization: api/safe.viz.md
@@ -32,7 +35,7 @@ theme:
 
 extra_javascript:
   - assets/js/google-analytics.js
-  
+
 markdown_extensions:
   - admonition
   - markdown_include.include
@@ -57,30 +60,19 @@ plugins:
   - mkdocstrings:
       handlers:
         python:
-          import:
-            - https://docs.python.org/3/objects.inv
-          setup_commands:
-            - import sys
-            - import safe
-            - sys.path.append("docs")
-            - sys.path.append("safe")
-          selection:
-            new_path_syntax: true
-          rendering:
-            show_root_heading: false
+          options:
+            docstring_options:
+              ignore_init_summary: false
+            docstring_section_style: list
             heading_level: 2
+            merge_init_into_class: true
             show_if_no_docstring: true
-        options:
-          docstring_options:
-            ignore_init_summary: false
-          docstring_section_style: list
-          merge_init_into_class: true
-          show_root_heading: false
-          show_root_full_path: false
-          show_signature_annotations: true
-          show_symbol_type_heading: true
-          show_symbol_type_toc: true
-          signature_crossrefs: true
+            show_root_full_path: false
+            show_root_heading: false
+            show_signature_annotations: true
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            signature_crossrefs: true
 
   - mkdocs-jupyter:
       execute: False

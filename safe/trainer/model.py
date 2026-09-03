@@ -5,7 +5,6 @@ from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
 from transformers import GPT2DoubleHeadsModel, PretrainedConfig
 from transformers.activations import get_activation
-from transformers.utils import auto_docstring
 from transformers.models.gpt2.modeling_gpt2 import (
     GPT2DoubleHeadsModelOutput,
 )
@@ -77,22 +76,15 @@ class PropertyHead(torch.nn.Module):
         elif self.summary_type == "mean":
             output = hidden_states.mean(dim=1)
         elif self.summary_type == "cls_index":
-            # if cls_index is None:
-            #     cls_index = torch.full_like(
-            #         hidden_states[..., :1, :],
-            #         hidden_states.shape[-2] - 1,
-            #         dtype=torch.long,
-            #     )
-            # else:
-            #     cls_index = cls_index.unsqueeze(-1).unsqueeze(-1)
-            #     cls_index = cls_index.expand(
-            #         (-1,) * (cls_index.dim() - 1) + (hidden_states.size(-1),)
-            #     )
-
-            # shape of cls_index: (bsz, XX, 1, hidden_size) where XX are optional leading dim of hidden_states
-            # output = hidden_states.gather(-2, cls_index).squeeze(-2)  # shape (bsz, XX, hidden_size)
             batch_size = hidden_states.shape[0]
-            output = hidden_states.squeeze()[torch.arange(batch_size), cls_index]
+            if cls_index is None:
+                cls_index = torch.full(
+                    (batch_size,),
+                    hidden_states.shape[1] - 1,
+                    device=hidden_states.device,
+                    dtype=torch.long,
+                )
+            output = hidden_states[torch.arange(batch_size, device=hidden_states.device), cls_index]
         else:
             raise NotImplementedError
 
@@ -111,11 +103,10 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
         del self.multiple_choice_head
         self.multiple_choice_head = PropertyHead(config)
 
-    @auto_docstring()
     def forward(
         self,
         input_ids: Optional[torch.LongTensor] = None,
-        past_key_values: Optional[Tuple[Tuple[torch.Tensor]]] = None,
+        past_key_values: Optional[Any] = None,
         attention_mask: Optional[torch.FloatTensor] = None,
         token_type_ids: Optional[torch.LongTensor] = None,
         position_ids: Optional[torch.LongTensor] = None,
@@ -130,6 +121,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
         return_dict: Optional[bool] = None,
         inputs: Optional[Any] = None,  # do not remove because of trainer
         encoder_hidden_states: Optional[torch.Tensor] = None,
+        encoder_attention_mask: Optional[torch.Tensor] = None,
         **kwargs,
     ) -> Union[Tuple, GPT2DoubleHeadsModelOutput]:
         r"""
@@ -146,7 +138,8 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
                 Labels for computing the supervized loss for regularization.
             inputs: List of inputs, put here because the trainer removes information not in signature
         """
-        return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+        del inputs
+        return_dict = return_dict if return_dict is not None else self.config.return_dict
         transformer_outputs = self.transformer(
             input_ids,
             past_key_values=past_key_values,
@@ -160,6 +153,8 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
             encoder_hidden_states=encoder_hidden_states,
+            encoder_attention_mask=encoder_attention_mask,
+            **kwargs,
         )
 
         hidden_states = transformer_outputs[0]
@@ -171,7 +166,7 @@ class SAFEDoubleHeadsModel(GPT2DoubleHeadsModel):
             )
 
         # Set device for model parallelism
-        if self.model_parallel:
+        if getattr(self, "model_parallel", False):
             torch.cuda.set_device(self.transformer.first_device)
             hidden_states = hidden_states.to(self.lm_head.weight.device)
 

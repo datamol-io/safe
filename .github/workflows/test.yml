@@ -1,54 +1,140 @@
-name: test
+name: tests
 
 on:
   push:
-    branches: ["main"]
-    tags: ["*"]
+    branches: [main, dev]
   pull_request:
-    branches:
-      - "*"
-      - "!gh-pages"
+    branches: [main, dev]
   schedule:
     - cron: "0 4 * * MON"
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  test:
+  minimal-install:
+    name: Minimal core dependency boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.8"
+          python-version: "3.13"
+          activate-environment: true
+          enable-cache: true
+
+      - name: Install core package only
+        run: uv pip install --editable .
+
+      - name: Verify core imports and conversion
+        run: |
+          python -c "from safe import *; import sys; assert 'torch' not in sys.modules; assert decode(encode('CCOC(=O)N'), canonical=True) == 'CCOC(N)=O'"
+
+  core:
+    name: ${{ matrix.os }} / Python ${{ matrix.python-version }} / RDKit ${{ matrix.rdkit-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.11"]
-
-    runs-on: "ubuntu-latest"
-    timeout-minutes: 30
-
-    defaults:
-      run:
-        shell: bash -l {0}
-
-    name: python=${{ matrix.python-version }}
+        include:
+          - os: ubuntu-latest
+            python-version: "3.11"
+            rdkit-version: "2024.9.*"
+            pandas-version: "<3"
+          - os: ubuntu-latest
+            python-version: "3.12"
+            rdkit-version: "2025.3.*"
+            pandas-version: "<3"
+          - os: ubuntu-latest
+            python-version: "3.13"
+            rdkit-version: "2025.9.*"
+            pandas-version: ">=3"
+          - os: ubuntu-latest
+            python-version: "3.14"
+            rdkit-version: "2025.9.*"
+            pandas-version: ">=3"
+          - os: macos-latest
+            python-version: "3.13"
+            rdkit-version: "2025.9.*"
+            pandas-version: ">=3"
+          - os: macos-15-intel
+            python-version: "3.13"
+            rdkit-version: "2025.9.*"
+            pandas-version: ">=3"
+          - os: windows-latest
+            python-version: "3.13"
+            rdkit-version: "2025.9.*"
+            pandas-version: ">=3"
 
     steps:
-      - name: Checkout the code
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - name: Setup mamba
-        uses: mamba-org/setup-micromamba@v1
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          environment-file: env.yml
-          environment-name: my_env
-          cache-environment: true
-          cache-downloads: true
-          create-args: >-
-            python=${{ matrix.python-version }}
+          version: "0.12.8"
+          python-version: ${{ matrix.python-version }}
+          activate-environment: true
+          enable-cache: true
 
-      - name: Install library
-        run: python -m pip install --no-deps -e .
+      - name: Install dependencies
+        run: |
+          uv pip install "rdkit==${{ matrix.rdkit-version }}"
+          uv pip install --editable ".[test]"
+          uv pip install "pandas${{ matrix.pandas-version }}"
 
-      - name: Run tests
-        run: pytest
+      - name: Run core tests
+        run: >-
+          python -m pytest -m "not integration"
+          --ignore=tests/test_hgf_load.py
+          --ignore=tests/test_model.py
 
-      - name: Test CLI
+      - name: Upload coverage
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.14'
+        uses: codecov/codecov-action@a99c28d3f0da835de33ff2feb2e15691c7b9641f # v7
+        with:
+          files: cov.xml
+          fail_ci_if_error: false
+          flags: core
+
+  published-model-and-notebooks:
+    name: SAFE-GPT and executable tutorials
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      HF_HOME: ${{ github.workspace }}/.cache/huggingface
+      MPLCONFIGDIR: ${{ github.workspace }}/.cache/matplotlib
+      PYTHONHASHSEED: "0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up uv and Python
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.12.8"
+          python-version: "3.13"
+          activate-environment: true
+          enable-cache: true
+
+      - name: Install integration dependencies
+        run: uv pip install --editable ".[test,docs,all]"
+
+      - name: Test training CLI
         run: safe-train --help
 
-      - name: Test building the doc
-        run: mkdocs build
+      - name: Run integration tests
+        run: python -m pytest -m integration --no-cov

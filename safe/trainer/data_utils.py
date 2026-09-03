@@ -127,7 +127,7 @@ def get_dataset(
                 data_path,
                 name=name,
                 cache_dir=cache_dir,
-                use_auth_token=True if use_auth_token else None,
+                token=True if use_auth_token else None,
                 streaming=streaming,
             )
     # that means we need to return a tokenized version of the dataset

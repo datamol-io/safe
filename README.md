@@ -30,8 +30,8 @@
 [![Conda](https://img.shields.io/conda/v/conda-forge/safe-mol?label=conda&color=success)](https://anaconda.org/conda-forge/safe-mol)
 [![PyPI - Downloads](https://img.shields.io/pypi/dm/safe-mol)](https://pypi.org/project/safe-mol/)
 [![Conda](https://img.shields.io/conda/dn/conda-forge/safe-mol)](https://anaconda.org/conda-forge/safe-mol)
-[![Code license](https://img.shields.io/badge/Code%20License-Apache_2.0-green.svg)](https://github.com/datamol-io/safe/blob/main/LICENSE)
-[![Data License](https://img.shields.io/badge/Data%20License-CC%20BY%204.0-red.svg)](https://github.com/datamol-io/safe/blob/main/DATA_LICENSE)
+[![Code license](https://img.shields.io/badge/Code%20License-Apache_2.0-green.svg)](LICENSE)
+[![Data License](https://img.shields.io/badge/Data%20License-CC%20BY%204.0-red.svg)](DATA_LICENSE)
 [![GitHub Repo stars](https://img.shields.io/github/stars/datamol-io/safe)](https://github.com/datamol-io/safe/stargazers)
 [![GitHub Repo stars](https://img.shields.io/github/forks/datamol-io/safe)](https://github.com/datamol-io/safe/network/members)
 [![arXiv](https://img.shields.io/badge/arXiv-2310.10773-b31b1b.svg)](https://arxiv.org/pdf/2310.10773.pdf)
@@ -61,41 +61,56 @@ The construction of a SAFE strings requires defining a molecular fragmentation a
 
 ## News 🚀
 
+#### 💥 2026/09/03 💥
+1. **SAFE 1.0 release.** A maintenance-focused major release. It preserves E/Z and atom stereochemistry across fragmentation, makes strict and permissive decoding behaviour explicit, supports extended ring closures, and updates SAFE-GPT to Transformers 5 without changing the established seeded generation paths. The core notation package is lightweight, while model, training, visualization and Weights & Biases support are independent extras. Sampling gains an optional `try_hard` quality pass and deterministic handling of linker and pattern constraints. See the [complete changelog](CHANGELOG.md) and the [1.0 migration guide](docs/migration.md).
+
 #### 💥 2024/01/15 💥
 1. [@IanAWatson](https://github.com/IanAWatson) has a C++ implementation of SAFE in [LillyMol](https://github.com/IanAWatson/LillyMol/tree/bazel_version_float) that is quite fast and use a custom fragmentation algorithm. Follow the installation instruction on the repo and checkout the docs of the CLI here: [docs/Molecule_Tools/SAFE.md](https://github.com/IanAWatson/LillyMol/blob/bazel_version_float/docs/Molecule_Tools/SAFE.md)
 
+## Installation
 
-### Installation
+SAFE 1.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:
 
-You can install `safe` using pip:
+```bash
+uv add safe-mol
+```
+
+Pip and conda-forge remain supported:
 
 ```bash
 pip install safe-mol
-```
-
-You can use conda/mamba:
-
-```bash
 mamba install -c conda-forge safe-mol
 ```
 
-#### 2024/11/22
-NOTE: Installation might cause issues like no detection of GPUs (which can be checked by `torch.cuda.is_available()`) and sengmentation error due to mismatch between installed and driver cuda versions. In that case, follow these steps:
-
-Create a new environment using conda:
+SAFE's core install contains only encoding, decoding and notation splitting.
+It supports Mac Intel without PyTorch. Model and training extras require
+PyTorch 2.5+; official Mac Intel wheels stop at 2.2, so use Linux, Windows or
+Apple Silicon for that stack.
+Add `safe-mol[model]` for `SAFETokenizer` and `SAFEDesign`,
+`safe-mol[train]` for the model stack plus `safe-train`, or
+`safe-mol[all]` to install every maintained feature. Model APIs retain their
+top-level imports but load their dependencies only when used. For example:
 
 ```bash
-conda create -n env_safe python=3.12
-conda activate env_safe
+uv add "safe-mol[model]"
+# or: python -m pip install "safe-mol[model]"
 ```
 
-Check nvidia driver version on machine by running `nvcc --version` or `nvidia-smi` commands
+Visualization and Weights & Biases remain independently available through
+`safe-mol[viz]` and `safe-mol[wandb]`. SAFE's optional model stack uses
+Transformers 5. SAFE maintains random, greedy, beam and beam-sampling paths.
+The constrained beam backend required by model-only linker generation is loaded
+lazily from a reviewed, commit-pinned Hugging Face repository. RDKit 2026.03 is
+excluded because of an upstream stereochemistry regression; RDKit 2024.09
+through 2025.09 are covered by CI. See the
+[1.0 migration guide](docs/migration.md) for details.
 
-Install pytorch with compatible cuda versions (from `https://pytorch.org/get-started/locally/`) and safe-mol:
+For GPU workloads, install the PyTorch build matching your CUDA driver before installing SAFE. You can verify the resulting environment with:
 
-```bash
-conda install pytorch torchvision torchaudio pytorch-cuda=12.1 -c pytorch -c nvidia
-conda install -c conda-forge safe-mol
+```python
+import torch
+
+print(torch.cuda.is_available())
 ```
 
 ### Datasets and Models
@@ -133,9 +148,9 @@ ibuprofen = "CC(Cc1ccc(cc1)C(C(=O)O)C)C"
 try:
     ibuprofen_sf = safe.encode(ibuprofen)  # c12ccc3cc1.C3(C)C(=O)O.CC(C)C2
     ibuprofen_smi = safe.decode(ibuprofen_sf, canonical=True)  # CC(C)Cc1ccc(C(C)C(=O)O)cc1
-except safe.EncoderError:
+except safe.SAFEEncodeError:
     pass
-except safe.DecoderError:
+except safe.SAFEDecodeError:
     pass
 
 ibuprofen_tokens = list(safe.split(ibuprofen_sf))
@@ -179,25 +194,40 @@ If you use this repository, please cite the following related [paper](https://ar
 
 ## License
 
-The training dataset is licensed under CC BY 4.0. See [DATA_LICENSE](DATA_LICENSE) for details.  This code base is licensed under the Apache-2.0 license. See [LICENSE](LICENSE) for details. 
+The training dataset is licensed under CC BY 4.0. See [DATA_LICENSE](DATA_LICENSE)
+for details. This code base is licensed under the Apache-2.0 license. See
+[LICENSE](LICENSE) for details.
 
 Note that the model weights of **SAFE-GPT** are exclusively licensed for research purposes (CC BY-NC 4.0).
+
+These licences apply to separate materials. The Python package does not
+redistribute the model weights.
 
 ## Development lifecycle
 
 ### Setup dev environment
 
 ```bash
-mamba create -n safe -f env.yml
-mamba activate safe
-
-pip install --no-deps -e .
+uv sync --all-extras
 ```
+
+This creates an isolated `.venv` with the training, visualisation, reporting,
+test, documentation and development extras. `env.yml` remains available when a
+Conda environment is required.
 
 ### Tests
 
 You can run tests locally with:
 
 ```bash
-pytest
+uv run python -m pytest -m "not integration"
+uv run python -m pytest -m integration --no-cov
 ```
+
+The integration command validates the published SAFE-GPT model and executes
+the maintained tutorials. GitHub Actions runs the same command. Use
+`uv run python -m pytest -m notebook --no-cov` when iterating on tutorials only.
+
+### Releasing
+
+Release maintainers: see the [manual release guide](docs/releasing.md).
