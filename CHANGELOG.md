@@ -22,12 +22,11 @@ for earlier release notes.
 - Add `allow_empty=True` to `safe.encode`. Inputs the slicer cannot cut (rigid
   rings, single atoms, or the components of a salt) are returned as a single
   unfragmented SAFE block instead of raising `SAFEFragmentationError`.
-- Add `refine=True` (replaces `try_hard`) to every public design workflow. It
-  oversamples, validates, checks the requested structural constraint, removes
-  duplicates in generation order and returns at most the requested number of
-  candidates. For completion tasks it also constrains decoding to a single
-  connected molecule so results are not the scaffold plus spurious disconnected
-  fragments.
+- Add `refine=True` to every public design workflow. It oversamples, validates,
+  checks the requested structural constraint, removes duplicates in generation
+  order and returns at most the requested number of candidates. For completion
+  tasks it also constrains decoding to a single connected molecule so results are
+  not the scaffold plus spurious disconnected fragments.
 - Add a connectivity-aware decoder (`ScaffoldConnectivityLogitsProcessor`) that
   tracks ring-closure connectivity during generation and, for scaffold
   completion, forces a single connected component. It is stateless (usable in an
@@ -68,9 +67,6 @@ for earlier release notes.
   SAFE 2.0.
 - Deprecate `max_length` in public sampling helpers in favor of
   `max_new_tokens`; passing both is an error.
-- Deprecate the `try_hard` design-workflow argument in favor of `refine`.
-  `try_hard` still works but emits a `FutureWarning` and is scheduled for
-  removal in SAFE 2.0.
 
 ### Removed
 

@@ -1,6 +1,5 @@
 import pickle
 import random
-import warnings
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
@@ -214,7 +213,7 @@ def test_motif_extension_is_a_deprecated_scaffold_decoration_alias():
     )
 
 
-def test_try_hard_sampling_budget_and_stable_deduplication():
+def test_refine_sampling_budget_and_stable_deduplication():
     assert SAFEDesign._candidate_count(4, refine=False) == 4
     assert SAFEDesign._candidate_count(4, refine=True) == 12
     samples = ["CC", None, "CN", "CC", "CO"]
@@ -317,9 +316,7 @@ def test_connectivity_processor_blocks_detached_fragment_and_eos():
     from safe.sample import ScaffoldConnectivityLogitsProcessor
 
     tok, v = _fake_tokenizer()
-    proc = ScaffoldConnectivityLogitsProcessor(
-        tok, prompt_len=3, suppress_incomplete_eos=True, block_new_fragment=True
-    )
+    proc = ScaffoldConnectivityLogitsProcessor(tok, prompt_len=3)
     neg = torch.finfo(torch.float32).min
     # prompt "[CLS] C 1" + generated ". c 2": new fragment opened label 2, detached
     ids = torch.tensor([[v["[CLS]"], v["C"], v["1"], v["."], v["c"], v["2"]]])
@@ -327,18 +324,3 @@ def test_connectivity_processor_blocks_detached_fragment_and_eos():
     assert out[0, v["[SEP]"]] == neg  # incomplete -> EOS suppressed
     assert out[0, v["."]] == neg  # detached -> cannot start a new fragment
     assert out[0, v["C"]] > neg  # atoms still allowed (so it can attach)
-
-
-def test_try_hard_is_deprecated_alias_for_refine():
-    from safe.sample import _accept_try_hard_alias
-
-    @_accept_try_hard_alias
-    def method(self, refine=False):
-        return refine
-
-    with pytest.warns(FutureWarning, match="try_hard"):
-        assert method(object(), try_hard=True) is True
-
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        assert method(object(), refine=True) is True

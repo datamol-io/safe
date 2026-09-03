@@ -1,5 +1,4 @@
 import copy
-import functools
 import itertools
 import os
 import random
@@ -24,23 +23,6 @@ from safe.trainer.model import SAFEDoubleHeadsModel
 from safe._pattern import PatternConstraint, PatternSampler
 
 
-def _accept_try_hard_alias(func):
-    """Accept the deprecated ``try_hard`` keyword as an alias for ``refine``."""
-
-    @functools.wraps(func)
-    def wrapper(self, *args, try_hard=None, **kwargs):
-        if try_hard is not None:
-            warnings.warn(
-                "try_hard is deprecated and will be removed in SAFE 2.0; use refine instead.",
-                FutureWarning,
-                stacklevel=2,
-            )
-            kwargs["refine"] = try_hard
-        return func(self, *args, **kwargs)
-
-    return wrapper
-
-
 class ScaffoldConnectivityLogitsProcessor(LogitsProcessor):
     """Steer scaffold completion toward a single connected molecule.
 
@@ -54,33 +36,19 @@ class ScaffoldConnectivityLogitsProcessor(LogitsProcessor):
       component with balanced parentheses and no open ring labels;
     * suppresses the end-of-sequence token while the molecule is still
       incomplete; and
-    * (optionally) forbids starting a new ``.``-fragment while the fragment being
-      written has not yet attached to the scaffold, so free fragments cannot pile
-      up.
+    * forbids starting a new ``.``-fragment while the fragment being written has
+      not yet attached to the scaffold, so free fragments cannot pile up.
 
-    Works with multinomial, greedy and beam search, and needs no retraining.
-
-    The default (``force_eos_only``) only truncates over-generation once a valid
-    connected molecule has been reached, which removes almost all spurious
-    fragments at negligible cost to validity. The stricter behaviours
-    (``suppress_incomplete_eos`` and ``block_new_fragment``) additionally push
-    the model to *reach* a connected state; they drive fragmentation to ~0 but
-    can lower validity because they force the model off its own distribution.
+    Works with multinomial, greedy and beam search, and needs no retraining. It
+    is stateless (recomputed from ``input_ids`` each step), so it is safe to use
+    batched and inside a reinforcement-learning sampling loop.
     """
 
-    def __init__(
-        self,
-        tokenizer,
-        prompt_len: int,
-        suppress_incomplete_eos: bool = False,
-        block_new_fragment: bool = False,
-    ):
+    def __init__(self, tokenizer, prompt_len: int):
         self._id2tok = {idx: tok for tok, idx in tokenizer.get_vocab().items()}
         self._specials = frozenset(tokenizer.all_special_tokens)
         self._prompt_len = prompt_len
         self._eos = tokenizer.eos_token_id
-        self._suppress_incomplete_eos = suppress_incomplete_eos
-        self._block_new_fragment = block_new_fragment
         self._dot_id = tokenizer.convert_tokens_to_ids(".")
         unk = tokenizer.unk_token_id
         self._has_dot = self._dot_id is not None and self._dot_id != unk
@@ -104,10 +72,11 @@ class ScaffoldConnectivityLogitsProcessor(LogitsProcessor):
                 scores[b, :] = neg_inf
                 scores[b, self._eos] = forced
                 continue
-            # Optionally push the model to actually reach a connected state.
-            if self._suppress_incomplete_eos and self._eos is not None:
+            # Incomplete: never stop here, and do not open a new fragment before
+            # the current one has attached to the scaffold.
+            if self._eos is not None:
                 scores[b, self._eos] = neg_inf
-            if self._block_new_fragment and self._has_dot and not decision.current_attached:
+            if self._has_dot and not decision.current_attached:
                 scores[b, self._dot_id] = neg_inf
         return scores
 
@@ -118,7 +87,7 @@ class SAFEDesign:
     _DEFAULT_MAX_LENGTH = 1024  # default max length used during training
     _DEFAULT_MODEL_PATH = "datamol-io/safe-gpt"
     _DEFAULT_MODEL_REVISION = "3d5fa0988383e898d5ac5db7cd52bf715bc37061"
-    _TRY_HARD_OVERSAMPLE_FACTOR = 3
+    _REFINE_OVERSAMPLE_FACTOR = 3
     _CONSTRAINED_GENERATION_BACKEND = (
         "transformers-community/constrained-beam-search",
         "07b2f120b7db38f1d7bac617ad65ea130508f297",
@@ -187,7 +156,7 @@ class SAFEDesign:
     @classmethod
     def _candidate_count(cls, requested: int, refine: bool) -> int:
         """Return the number of raw candidates to sample for a design trial."""
-        return requested * cls._TRY_HARD_OVERSAMPLE_FACTOR if refine else requested
+        return requested * cls._REFINE_OVERSAMPLE_FACTOR if refine else requested
 
     @staticmethod
     def _finalize_samples(sequences: List[Optional[str]], limit: int, refine: bool):
@@ -323,7 +292,6 @@ class SAFEDesign:
             **kwargs,
         )
 
-    @_accept_try_hard_alias
     def linker_generation(
         self,
         *groups: Union[str, dm.Mol],
@@ -347,7 +315,7 @@ class SAFEDesign:
             sanitize: whether to sanitize the generated molecules
             random_seed: random seed to use
             model_only: whether to use the model only ability and nothing more.
-            refine: quality mode (replaces the deprecated ``try_hard``). Oversample, then
+            refine: quality mode. Oversample, then
                 return only valid, deduplicated molecules up to the requested count; for
                 completion tasks the result is also constrained to a single connected molecule.
             kwargs: any argument to provide to the underlying generation function
@@ -372,7 +340,6 @@ class SAFEDesign:
             **kwargs,
         )
 
-    @_accept_try_hard_alias
     def scaffold_morphing(
         self,
         side_chains: Optional[Union[dm.Mol, str, List[Union[str, dm.Mol]]]] = None,
@@ -406,7 +373,7 @@ class SAFEDesign:
             do_not_fragment_further: whether to fragment the scaffold further or not
             sanitize: whether to sanitize the generated molecules
             random_seed: random seed to use
-            refine: quality mode (replaces the deprecated ``try_hard``). Oversample, then
+            refine: quality mode. Oversample, then
                 return only valid, deduplicated molecules up to the requested count; for
                 completion tasks the result is also constrained to a single connected molecule.
             kwargs: any argument to provide to the underlying generation function
@@ -464,7 +431,7 @@ class SAFEDesign:
             is_linking: whether it's a linking task or not.
                 For linking tasks, we use a different custom strategy of completing up to the attachment signal
             model_only: whether to use the model only ability and nothing more. Only relevant when doing linker generation
-            refine: quality mode (replaces the deprecated ``try_hard``). Oversample, then
+            refine: quality mode. Oversample, then
                 return only valid, deduplicated molecules up to the requested count; for
                 completion tasks the result is also constrained to a single connected molecule.
             kwargs: any argument to provide to the underlying generation function
@@ -675,7 +642,6 @@ class SAFEDesign:
             refine,
         )
 
-    @_accept_try_hard_alias
     def motif_extension(
         self,
         motif: Union[str, dm.Mol],
@@ -706,7 +672,6 @@ class SAFEDesign:
             **kwargs,
         )
 
-    @_accept_try_hard_alias
     def super_structure(
         self,
         core: Union[str, dm.Mol],
@@ -733,7 +698,7 @@ class SAFEDesign:
             random_seed: random seed to use
             attachment_point_depth: depth of opening the attachment points.
                 Increasing this, means you increase the number of substitution point to consider.
-            refine: quality mode (replaces the deprecated ``try_hard``). Oversample, then
+            refine: quality mode. Oversample, then
                 return only valid, deduplicated molecules up to the requested count; for
                 completion tasks the result is also constrained to a single connected molecule.
             kwargs: any argument to provide to the underlying generation function
@@ -787,7 +752,6 @@ class SAFEDesign:
             refine,
         )
 
-    @_accept_try_hard_alias
     def scaffold_decoration(
         self,
         scaffold: Union[str, dm.Mol],
@@ -812,7 +776,7 @@ class SAFEDesign:
             do_not_fragment_further: whether to fragment the scaffold further or not
             sanitize: whether to sanitize the generated molecules and check if the scaffold is still present
             random_seed: random seed to use
-            refine: quality mode (replaces the deprecated ``try_hard``). Oversample, then
+            refine: quality mode. Oversample, then
                 return only valid, deduplicated molecules up to the requested count; for
                 completion tasks the result is also constrained to a single connected molecule.
             kwargs: any argument to provide to the underlying generation function
@@ -844,7 +808,6 @@ class SAFEDesign:
             refine,
         )
 
-    @_accept_try_hard_alias
     def pattern_decoration(
         self,
         scaffold: Union[str, dm.Mol],
@@ -882,7 +845,7 @@ class SAFEDesign:
             n_scaff_samples: Maximum number of samples to sample for a given scaffold from the pattern.
                 Increasing this will make sure you have more diversity in the scaffold coming from the pattern
             scaff_temperature: Temperature to use when sampling valid scaffolds from the pattern. Higher temperature means more diverse scaffold
-            refine: quality mode (replaces the deprecated ``try_hard``). Oversample, then
+            refine: quality mode. Oversample, then
                 return only valid, deduplicated molecules up to the requested count; for
                 completion tasks the result is also constrained to a single connected molecule.
             kwargs: Additional arguments for the underlying generation function.
@@ -958,7 +921,6 @@ class SAFEDesign:
             refine,
         )
 
-    @_accept_try_hard_alias
     def de_novo_generation(
         self,
         n_samples_per_trial: int = 10,
@@ -975,7 +937,7 @@ class SAFEDesign:
             n_samples_per_trial: number of new molecules to generate
             sanitize: whether to perform sanitization, aka, perform control to ensure what is asked is what is returned
             n_trials: number of randomization to perform
-            refine: quality mode (replaces the deprecated ``try_hard``). Oversample, then
+            refine: quality mode. Oversample, then
                 return only valid, deduplicated molecules up to the requested count; for
                 completion tasks the result is also constrained to a single connected molecule.
             kwargs: any argument to provide to the underlying generation function
@@ -1128,7 +1090,7 @@ class SAFEDesign:
             random_seed: random seed to use
             is_safe: whether the smiles is already encoded as a safe string
             add_dot: whether to add a dot at the end of the fragments to signal to the model that we want to generate a distinct fragment.
-            refine: quality mode (replaces the deprecated ``try_hard``). Oversample, then
+            refine: quality mode. Oversample, then
                 return only valid, deduplicated molecules up to the requested count; for
                 completion tasks the result is also constrained to a single connected molecule.
             kwargs: any argument to provide to the underlying generation function
@@ -1321,12 +1283,7 @@ class SAFEDesign:
             if not isinstance(safe_prefix, str):
                 raise ValueError("force_connected requires a scaffold prefix to complete")
             prompt_len = int(input_ids["input_ids"].shape[1])
-            connectivity = ScaffoldConnectivityLogitsProcessor(
-                pretrained_tk,
-                prompt_len,
-                suppress_incomplete_eos=True,
-                block_new_fragment=True,
-            )
+            connectivity = ScaffoldConnectivityLogitsProcessor(pretrained_tk, prompt_len)
             existing = kwargs.get("logits_processor") or []
             kwargs["logits_processor"] = LogitsProcessorList([*existing, connectivity])
 
