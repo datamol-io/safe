@@ -908,8 +908,8 @@
 <ul>
 <li>Python 3.11 through 3.14 is supported. Python 3.9 and 3.10 are no longer tested.</li>
 <li>The minimum RDKit release is 2024.09. RDKit 2026.03 is deliberately excluded because that series changes double-bond direction handling during fragmentation and can silently lose stereochemistry in an otherwise valid SAFE round trip. The compatibility matrix uses RDKit 2024.09, 2025.03, and 2025.09.</li>
-<li>Model and training extras require PyTorch 2.5 or newer. Official macOS Intel
-  wheels stop at PyTorch 2.2, so those extras are not supported natively there.
+<li>The <code>model</code> extra requires PyTorch 2.5 or newer. Official macOS Intel
+  wheels stop at PyTorch 2.2, so it is not supported natively there.
   The notation core works without PyTorch, including alongside Molfeat on Intel.</li>
 <li>Transformers 5 is the supported generation stack. SAFE maintains greedy,
   multinomial, beam, beam-sampling and the constrained-beam path required by
@@ -924,19 +924,18 @@ through <code>SAFE_CONSTRAINED_GENERATION_BACKEND</code>. Standard sampling does
 download or execute this backend. Contrastive and diverse beam search are no
 longer wrapped by SAFE; advanced Transformers experiments should call the
 underlying model directly.</p>
-<p>The default installation is now the molecular notation core: encoding,
-decoding and <code>safe.split</code>. PyTorch, Transformers, Tokenizers, tqdm and fsspec
-move to the <code>model</code> extra. <code>SAFEDesign</code> and <code>SAFETokenizer</code> keep their public
-top-level names and load that stack only when used. The <code>train</code> extra includes
-the model stack plus Datasets, Evaluate, Accelerate and universal-pathlib.
-Matplotlib and Weights &amp; Biases remain isolated in <code>viz</code> and <code>wandb</code>; <code>all</code>
-installs every maintained feature.</p>
+<p>The base installation is the molecular notation core (encoding, decoding and
+<code>safe.split</code>) plus molecule visualization, and needs no PyTorch. The single
+<code>model</code> extra adds the full model stack: PyTorch, Transformers, Tokenizers,
+SAFE-GPT inference, the <code>safe-train</code> CLI (Datasets, Evaluate, Accelerate,
+universal-pathlib) and Weights &amp; Biases logging. <code>SAFEDesign</code> and
+<code>SAFETokenizer</code> keep their public top-level names and load that stack only when
+used.</p>
 <p>Recreate the environment rather than upgrading it in place:</p>
 <div class="highlight"><pre><span></span><code>uv<span class="w"> </span>sync<span class="w"> </span>--all-extras
 </code></pre></div>
-<p><code>env.yml</code> remains a supported Conda alternative. For a pip training
-environment, install <code>safe-mol[train]</code> (or <code>safe-mol[train,wandb]</code> if
-experiment reporting is required).</p>
+<p><code>env.yml</code> remains a supported Conda alternative. For a pip environment with the
+model, training and experiment-reporting stack, install <code>safe-mol[model]</code>.</p>
 <p>For GPU installations, install the PyTorch build appropriate for the CUDA driver before installing SAFE.</p>
 <h2 id="behaviour-preserving-fixes">Behaviour-preserving fixes<a class="headerlink" href="#behaviour-preserving-fixes" title="Permanent link">&para;</a></h2>
 <ul>

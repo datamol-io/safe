@@ -1283,26 +1283,42 @@
 <li><a href="https://github.com/IanAWatson">@IanAWatson</a> has a C++ implementation of SAFE in <a href="https://github.com/IanAWatson/LillyMol/tree/bazel_version_float">LillyMol</a> that is quite fast and use a custom fragmentation algorithm. Follow the installation instruction on the repo and checkout the docs of the CLI here: <a href="https://github.com/IanAWatson/LillyMol/blob/bazel_version_float/docs/Molecule_Tools/SAFE.md">docs/Molecule_Tools/SAFE.md</a></li>
 </ol>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
-<p>SAFE 0.2.0 supports Python 3.11 through 3.14. Add it to a uv-managed project:</p>
-<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>add<span class="w"> </span>safe-mol
-</code></pre></div>
-<p>Pip and conda-forge remain supported:</p>
-<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span>safe-mol
+<p>SAFE 0.2.0 supports Python 3.11 through 3.14.</p>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>add<span class="w"> </span>safe-mol<span class="w">          </span><span class="c1"># or: pip install safe-mol</span>
 mamba<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>safe-mol
 </code></pre></div>
-<p>SAFE's core install contains only encoding, decoding and notation splitting.
-Use <code>safe-mol[model]</code> for <code>SAFETokenizer</code> and <code>SAFEDesign</code>,
-<code>safe-mol[train]</code> for the model stack plus <code>safe-train</code>, or
-<code>safe-mol[all]</code> for every maintained feature. Model APIs remain available from
-the top-level module and load their dependencies only when used.</p>
-<p>The optional model stack uses Transformers 5. SAFE maintains random, greedy,
-beam and beam-sampling paths. The constrained beam backend required by
-model-only linker generation is loaded lazily from a reviewed, commit-pinned
-Hugging Face repository. RDKit 2026.03 is excluded because of an upstream
-stereochemistry regression; RDKit 2024.09 through 2025.09 are covered by CI.
-Read <a href="migration.html">Migrating to SAFE 0.2.0</a> before upgrading an existing
-environment. Visualization and Weights &amp; Biases remain independently available
-through <code>safe-mol[viz]</code> and <code>safe-mol[wandb]</code>.</p>
+<p>The base install covers the notation core (<code>safe.encode</code>, <code>safe.decode</code>,
+<code>safe.split</code>) and molecule visualization, and needs no PyTorch — so it runs
+anywhere, including Mac Intel. The model stack is a single optional extra:</p>
+<table>
+<thead>
+<tr>
+<th>Install</th>
+<th>Includes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>safe-mol</code></td>
+<td>Notation core + molecule visualization</td>
+</tr>
+<tr>
+<td><code>safe-mol[model]</code></td>
+<td>Everything above <strong>plus</strong> SAFE-GPT inference, the <code>safe-train</code> CLI and W&amp;B logging</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>uv<span class="w"> </span>add<span class="w"> </span><span class="s2">"safe-mol[model]"</span><span class="w">        </span><span class="c1"># or: pip install "safe-mol[model]"</span>
+</code></pre></div>
+<p>Installing the extra always includes the base, so <code>safe-mol[model]</code> gives you
+the core, visualization and the full model stack. Model APIs keep their
+top-level imports but load their dependencies only when used. The <code>model</code> extra
+requires PyTorch 2.5+; official Mac Intel wheels stop at 2.2, so use Linux,
+Windows or Apple Silicon for that stack. It uses Transformers 5, and RDKit
+2026.03 is excluded because of an upstream stereochemistry regression (RDKit
+2024.09 through 2025.09 are covered by CI). Read
+<a href="migration.html">Migrating to SAFE 0.2.0</a> before upgrading an existing
+environment.</p>
 <p>For constrained design, <code>try_hard=True</code> is the opt-in quality mode. It
 oversamples, validates the molecular and substructure constraints, and removes
 duplicates while preserving generation order. Use <code>max_new_tokens</code> to set a
