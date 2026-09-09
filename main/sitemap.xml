@@ -2,58 +2,58 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://safe-docs.datamol.io/main/index.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/cli.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/data_license.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/license.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/migration.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/releasing.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/api/safe.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/api/safe.models.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/api/safe.viz.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/tutorials/design-with-safe.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/tutorials/extracting-representation-molfeat.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/tutorials/getting-started.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/tutorials/how-it-works.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
     <url>
          <loc>https://safe-docs.datamol.io/main/tutorials/load-from-wandb.html</loc>
-         <lastmod>2026-09-03</lastmod>
+         <lastmod>2026-09-09</lastmod>
     </url>
 </urlset>
